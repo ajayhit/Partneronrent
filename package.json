@@ -1,0 +1,14 @@
+{
+  "name": "partner-on-rent",
+  "version": "1.0.0",
+  "description": "Hourly companion and emotional wellness platform inspired by KoPartner.in",
+  "scripts": {
+    "server": "npm --prefix server start",
+    "client": "npm --prefix client run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "install-all": "npm install && npm --prefix server install && npm --prefix client install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

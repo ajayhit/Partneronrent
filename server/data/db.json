@@ -1,0 +1,817 @@
+{
+  "settings": {
+    "platformName": "PartnerOnRent",
+    "tagline": "India's Most Trusted Platonic Companionship & Emotional Wellness Platform",
+    "commissionRate": 20,
+    "gstRate": 18,
+    "annualMembershipFee": 1000,
+    "supportPhone": "+91-98105-35398",
+    "supportEmail": "safety@partneronrent.in",
+    "cities": [
+      "Delhi NCR",
+      "Mumbai",
+      "Bangalore",
+      "Pune",
+      "Hyderabad",
+      "Chennai",
+      "Kolkata",
+      "Jaipur",
+      "Ahmedabad",
+      "Chandigarh"
+    ]
+  },
+  "services": [
+    {
+      "id": "movie-companion",
+      "name": "Movie Companion",
+      "tagline": "Watch latest releases, discuss cinema & grab popcorn",
+      "basePrice": 2000,
+      "icon": "Film",
+      "category": "Entertainment",
+      "description": "Never watch a premiere alone. Enjoy great company, post-movie discussion at a cafe, and shared laughs in a safe public theatre."
+    },
+    {
+      "id": "in-person-hangout",
+      "name": "Cafe & Conversation",
+      "tagline": "Meaningful chats, emotional decompression & coffee",
+      "basePrice": 1500,
+      "icon": "Coffee",
+      "category": "Social",
+      "description": "Unwind over coffee at your favorite cafe. A non-judgmental, active listener to share your thoughts, vent work stress, or just talk about life."
+    },
+    {
+      "id": "shopping-buddy",
+      "name": "Shopping Buddy",
+      "tagline": "Style advice, grocery run & mall companion",
+      "basePrice": 1200,
+      "icon": "ShoppingBag",
+      "category": "Lifestyle",
+      "description": "Get honest styling feedback, accompany you for festive or wardrobe shopping, or just make mall visits fun and collaborative."
+    },
+    {
+      "id": "travel-partner",
+      "name": "City Exploration & Travel",
+      "tagline": "Explore monuments, street food tours & heritage walks",
+      "basePrice": 2500,
+      "icon": "Compass",
+      "category": "Travel",
+      "description": "Explore city landmarks, hidden food gems, museums, or botanical gardens with a friendly local insider."
+    },
+    {
+      "id": "elder-care",
+      "name": "Elder Companionship",
+      "tagline": "Gentle walk companion, reading, park visits & conversation",
+      "basePrice": 1000,
+      "icon": "HeartHandshake",
+      "category": "Care",
+      "description": "Patient, compassionate companions for senior citizens. Ideal for evening park walks, reading books, playing board games, or friendly reminiscing."
+    },
+    {
+      "id": "medical-support",
+      "name": "Clinic & Medical Support",
+      "tagline": "Wait companion for doctor visits & diagnostic labs",
+      "basePrice": 1500,
+      "icon": "Stethoscope",
+      "category": "Care",
+      "description": "Never face stressful doctor appointments alone. Companions help navigate queue waits, grab medical prescriptions, and provide calming presence."
+    },
+    {
+      "id": "clubbing-events",
+      "name": "Events & Clubbing",
+      "tagline": "Concerts, social mixers, art exhibitions & gigs",
+      "basePrice": 2000,
+      "icon": "Sparkles",
+      "category": "Entertainment",
+      "description": "Have a reliable, respectful plus-one for indie music gigs, networking mixers, stand-up comedy shows, or art gallery openings."
+    },
+    {
+      "id": "consultation",
+      "name": "Emotional Wellness Talk",
+      "tagline": "Empathetic listening & platonic mentorship",
+      "basePrice": 1000,
+      "icon": "Smile",
+      "category": "Wellness",
+      "description": "Strictly platonic, empathetic peer support designed to relieve urban loneliness, stress, and anxiety in safe public venues."
+    }
+  ],
+  "users": [
+    {
+      "id": "client-1",
+      "name": "Rahul Verma",
+      "email": "rahul.verma@example.com",
+      "phone": "+91 98765 43210",
+      "role": "client",
+      "city": "Delhi NCR",
+      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=250&q=80",
+      "walletBalance": 1035,
+      "emergencyContact": "+91 98111 22334 (Brother)",
+      "totalBookings": 6,
+      "joinedDate": "2024-01-15"
+    },
+    {
+      "id": "client-2",
+      "name": "Sneha Roy",
+      "email": "sneha.roy@example.com",
+      "phone": "+91 98222 33445",
+      "role": "client",
+      "city": "Mumbai",
+      "avatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=250&q=80",
+      "walletBalance": 3200,
+      "emergencyContact": "+91 98333 44556 (Sister)",
+      "totalBookings": 3,
+      "joinedDate": "2024-02-10"
+    },
+    {
+      "id": "partner-1",
+      "name": "Aanya Sharma",
+      "email": "aanya.sharma@example.com",
+      "phone": "+91 98123 45678",
+      "role": "partner",
+      "partnerProfileId": "partner-p1"
+    },
+    {
+      "id": "partner-2",
+      "name": "Kabir Mathur",
+      "email": "kabir.mathur@example.com",
+      "phone": "+91 98234 56789",
+      "role": "partner",
+      "partnerProfileId": "partner-p2"
+    },
+    {
+      "id": "admin-1",
+      "name": "Super Administrator",
+      "email": "admin@partneronrent.in",
+      "phone": "+91 98105 35398",
+      "role": "admin",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=250&q=80"
+    }
+  ],
+  "partners": [
+    {
+      "id": "partner-p1",
+      "userId": "partner-1",
+      "name": "Aanya Sharma",
+      "tagline": "Psychology Grad • Warm Listener • Coffee & Museum Enthusiast",
+      "bio": "Hi! I am a 24-year-old postgraduate in psychology. I believe everyone deserves a non-judgmental presence to decompress from hectic work life. I love trying specialty cafes, bookshops, indie cinema, and peaceful evening walks. Strictly platonic, polite, and respectful.",
+      "city": "Delhi NCR",
+      "areas": [
+        "Connaught Place",
+        "Hauz Khas",
+        "Saket",
+        "Cyber Hub Gurgaon",
+        "Noida Sec 18"
+      ],
+      "gender": "Female",
+      "age": 24,
+      "languages": [
+        "English",
+        "Hindi"
+      ],
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      "coverPhoto": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80",
+      "rating": 4.95,
+      "reviewCount": 42,
+      "completedHours": 128,
+      "badge": "Top Rated Partner",
+      "kycStatus": "verified",
+      "isOnline": true,
+      "hourlyRate": 1500,
+      "services": [
+        {
+          "serviceId": "in-person-hangout",
+          "ratePerHour": 1500
+        },
+        {
+          "serviceId": "movie-companion",
+          "ratePerHour": 1800
+        },
+        {
+          "serviceId": "shopping-buddy",
+          "ratePerHour": 1200
+        },
+        {
+          "serviceId": "consultation",
+          "ratePerHour": 1000
+        },
+        {
+          "serviceId": "travel-partner",
+          "ratePerHour": 2200
+        }
+      ],
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ],
+      "availableHours": "11:00 AM - 08:30 PM",
+      "walletBalance": 18400,
+      "totalEarnings": 94000,
+      "bankDetails": {
+        "accountHolder": "Aanya Sharma",
+        "bankName": "HDFC Bank",
+        "accountNumber": "50100492819283",
+        "ifsc": "HDFC0001234",
+        "upiId": "aanya@okhdfcbank"
+      },
+      "kycDocuments": {
+        "idType": "Aadhaar Card",
+        "idNumber": "XXXX-XXXX-8912",
+        "verifiedOn": "2024-01-20",
+        "backgroundCheck": "Cleared by VerifiedID India"
+      }
+    },
+    {
+      "id": "partner-p2",
+      "userId": "partner-2",
+      "name": "Kabir Mathur",
+      "tagline": "Fitness Trainer & Foodie • Upbeat & Supportive Energy",
+      "bio": "Certified fitness coach and avid outdoor explorer. I enjoy gym workouts, running along Marine Drive, checking out new food joints, and helping people stay motivated. Great partner for sports, workouts, shopping, and positive conversations.",
+      "city": "Mumbai",
+      "areas": [
+        "Bandra",
+        "Juhu",
+        "Colaba",
+        "Lower Parel",
+        "Andheri West"
+      ],
+      "gender": "Male",
+      "age": 27,
+      "languages": [
+        "English",
+        "Hindi",
+        "Marathi"
+      ],
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+      "coverPhoto": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=900&q=80",
+      "rating": 4.9,
+      "reviewCount": 38,
+      "completedHours": 95,
+      "badge": "Active Buddy",
+      "kycStatus": "verified",
+      "isOnline": true,
+      "hourlyRate": 1600,
+      "services": [
+        {
+          "serviceId": "in-person-hangout",
+          "ratePerHour": 1500
+        },
+        {
+          "serviceId": "shopping-buddy",
+          "ratePerHour": 1300
+        },
+        {
+          "serviceId": "clubbing-events",
+          "ratePerHour": 2000
+        },
+        {
+          "serviceId": "travel-partner",
+          "ratePerHour": 2500
+        }
+      ],
+      "availableDays": [
+        "Tuesday",
+        "Wednesday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ],
+      "availableHours": "09:00 AM - 09:00 PM",
+      "walletBalance": 12600,
+      "totalEarnings": 68000,
+      "bankDetails": {
+        "accountHolder": "Kabir Mathur",
+        "bankName": "ICICI Bank",
+        "accountNumber": "002101928374",
+        "ifsc": "ICIC0000021",
+        "upiId": "kabir.mathur@icici"
+      },
+      "kycDocuments": {
+        "idType": "Passport",
+        "idNumber": "Z9817291",
+        "verifiedOn": "2024-02-01",
+        "backgroundCheck": "Cleared by VerifiedID India"
+      }
+    },
+    {
+      "id": "partner-p3",
+      "userId": "partner-3",
+      "name": "Dr. Ritu Sen",
+      "tagline": "Gentle Companion for Elders & Medical Clinic Appointments",
+      "bio": "Former healthcare administrator and certified senior caregiver. Warm, respectful, and attentive. I specialize in accompanying senior citizens for garden walks, reading classics aloud, and accompanying clients to stressful doctor appointments.",
+      "city": "Bangalore",
+      "areas": [
+        "Indiranagar",
+        "Koramangala",
+        "Jayanagar",
+        "Whitefield",
+        "Malleshwaram"
+      ],
+      "gender": "Female",
+      "age": 36,
+      "languages": [
+        "English",
+        "Hindi",
+        "Kannada",
+        "Bengali"
+      ],
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80",
+      "coverPhoto": "https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&w=900&q=80",
+      "rating": 5,
+      "reviewCount": 54,
+      "completedHours": 180,
+      "badge": "Care Specialist",
+      "kycStatus": "verified",
+      "isOnline": false,
+      "hourlyRate": 1200,
+      "services": [
+        {
+          "serviceId": "elder-care",
+          "ratePerHour": 1000
+        },
+        {
+          "serviceId": "medical-support",
+          "ratePerHour": 1400
+        },
+        {
+          "serviceId": "in-person-hangout",
+          "ratePerHour": 1300
+        },
+        {
+          "serviceId": "consultation",
+          "ratePerHour": 1000
+        }
+      ],
+      "availableDays": [
+        "Monday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ],
+      "availableHours": "10:00 AM - 06:00 PM",
+      "walletBalance": 24000,
+      "totalEarnings": 135000,
+      "bankDetails": {
+        "accountHolder": "Ritu Sen",
+        "bankName": "State Bank of India",
+        "accountNumber": "33891029381",
+        "ifsc": "SBIN0004019",
+        "upiId": "ritus@oksbi"
+      },
+      "kycDocuments": {
+        "idType": "Aadhaar Card",
+        "idNumber": "XXXX-XXXX-4419",
+        "verifiedOn": "2024-01-10",
+        "backgroundCheck": "Cleared with distinction"
+      }
+    },
+    {
+      "id": "partner-p4",
+      "userId": "partner-4",
+      "name": "Arjun Saxena",
+      "tagline": "Software Engineer • Gamer • Movie Buff & Tech Discussions",
+      "bio": "Techie by day, indie film & board game lover by evening. If you want someone to check out the newest IMAX film, discuss tech trends, or explore cafes around Pune, I'm here! Very calm, friendly, and easygoing.",
+      "city": "Pune",
+      "areas": [
+        "Koregaon Park",
+        "Viman Nagar",
+        "Kalyani Nagar",
+        "Baner",
+        "Aundh"
+      ],
+      "gender": "Male",
+      "age": 26,
+      "languages": [
+        "English",
+        "Hindi"
+      ],
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
+      "coverPhoto": "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=80",
+      "rating": 4.88,
+      "reviewCount": 29,
+      "completedHours": 76,
+      "badge": "Top Rated Partner",
+      "kycStatus": "verified",
+      "isOnline": true,
+      "hourlyRate": 1500,
+      "services": [
+        {
+          "serviceId": "movie-companion",
+          "ratePerHour": 1800
+        },
+        {
+          "serviceId": "in-person-hangout",
+          "ratePerHour": 1400
+        },
+        {
+          "serviceId": "shopping-buddy",
+          "ratePerHour": 1100
+        }
+      ],
+      "availableDays": [
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ],
+      "availableHours": "02:00 PM - 10:30 PM",
+      "walletBalance": 9600,
+      "totalEarnings": 48000,
+      "bankDetails": {
+        "accountHolder": "Arjun Saxena",
+        "bankName": "Axis Bank",
+        "accountNumber": "91801004829102",
+        "ifsc": "UTIB0001048",
+        "upiId": "arjun.saxena@axisbank"
+      },
+      "kycDocuments": {
+        "idType": "Driving License",
+        "idNumber": "MH-12-2020-009182",
+        "verifiedOn": "2024-02-18",
+        "backgroundCheck": "Cleared by VerifiedID India"
+      }
+    },
+    {
+      "id": "partner-p5",
+      "userId": "partner-5",
+      "name": "Meera Joshi",
+      "tagline": "Literature Lover • Art Galleries & Heritage Explorer",
+      "bio": "Art history enthusiast and freelance writer. I love strolling through historical monuments, exploring traditional bazaars, discussing poetry, and visiting tranquil tea houses. Wonderful company for tourists and culture lovers.",
+      "city": "Jaipur",
+      "areas": [
+        "C-Scheme",
+        "Malviya Nagar",
+        "Civil Lines",
+        "Amer Road"
+      ],
+      "gender": "Female",
+      "age": 28,
+      "languages": [
+        "English",
+        "Hindi",
+        "Rajasthani"
+      ],
+      "avatar": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80",
+      "coverPhoto": "https://images.unsplash.com/photo-1599661046827-dacff0c0f09a?auto=format&fit=crop&w=900&q=80",
+      "rating": 4.92,
+      "reviewCount": 31,
+      "completedHours": 82,
+      "badge": "Culture Insider",
+      "kycStatus": "verified",
+      "isOnline": true,
+      "hourlyRate": 1600,
+      "services": [
+        {
+          "serviceId": "travel-partner",
+          "ratePerHour": 2400
+        },
+        {
+          "serviceId": "in-person-hangout",
+          "ratePerHour": 1500
+        },
+        {
+          "serviceId": "shopping-buddy",
+          "ratePerHour": 1300
+        }
+      ],
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Thursday",
+        "Saturday",
+        "Sunday"
+      ],
+      "availableHours": "10:00 AM - 07:00 PM",
+      "walletBalance": 14200,
+      "totalEarnings": 62000,
+      "bankDetails": {
+        "accountHolder": "Meera Joshi",
+        "bankName": "Kotak Mahindra Bank",
+        "accountNumber": "4491029381",
+        "ifsc": "KKBK0000182",
+        "upiId": "meeraj@kotak"
+      },
+      "kycDocuments": {
+        "idType": "Aadhaar Card",
+        "idNumber": "XXXX-XXXX-9102",
+        "verifiedOn": "2024-03-01",
+        "backgroundCheck": "Cleared by VerifiedID India"
+      }
+    },
+    {
+      "id": "partner-p6",
+      "userId": "partner-6",
+      "name": "Rohan Deshmukh",
+      "tagline": "Pending Verification Applicant • Music & Tech Enthusiast",
+      "bio": "New applicant seeking to offer evening movie companionship and casual cafe hangout sessions in Hyderabad.",
+      "city": "Hyderabad",
+      "areas": [
+        "Banjara Hills",
+        "Jubilee Hills",
+        "Gachibowli",
+        "Hitec City"
+      ],
+      "gender": "Male",
+      "age": 25,
+      "languages": [
+        "English",
+        "Hindi",
+        "Telugu"
+      ],
+      "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80",
+      "coverPhoto": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80",
+      "rating": 0,
+      "reviewCount": 0,
+      "completedHours": 0,
+      "badge": "Verified Partner",
+      "kycStatus": "verified",
+      "isOnline": false,
+      "hourlyRate": 1400,
+      "services": [
+        {
+          "serviceId": "in-person-hangout",
+          "ratePerHour": 1400
+        },
+        {
+          "serviceId": "movie-companion",
+          "ratePerHour": 1600
+        }
+      ],
+      "availableDays": [
+        "Saturday",
+        "Sunday"
+      ],
+      "availableHours": "03:00 PM - 09:00 PM",
+      "walletBalance": 0,
+      "totalEarnings": 0,
+      "bankDetails": {
+        "accountHolder": "Rohan Deshmukh",
+        "bankName": "Canara Bank",
+        "accountNumber": "192837465012",
+        "ifsc": "CNRB0001928",
+        "upiId": "rohan@okaxis"
+      },
+      "kycDocuments": {
+        "idType": "Aadhaar Card",
+        "idNumber": "XXXX-XXXX-7721",
+        "verifiedOn": null,
+        "backgroundCheck": "Verification in progress",
+        "reviewedAt": "2026-09-22T15:38:41.072Z",
+        "reviewNotes": "Approved by Operations Admin Team"
+      }
+    }
+  ],
+  "bookings": [
+    {
+      "id": "BK-8378",
+      "clientId": "client-1",
+      "clientName": "Rahul Verma",
+      "clientPhone": "+91 98765 43210",
+      "partnerId": "partner-p1",
+      "partnerName": "Aanya Sharma",
+      "partnerAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      "serviceId": "in-person-hangout",
+      "serviceName": "Cafe & Conversation",
+      "date": "2026-09-23",
+      "startTime": "04:00 PM",
+      "durationHours": 2,
+      "hourlyRate": 1500,
+      "baseAmount": 3000,
+      "platformFee": 300,
+      "gstAmount": 165,
+      "totalAmount": 3465,
+      "partnerShare": 2400,
+      "platformRevenue": 1065,
+      "meetingLocation": "Starbucks Cafe, Select Citywalk Mall, Saket, Delhi",
+      "clientNotes": "Looking forward to a calm conversation and relaxing coffee.",
+      "emergencyContact": "+91 98111 22334 (Family)",
+      "status": "confirmed",
+      "startOtp": "6868",
+      "createdAt": "2026-09-22T15:24:38.378Z"
+    },
+    {
+      "id": "BK-1001",
+      "clientId": "client-1",
+      "clientName": "Rahul Verma",
+      "clientPhone": "+91 98765 43210",
+      "partnerId": "partner-p1",
+      "partnerName": "Aanya Sharma",
+      "partnerAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      "serviceId": "movie-companion",
+      "serviceName": "Movie Companion",
+      "date": "2026-09-24",
+      "startTime": "06:00 PM",
+      "durationHours": 3,
+      "hourlyRate": 1800,
+      "baseAmount": 5400,
+      "platformFee": 540,
+      "gstAmount": 97,
+      "totalAmount": 6037,
+      "partnerShare": 4320,
+      "platformRevenue": 1717,
+      "meetingLocation": "PVR Director's Cut, Ambience Mall, Vasant Kunj, New Delhi",
+      "clientNotes": "Looking forward to watching the sci-fi premiere. Will grab coffee before showtime.",
+      "emergencyContact": "+91 98111 22334 (Brother)",
+      "status": "confirmed",
+      "startOtp": "8341",
+      "createdAt": "2026-09-21T18:30:00Z"
+    },
+    {
+      "id": "BK-1002",
+      "clientId": "client-1",
+      "clientName": "Rahul Verma",
+      "clientPhone": "+91 98765 43210",
+      "partnerId": "partner-p1",
+      "partnerName": "Aanya Sharma",
+      "partnerAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      "serviceId": "in-person-hangout",
+      "serviceName": "Cafe & Conversation",
+      "date": "2026-09-22",
+      "startTime": "04:00 PM",
+      "durationHours": 2,
+      "hourlyRate": 1500,
+      "baseAmount": 3000,
+      "platformFee": 300,
+      "gstAmount": 54,
+      "totalAmount": 3354,
+      "partnerShare": 2400,
+      "platformRevenue": 954,
+      "meetingLocation": "Blue Tokai Coffee Roasters, Hauz Khas Village, Delhi",
+      "clientNotes": "Stressed week at work, need a calm relaxing discussion.",
+      "emergencyContact": "+91 98111 22334 (Brother)",
+      "status": "in-progress",
+      "startOtp": "4920",
+      "startedAt": "2026-09-22T19:45:00Z",
+      "createdAt": "2026-09-22T14:10:00Z"
+    },
+    {
+      "id": "BK-1003",
+      "clientId": "client-2",
+      "clientName": "Sneha Roy",
+      "clientPhone": "+91 98222 33445",
+      "partnerId": "partner-p2",
+      "partnerName": "Kabir Mathur",
+      "partnerAvatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80",
+      "serviceId": "shopping-buddy",
+      "serviceName": "Shopping Buddy",
+      "date": "2026-09-20",
+      "startTime": "02:00 PM",
+      "durationHours": 3,
+      "hourlyRate": 1300,
+      "baseAmount": 3900,
+      "platformFee": 390,
+      "gstAmount": 70,
+      "totalAmount": 4360,
+      "partnerShare": 3120,
+      "platformRevenue": 1240,
+      "meetingLocation": "Palladium Mall, Lower Parel, Mumbai",
+      "clientNotes": "Festive season wardrobe shopping assistance.",
+      "emergencyContact": "+91 98333 44556 (Sister)",
+      "status": "completed",
+      "startOtp": "1192",
+      "startedAt": "2026-09-20T14:00:00Z",
+      "completedAt": "2026-09-20T17:00:00Z",
+      "rating": 5,
+      "reviewText": "Kabir was wonderful and so polite! Gave genuine styling advice and made what could have been a tiring shopping trip really enjoyable.",
+      "createdAt": "2026-09-18T10:00:00Z"
+    },
+    {
+      "id": "BK-1004",
+      "clientId": "client-1",
+      "clientName": "Rahul Verma",
+      "clientPhone": "+91 98765 43210",
+      "partnerId": "partner-p1",
+      "partnerName": "Aanya Sharma",
+      "partnerAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      "serviceId": "in-person-hangout",
+      "serviceName": "Cafe & Conversation",
+      "date": "2026-09-25",
+      "startTime": "05:30 PM",
+      "durationHours": 2,
+      "hourlyRate": 1500,
+      "baseAmount": 3000,
+      "platformFee": 300,
+      "gstAmount": 54,
+      "totalAmount": 3354,
+      "partnerShare": 2400,
+      "platformRevenue": 954,
+      "meetingLocation": "Starbucks, DLF CyberHub, Gurgaon",
+      "clientNotes": "Weekend decompression chat over iced matcha.",
+      "emergencyContact": "+91 98111 22334 (Brother)",
+      "status": "pending",
+      "startOtp": "6732",
+      "createdAt": "2026-09-22T20:00:00Z"
+    }
+  ],
+  "payouts": [
+    {
+      "id": "PAY-701",
+      "partnerId": "partner-p1",
+      "partnerName": "Aanya Sharma",
+      "amount": 10000,
+      "method": "UPI",
+      "destination": "aanya@okhdfcbank",
+      "status": "pending",
+      "requestedAt": "2026-09-22T11:00:00Z",
+      "processedAt": null,
+      "transactionRef": null
+    },
+    {
+      "id": "PAY-702",
+      "partnerId": "partner-p2",
+      "partnerName": "Kabir Mathur",
+      "amount": 15000,
+      "method": "Bank Transfer",
+      "destination": "ICICI Bank - A/C **8374",
+      "status": "completed",
+      "requestedAt": "2026-09-15T09:30:00Z",
+      "processedAt": "2026-09-15T15:45:00Z",
+      "transactionRef": "CMS99482910482"
+    },
+    {
+      "id": "PAY-703",
+      "partnerId": "partner-p3",
+      "partnerName": "Dr. Ritu Sen",
+      "amount": 20000,
+      "method": "Bank Transfer",
+      "destination": "SBI - A/C **9381",
+      "status": "completed",
+      "requestedAt": "2026-09-12T14:20:00Z",
+      "processedAt": "2026-09-13T10:15:00Z",
+      "transactionRef": "SBI4928172910"
+    }
+  ],
+  "reviews": [
+    {
+      "id": "REV-1",
+      "partnerId": "partner-p1",
+      "clientName": "Aditya Rao",
+      "rating": 5,
+      "service": "Cafe & Conversation",
+      "comment": "Aanya was very respectful and an attentive listener. I felt much lighter after our conversation. 10/10 recommend.",
+      "date": "2026-09-14"
+    },
+    {
+      "id": "REV-2",
+      "partnerId": "partner-p1",
+      "clientName": "Simran Kaur",
+      "rating": 5,
+      "service": "Shopping Buddy",
+      "comment": "Super helpful styling advice at DLF Promenade. Made shopping breezy and fun.",
+      "date": "2026-09-08"
+    },
+    {
+      "id": "REV-3",
+      "partnerId": "partner-p2",
+      "clientName": "Sneha Roy",
+      "rating": 5,
+      "service": "Shopping Buddy",
+      "comment": "Kabir was wonderful and so polite! Gave genuine styling advice and made what could have been a tiring shopping trip really enjoyable.",
+      "date": "2026-09-20"
+    },
+    {
+      "id": "REV-4",
+      "partnerId": "partner-p3",
+      "clientName": "Sunil Nambiar",
+      "rating": 5,
+      "service": "Elder Companionship",
+      "comment": "Ritu visited my elderly mother in Bangalore. They spent two pleasant hours walking in the park and chatting in Bengali. Truly grateful.",
+      "date": "2026-09-10"
+    }
+  ],
+  "messages": [
+    {
+      "id": "msg-1",
+      "bookingId": "BK-1002",
+      "senderId": "client-1",
+      "senderName": "Rahul Verma",
+      "senderRole": "client",
+      "text": "Hi Aanya, I have reached Blue Tokai. Sitting by the window table wearing a navy jacket.",
+      "timestamp": "2026-09-22T19:40:00Z"
+    },
+    {
+      "id": "msg-2",
+      "bookingId": "BK-1002",
+      "senderId": "partner-p1",
+      "senderName": "Aanya Sharma",
+      "senderRole": "partner",
+      "text": "Hello Rahul! Just entered the cafe, see you right there at the window table.",
+      "timestamp": "2026-09-22T19:42:00Z"
+    }
+  ],
+  "sosAlerts": [
+    {
+      "id": "SOS-901",
+      "bookingId": "BK-1002",
+      "triggeredBy": "system-test",
+      "userName": "Security Simulation Test",
+      "userRole": "client",
+      "location": "Blue Tokai, Hauz Khas Village, Delhi",
+      "timestamp": "2026-09-18T16:00:00Z",
+      "status": "resolved",
+      "resolutionNotes": "Safety dispatch test drill successfully verified with local emergency contact."
+    }
+  ]
+}
