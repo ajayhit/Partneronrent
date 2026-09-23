@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AppProvider, useApp } from './context/AppContext';
 
@@ -14,6 +14,7 @@ import ReviewModal from './components/ReviewModal';
 import Home from './pages/Home';
 import PartnerDirectory from './pages/PartnerDirectory';
 import PartnerProfile from './pages/PartnerProfile';
+import SignIn from './pages/SignIn';
 import ClientDashboard from './pages/client/ClientDashboard';
 import ClientWallet from './pages/client/ClientWallet';
 import PartnerDashboard from './pages/partner/PartnerDashboard';
@@ -21,11 +22,53 @@ import PartnerEarnings from './pages/partner/PartnerEarnings';
 import PartnerKYC from './pages/partner/PartnerKYC';
 import AdminDashboard from './pages/admin/AdminDashboard';
 
+// Pages that require the user to be logged in
+const PROTECTED_PAGES = new Set([
+  'client-dashboard',
+  'client-wallet',
+  'partner-dashboard',
+  'partner-earnings',
+  'partner-kyc',
+  'admin-dashboard'
+]);
+
+// Map: which role can access which pages
+const ROLE_PAGES = {
+  client: new Set(['client-dashboard', 'client-wallet']),
+  partner: new Set(['partner-dashboard', 'partner-earnings', 'partner-kyc']),
+  admin: new Set(['admin-dashboard'])
+};
+
 function MainLayout() {
   const [activePage, setActivePage] = useState('home');
   const [selectedPartner, setSelectedPartner] = useState(null);
-  const { currentRole } = useAuth();
+  const { isAuthenticated, currentRole, logout } = useAuth();
   const { toast } = useApp();
+
+  // ── Route guard: redirect to auth when accessing protected pages ──────────
+  const safeguardedSetPage = (page) => {
+    if (PROTECTED_PAGES.has(page)) {
+      if (!isAuthenticated) {
+        setActivePage('auth');
+        return;
+      }
+      // Role mismatch: redirect to correct dashboard
+      const allowed = ROLE_PAGES[currentRole];
+      if (allowed && !allowed.has(page)) {
+        if (currentRole === 'client') { setActivePage('client-dashboard'); return; }
+        if (currentRole === 'partner') { setActivePage('partner-dashboard'); return; }
+        if (currentRole === 'admin') { setActivePage('admin-dashboard'); return; }
+      }
+    }
+    setActivePage(page);
+  };
+
+  // ── On auth state change, bounce out of protected pages if logged out ─────
+  useEffect(() => {
+    if (!isAuthenticated && PROTECTED_PAGES.has(activePage)) {
+      setActivePage('auth');
+    }
+  }, [isAuthenticated]);
 
   return (
     <div className="app-container">
@@ -53,81 +96,87 @@ function MainLayout() {
       )}
 
       {/* Top Navigation */}
-      <Navbar activePage={activePage} setActivePage={setActivePage} />
+      <Navbar activePage={activePage} setActivePage={safeguardedSetPage} />
 
       {/* Main Content Area */}
       <main className="main-content">
+        {/* ── Auth Page ─────────────────────────────────────────── */}
+        {activePage === 'auth' && (
+          <SignIn setActivePage={safeguardedSetPage} />
+        )}
+
+        {/* ── Public Pages ──────────────────────────────────────── */}
         {activePage === 'home' && (
-          <Home 
-            setActivePage={setActivePage} 
+          <Home
+            setActivePage={safeguardedSetPage}
             onSelectPartner={(partner) => {
               setSelectedPartner(partner);
-              setActivePage('partner-detail');
-            }} 
+              safeguardedSetPage('partner-detail');
+            }}
           />
         )}
 
         {activePage === 'directory' && (
-          <PartnerDirectory 
-            setActivePage={setActivePage}
+          <PartnerDirectory
+            setActivePage={safeguardedSetPage}
             onSelectPartner={(partner) => {
               setSelectedPartner(partner);
-              setActivePage('partner-detail');
+              safeguardedSetPage('partner-detail');
             }}
           />
         )}
 
         {activePage === 'partner-detail' && (
-          <PartnerProfile 
+          <PartnerProfile
             partnerId={selectedPartner?.id}
             partnerObj={selectedPartner}
-            onBack={() => setActivePage('directory')}
-            setActivePage={setActivePage}
+            onBack={() => safeguardedSetPage('directory')}
+            setActivePage={safeguardedSetPage}
           />
         )}
 
-        {/* Client Portal Pages */}
-        {activePage === 'client-dashboard' && (
-          <ClientDashboard 
-            setActivePage={setActivePage}
+        {/* ── Client Portal Pages ────────────────────────────────── */}
+        {activePage === 'client-dashboard' && isAuthenticated && currentRole === 'client' && (
+          <ClientDashboard
+            setActivePage={safeguardedSetPage}
             onSelectPartner={(partner) => {
               setSelectedPartner(partner);
-              setActivePage('partner-detail');
+              safeguardedSetPage('partner-detail');
             }}
           />
         )}
 
-        {activePage === 'client-wallet' && (
+        {activePage === 'client-wallet' && isAuthenticated && currentRole === 'client' && (
           <ClientWallet />
         )}
 
-        {/* Partner Portal Pages */}
-        {activePage === 'partner-dashboard' && (
-          <PartnerDashboard setActivePage={setActivePage} />
+        {/* ── Partner Portal Pages ───────────────────────────────── */}
+        {activePage === 'partner-dashboard' && isAuthenticated && currentRole === 'partner' && (
+          <PartnerDashboard setActivePage={safeguardedSetPage} />
         )}
 
-        {activePage === 'partner-earnings' && (
+        {activePage === 'partner-earnings' && isAuthenticated && currentRole === 'partner' && (
           <PartnerEarnings />
         )}
 
-        {activePage === 'partner-kyc' && (
+        {activePage === 'partner-kyc' && isAuthenticated && currentRole === 'partner' && (
           <PartnerKYC />
         )}
 
-        {/* Admin Portal Pages */}
-        {activePage === 'admin-dashboard' && (
+        {/* ── Admin Portal Pages ─────────────────────────────────── */}
+        {activePage === 'admin-dashboard' && isAuthenticated && currentRole === 'admin' && (
           <AdminDashboard />
         )}
       </main>
 
       {/* Global Modals */}
-      <BookingModal onBookingCreated={() => setActivePage('client-dashboard')} />
+      <BookingModal onBookingCreated={() => safeguardedSetPage('client-dashboard')} />
       <ChatDrawer />
       <SOSModal />
       <ReviewModal onReviewSubmitted={() => {}} />
 
       {/* Footer */}
-      <Footer setActivePage={setActivePage} />
+      <Footer setActivePage={safeguardedSetPage} />
     </div>
   );
 }

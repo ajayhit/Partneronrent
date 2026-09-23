@@ -28,7 +28,7 @@ import {
 } from 'lucide-react';
 
 export default function Home({ setActivePage, onSelectPartner }) {
-  const { switchRole } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { services, settings, openBookingModal } = useApp();
   const [featuredPartners, setFeaturedPartners] = useState([]);
   const [selectedCity, setSelectedCity] = useState('All Cities');
@@ -444,11 +444,11 @@ export default function Home({ setActivePage, onSelectPartner }) {
               </div>
             </div>
 
-            <button 
+            <button
               className="btn-primary"
               onClick={() => {
-                switchRole('partner');
-                setActivePage('partner-dashboard');
+                // Redirect to auth to sign up as a partner
+                setActivePage('auth');
               }}
               style={{ padding: '14px 28px', fontSize: '1rem' }}
             >

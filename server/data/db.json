@@ -565,6 +565,33 @@
   ],
   "bookings": [
     {
+      "id": "BK-8853",
+      "clientId": "client-1",
+      "clientName": "Rahul Verma",
+      "clientPhone": "+91 98765 43210",
+      "partnerId": "partner-p1",
+      "partnerName": "Aanya Sharma",
+      "partnerAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+      "serviceId": "in-person-hangout",
+      "serviceName": "Cafe & Conversation",
+      "date": "2026-09-23",
+      "startTime": "04:00 PM",
+      "durationHours": 2,
+      "hourlyRate": 1500,
+      "baseAmount": 3000,
+      "platformFee": 300,
+      "gstAmount": 165,
+      "totalAmount": 3465,
+      "partnerShare": 2400,
+      "platformRevenue": 1065,
+      "meetingLocation": "Starbucks Cafe, Select Citywalk Mall, Saket, Delhi",
+      "clientNotes": "Looking forward to a calm conversation and relaxing coffee.",
+      "emergencyContact": "+91 98111 22334 (Family)",
+      "status": "pending",
+      "startOtp": "6781",
+      "createdAt": "2026-09-22T17:41:58.854Z"
+    },
+    {
       "id": "BK-8378",
       "clientId": "client-1",
       "clientName": "Rahul Verma",
@@ -799,9 +826,30 @@
       "senderRole": "partner",
       "text": "Hello Rahul! Just entered the cafe, see you right there at the window table.",
       "timestamp": "2026-09-22T19:42:00Z"
+    },
+    {
+      "id": "msg-1790099528331",
+      "bookingId": "BK-8378",
+      "senderId": "client-1",
+      "senderName": "Rahul Verma",
+      "senderRole": "client",
+      "text": "hi",
+      "timestamp": "2026-09-22T17:52:08.331Z"
     }
   ],
   "sosAlerts": [
+    {
+      "id": "SOS-2827",
+      "bookingId": "GENERAL",
+      "triggeredBy": "partner-p1",
+      "userName": "Aanya Sharma",
+      "userRole": "guest",
+      "location": "Active Meetup / GPS Broadcast",
+      "reason": "Feeling unsafe / need immediate safety dispatch assistance.",
+      "timestamp": "2026-09-22T17:42:32.827Z",
+      "status": "active",
+      "resolutionNotes": null
+    },
     {
       "id": "SOS-901",
       "bookingId": "BK-1002",
