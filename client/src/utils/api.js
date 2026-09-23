@@ -200,3 +200,45 @@ export async function fetchUsers() {
   const res = await fetch(`${API_BASE}/users`);
   return res.json();
 }
+
+export async function apiLogin(email, password, role) {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, role })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Login failed');
+  }
+  return data;
+}
+
+export async function changeAdminPassword(currentPassword, newPassword) {
+  const res = await fetch(`${API_BASE}/auth/admin/change-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentPassword, newPassword })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || 'Failed to update password');
+  }
+  return data;
+}
+
+export async function fetchAdminInfo() {
+  const res = await fetch(`${API_BASE}/auth/admin/info`);
+  return res.json();
+}
+
+export async function updatePlatformSettings(data) {
+  const res = await fetch(`${API_BASE}/settings`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  return res.json();
+}
+
+

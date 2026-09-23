@@ -24,7 +24,7 @@ import {
 const DEMO_CREDENTIALS = {
   client: { email: 'rahul@example.com', password: 'demo1234' },
   partner: { email: 'aanya@example.com', password: 'demo1234' },
-  admin: { email: 'admin@partneronrent.com', password: 'admin2024' }
+  admin: { email: 'admin@partneronrent.in', password: 'Admin@12345' }
 };
 
 const CITIES = [
@@ -94,6 +94,25 @@ export default function SignIn({ setActivePage }) {
     setError('');
   };
 
+  const handleQuickAdminLogin = async () => {
+    const creds = DEMO_CREDENTIALS.admin;
+    setSignInForm(f => ({ ...f, email: creds.email, password: creds.password, remember: true }));
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    await new Promise(r => setTimeout(r, 400));
+    const result = await login(creds.email, creds.password, 'admin');
+    setLoading(false);
+    if (!result.success) {
+      setError(result.message);
+      return;
+    }
+    setSuccess('Admin credentials verified! Entering operations dashboard…');
+    setTimeout(() => {
+      setActivePage('admin-dashboard');
+    }, 600);
+  };
+
   const handleSignIn = async (e) => {
     e.preventDefault();
     setError(''); setSuccess('');
@@ -102,8 +121,8 @@ export default function SignIn({ setActivePage }) {
       return;
     }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 700)); // simulate network
-    const result = login(signInForm.email, signInForm.password, role);
+    await new Promise(r => setTimeout(r, 500)); // simulate network
+    const result = await login(signInForm.email, signInForm.password, role);
     setLoading(false);
     if (!result.success) {
       setError(result.message);
@@ -114,7 +133,7 @@ export default function SignIn({ setActivePage }) {
       if (role === 'client') setActivePage('client-dashboard');
       else if (role === 'partner') setActivePage('partner-dashboard');
       else setActivePage('admin-dashboard');
-    }, 800);
+    }, 700);
   };
 
   const handleSignUp = async (e) => {
@@ -452,13 +471,71 @@ export default function SignIn({ setActivePage }) {
           {/* ── SIGN IN FORM ─────────────────────────────────── */}
           {tab === 'signin' && (
             <form onSubmit={handleSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* Highlighted Admin Credentials Banner */}
+              {role === 'admin' && (
+                <div style={{
+                  padding: '16px',
+                  borderRadius: '12px',
+                  background: 'rgba(56, 189, 248, 0.08)',
+                  border: '1px solid rgba(56, 189, 248, 0.25)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700, color: '#38bdf8' }}>
+                      <ShieldCheck size={16} /> Super Admin Credentials
+                    </div>
+                    <span style={{ fontSize: '0.72rem', background: 'rgba(56, 189, 248, 0.2)', color: '#bae6fd', padding: '2px 8px', borderRadius: '999px', fontWeight: 700 }}>
+                      Operations
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.8rem' }}>
+                    <div style={{ background: 'rgba(15, 23, 42, 0.7)', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ color: '#64748b', fontSize: '0.7rem' }}>Admin Email</div>
+                      <div style={{ color: '#fff', fontWeight: 600, wordBreak: 'break-all' }}>admin@partneronrent.in</div>
+                    </div>
+                    <div style={{ background: 'rgba(15, 23, 42, 0.7)', padding: '8px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div style={{ color: '#64748b', fontSize: '0.7rem' }}>Default Password</div>
+                      <div style={{ color: '#38bdf8', fontWeight: 700 }}>Admin@12345</div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleQuickAdminLogin}
+                    disabled={loading}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      borderRadius: '8px',
+                      background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                      color: '#fff',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 10px rgba(2, 132, 199, 0.3)'
+                    }}
+                  >
+                    ⚡ 1-Click Direct Admin Sign In
+                  </button>
+                </div>
+              )}
+
               <InputField
                 label="Email Address"
                 type="email"
                 icon={<Mail size={15} />}
                 value={signInForm.email}
                 onChange={v => setSignInForm(f => ({ ...f, email: v }))}
-                placeholder="your@email.com"
+                placeholder={role === 'admin' ? "admin@partneronrent.in" : "your@email.com"}
                 accentColor={rc.color}
                 accentGlow={rc.glow}
               />
@@ -468,7 +545,7 @@ export default function SignIn({ setActivePage }) {
                 onToggle={() => setShowPassword(s => !s)}
                 value={signInForm.password}
                 onChange={v => setSignInForm(f => ({ ...f, password: v }))}
-                placeholder="Enter your password"
+                placeholder={role === 'admin' ? "Admin@12345" : "Enter your password"}
                 accentColor={rc.color}
                 accentGlow={rc.glow}
               />
@@ -514,34 +591,38 @@ export default function SignIn({ setActivePage }) {
               </button>
 
               {/* Demo fill */}
-              {role !== 'admin' || true ? (
-                <button
-                  type="button"
-                  className="demo-btn"
-                  onClick={handleDemoFill}
-                  style={{
-                    width: '100%', padding: '10px',
-                    borderRadius: '10px',
-                    background: 'rgba(255,255,255,0.04)',
-                    border: `1px dashed ${rc.border}`,
-                    color: rc.color,
-                    fontSize: '0.82rem', fontWeight: 600,
-                    transition: 'all 0.2s ease', cursor: 'pointer'
-                  }}
-                >
-                  ⚡ Quick fill demo credentials ({rc.label})
-                </button>
-              ) : null}
+              <button
+                type="button"
+                className="demo-btn"
+                onClick={handleDemoFill}
+                style={{
+                  width: '100%', padding: '10px',
+                  borderRadius: '10px',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: `1px dashed ${rc.border}`,
+                  color: rc.color,
+                  fontSize: '0.82rem', fontWeight: 600,
+                  transition: 'all 0.2s ease', cursor: 'pointer'
+                }}
+              >
+                ⚡ Quick fill credentials ({rc.label}: {DEMO_CREDENTIALS[role].email})
+              </button>
 
-              <p style={{ textAlign: 'center', fontSize: '0.82rem', color: '#475569' }}>
-                Don't have an account?{' '}
-                <span
-                  onClick={() => switchTab('signup')}
-                  style={{ color: rc.color, fontWeight: 700, cursor: 'pointer' }}
-                >
-                  Sign up free
-                </span>
-              </p>
+              {role === 'admin' ? (
+                <p style={{ textAlign: 'center', fontSize: '0.78rem', color: '#64748b' }}>
+                  Admin privileges are restricted to platform operations personnel.
+                </p>
+              ) : (
+                <p style={{ textAlign: 'center', fontSize: '0.82rem', color: '#475569' }}>
+                  Don't have an account?{' '}
+                  <span
+                    onClick={() => switchTab('signup')}
+                    style={{ color: rc.color, fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    Sign up free
+                  </span>
+                </p>
+              )}
             </form>
           )}
 

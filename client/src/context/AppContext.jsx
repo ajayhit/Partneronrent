@@ -22,6 +22,9 @@ export function AppProvider({ children }) {
     cities: ['Delhi NCR', 'Mumbai', 'Bangalore', 'Pune', 'Hyderabad', 'Jaipur']
   });
 
+  // Admin active tab
+  const [adminActiveTab, setAdminActiveTab] = useState('overview');
+
   // Global modals
   const [bookingModal, setBookingModal] = useState({ isOpen: false, partner: null, preselectedService: null });
   const [chatDrawer, setChatDrawer] = useState({ isOpen: false, booking: null });
@@ -71,6 +74,8 @@ export function AppProvider({ children }) {
         reviewModal,
         openReview: (booking) => setReviewModal({ isOpen: true, booking }),
         closeReview: () => setReviewModal({ isOpen: false, booking: null }),
+        adminActiveTab,
+        setAdminActiveTab,
         toast,
         showToast
       }}

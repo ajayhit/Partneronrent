@@ -540,6 +540,94 @@ app.get('/api/users', (req, res) => {
   res.json(db.users);
 });
 
+// 10. Authentication & Admin Credentials
+app.post('/api/auth/login', (req, res) => {
+  const db = readData();
+  const { email, password, role } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: 'Email and password are required.' });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  // Find user by email and role (with admin alias tolerance for .in / .com)
+  const user = db.users.find(u => {
+    const userEmail = (u.email || '').toLowerCase();
+    const roleMatches = !role || u.role === role;
+    const emailMatches =
+      userEmail === normalizedEmail ||
+      (u.role === 'admin' && (normalizedEmail === 'admin@partneronrent.in' || normalizedEmail === 'admin@partneronrent.com'));
+
+    return roleMatches && emailMatches;
+  });
+
+  if (!user || user.password !== password) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid credentials. Please verify your email and password.'
+    });
+  }
+
+  const { password: _pw, ...safeUser } = user;
+  res.json({
+    success: true,
+    message: 'Authentication successful.',
+    user: safeUser
+  });
+});
+
+app.post('/api/auth/admin/change-password', (req, res) => {
+  const db = readData();
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Current and new password are required.' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ success: false, message: 'New password must be at least 6 characters.' });
+  }
+
+  const adminIndex = db.users.findIndex(u => u.role === 'admin');
+  if (adminIndex === -1) {
+    return res.status(404).json({ success: false, message: 'Admin account not found.' });
+  }
+
+  if (db.users[adminIndex].password !== currentPassword) {
+    return res.status(401).json({ success: false, message: 'Incorrect current password.' });
+  }
+
+  db.users[adminIndex].password = newPassword;
+  writeData(db);
+
+  res.json({
+    success: true,
+    message: 'Admin password updated successfully. Please use your new password on subsequent logins.'
+  });
+});
+
+app.get('/api/auth/admin/info', (req, res) => {
+  const db = readData();
+  const admin = db.users.find(u => u.role === 'admin');
+  if (!admin) {
+    return res.status(404).json({ success: false, message: 'Admin not found.' });
+  }
+
+  res.json({
+    success: true,
+    admin: {
+      id: admin.id,
+      name: admin.name,
+      email: admin.email,
+      phone: admin.phone,
+      role: admin.role,
+      avatar: admin.avatar
+    }
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`PartnerOnRent backend running on http://localhost:${PORT}`);
 });
+

@@ -130,11 +130,18 @@ export default function Footer({ setActivePage }) {
           <div>
             © {new Date().getFullYear()} PartnerOnRent Platform (India). Inspired by KoPartner emotional wellness architecture.
           </div>
-          <div style={{ display: 'flex', gap: '16px' }}>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
             <span>Terms of Service</span>
             <span>Privacy Policy</span>
             <span>Safety Guidelines</span>
             <span>Partner Code of Conduct</span>
+            <span
+              onClick={() => setActivePage('auth')}
+              style={{ cursor: 'pointer', color: '#38bdf8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}
+              title="Super Admin Portal Login"
+            >
+              🔒 Admin Login
+            </span>
           </div>
         </div>
 

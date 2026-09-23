@@ -3,7 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const AuthContext = createContext();
 
 // ─── Mock User Store ────────────────────────────────────────────────────────
-// Pre-seeded demo accounts (password stored plaintext for demo only)
+// Pre-seeded demo accounts
 const MOCK_USERS_KEY = 'por_mock_users';
 
 const DEFAULT_USERS = [
@@ -33,12 +33,12 @@ const DEFAULT_USERS = [
   },
   {
     id: 'admin-1',
-    name: 'Platform Admin',
+    name: 'Super Administrator',
     role: 'admin',
-    email: 'admin@partneronrent.com',
-    phone: '+91 90000 00001',
-    password: 'admin2024',
-    city: 'Mumbai',
+    email: 'admin@partneronrent.in',
+    phone: '+91 98105 35398',
+    password: 'Admin@12345',
+    city: 'Delhi NCR',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=250&q=80',
     walletBalance: 0
   }
@@ -47,7 +47,22 @@ const DEFAULT_USERS = [
 function getMockUsers() {
   try {
     const stored = localStorage.getItem(MOCK_USERS_KEY);
-    return stored ? JSON.parse(stored) : DEFAULT_USERS;
+    let users = stored ? JSON.parse(stored) : DEFAULT_USERS;
+    
+    // Ensure admin user has latest credentials
+    const adminIdx = users.findIndex(u => u.role === 'admin');
+    if (adminIdx !== -1) {
+      if (!users[adminIdx].password || users[adminIdx].password === 'admin2024') {
+        users[adminIdx].password = 'Admin@12345';
+        users[adminIdx].email = 'admin@partneronrent.in';
+        users[adminIdx].name = 'Super Administrator';
+        saveMockUsers(users);
+      }
+    } else {
+      users.push(DEFAULT_USERS[2]);
+      saveMockUsers(users);
+    }
+    return users;
   } catch {
     return DEFAULT_USERS;
   }
@@ -91,20 +106,77 @@ export function AuthProvider({ children }) {
   }, [session]);
 
   // ── Login ──────────────────────────────────────────────────────────────────
-  const login = (email, password, role) => {
-    const users = getMockUsers();
-    const user = users.find(
-      u =>
-        u.email.toLowerCase() === email.toLowerCase() &&
-        u.password === password &&
-        u.role === role
-    );
-    if (!user) {
-      return { success: false, message: 'Invalid email or password. Try the demo credentials.' };
+  const login = async (email, password, role) => {
+    const normEmail = (email || '').trim().toLowerCase();
+
+    // 1. Try server-side authentication first
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: normEmail, password, role })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.user) {
+          setSession(data.user);
+          return { success: true, user: data.user };
+        }
+      }
+    } catch {
+      // Backend unavailable or network error, fallback to local store below
     }
+
+    // 2. Local fallback verification
+    const users = getMockUsers();
+    const user = users.find(u => {
+      const uEmail = (u.email || '').toLowerCase();
+      const roleMatches = !role || u.role === role;
+      const emailMatches =
+        uEmail === normEmail ||
+        (u.role === 'admin' && (normEmail === 'admin@partneronrent.in' || normEmail === 'admin@partneronrent.com'));
+
+      return roleMatches && emailMatches && u.password === password;
+    });
+
+    if (!user) {
+      return { success: false, message: 'Invalid email or password. Please check your credentials.' };
+    }
+
     const { password: _pw, ...safeUser } = user;
     setSession(safeUser);
     return { success: true, user: safeUser };
+  };
+
+  // ── Change Admin Password ──────────────────────────────────────────────────
+  const updateAdminPassword = async (currentPassword, newPassword) => {
+    // 1. Try server update
+    try {
+      const res = await fetch('/api/auth/admin/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        return { success: false, message: data.message || 'Failed to update password on server.' };
+      }
+    } catch {
+      // If server unreachable, proceed with local update
+    }
+
+    // 2. Update local mock user store
+    const users = getMockUsers();
+    const adminIdx = users.findIndex(u => u.role === 'admin');
+    if (adminIdx !== -1) {
+      if (users[adminIdx].password !== currentPassword && users[adminIdx].password) {
+        return { success: false, message: 'Current password does not match.' };
+      }
+      users[adminIdx].password = newPassword;
+      saveMockUsers(users);
+    }
+
+    return { success: true, message: 'Admin password updated successfully!' };
   };
 
   // ── Register ───────────────────────────────────────────────────────────────
@@ -159,7 +231,8 @@ export function AuthProvider({ children }) {
         logout,
         register,
         updateSession,
-        // Legacy compat (some components use setActiveUser / setActivePartner directly)
+        updateAdminPassword,
+        // Legacy compat
         setActiveUser: updateSession,
         setActivePartner: updateSession,
       }}
