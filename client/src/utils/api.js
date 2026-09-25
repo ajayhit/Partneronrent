@@ -241,4 +241,280 @@ export async function updatePlatformSettings(data) {
   return res.json();
 }
 
+// ── Admin 22 Modules API Integrations ──────────────────────────────────────────
+
+// 1. Customers
+export async function fetchAdminCustomers() {
+  const res = await fetch(`${API_BASE}/admin/customers`);
+  return res.json();
+}
+
+export async function updateCustomerStatusAdmin(id, status, reason, adminName) {
+  const res = await fetch(`${API_BASE}/admin/customers/${id}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, reason, adminName })
+  });
+  return res.json();
+}
+
+export async function addCustomerNoteAdmin(id, note) {
+  const res = await fetch(`${API_BASE}/admin/customers/${id}/notes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ note })
+  });
+  return res.json();
+}
+
+// 2. Partners
+export async function fetchAdminPartners() {
+  const res = await fetch(`${API_BASE}/admin/partners`);
+  return res.json();
+}
+
+export async function updatePartnerStatusAdmin(id, status, reason, adminName) {
+  const res = await fetch(`${API_BASE}/admin/partners/${id}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, reason, adminName })
+  });
+  return res.json();
+}
+
+export async function addPartnerNoteAdmin(id, note) {
+  const res = await fetch(`${API_BASE}/admin/partners/${id}/notes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ note })
+  });
+  return res.json();
+}
+
+// 3. Bookings
+export async function fetchAdminBookings() {
+  const res = await fetch(`${API_BASE}/admin/bookings`);
+  return res.json();
+}
+
+export async function updateBookingStatusAdmin(id, status, reason, adminName) {
+  const res = await fetch(`${API_BASE}/admin/bookings/${id}/status`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, reason, adminName })
+  });
+  return res.json();
+}
+
+export async function refundBookingAdmin(id, amount, reason, adminName) {
+  const res = await fetch(`${API_BASE}/admin/bookings/${id}/refund`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ amount, reason, adminName })
+  });
+  return res.json();
+}
+
+// 4. Locations & Cities
+export async function fetchAdminLocations() {
+  const res = await fetch(`${API_BASE}/admin/locations`);
+  return res.json();
+}
+
+export async function addCityAdmin(stateName, cityName, areas, adminName) {
+  const res = await fetch(`${API_BASE}/admin/locations/city`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ stateName, cityName, areas, adminName })
+  });
+  return res.json();
+}
+
+export async function toggleCityActiveAdmin(cityName) {
+  const res = await fetch(`${API_BASE}/admin/locations/city/toggle`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cityName })
+  });
+  return res.json();
+}
+
+// 5. Services
+export async function fetchAdminServices() {
+  const res = await fetch(`${API_BASE}/admin/services`);
+  return res.json();
+}
+
+export async function createServiceAdmin(serviceData, adminName) {
+  const res = await fetch(`${API_BASE}/admin/services`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...serviceData, adminName })
+  });
+  return res.json();
+}
+
+export async function updateServiceAdmin(id, serviceData, adminName) {
+  const res = await fetch(`${API_BASE}/admin/services/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...serviceData, adminName })
+  });
+  return res.json();
+}
+
+// 6. Commission & Cancellation
+export async function fetchAdminCommissions() {
+  const res = await fetch(`${API_BASE}/admin/commissions`);
+  return res.json();
+}
+
+export async function updateCommissionsAdmin(data, adminName, reason) {
+  const res = await fetch(`${API_BASE}/admin/commissions`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...data, adminName, reason })
+  });
+  return res.json();
+}
+
+export async function fetchAdminCancellationPolicy() {
+  const res = await fetch(`${API_BASE}/admin/cancellation-policy`);
+  return res.json();
+}
+
+export async function updateCancellationPolicyAdmin(data, adminName) {
+  const res = await fetch(`${API_BASE}/admin/cancellation-policy`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...data, adminName })
+  });
+  return res.json();
+}
+
+// 7. Transactions
+export async function fetchAdminTransactions() {
+  const res = await fetch(`${API_BASE}/admin/transactions`);
+  return res.json();
+}
+
+// 8. Reviews
+export async function fetchAdminReviews() {
+  const res = await fetch(`${API_BASE}/admin/reviews`);
+  return res.json();
+}
+
+export async function moderateReviewAdmin(id, status, reason, adminName) {
+  const res = await fetch(`${API_BASE}/admin/reviews/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, reason, adminName })
+  });
+  return res.json();
+}
+
+// 9. Complaints & Disputes
+export async function fetchAdminComplaints() {
+  const res = await fetch(`${API_BASE}/admin/complaints`);
+  return res.json();
+}
+
+export async function resolveComplaintAdmin(id, data, adminName) {
+  const res = await fetch(`${API_BASE}/admin/complaints/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...data, adminName })
+  });
+  return res.json();
+}
+
+// 10. Safety Center Incidents
+export async function fetchAdminSafetyIncidents() {
+  const res = await fetch(`${API_BASE}/admin/safety-incidents`);
+  return res.json();
+}
+
+export async function updateSafetyIncidentAdmin(id, data, adminName) {
+  const res = await fetch(`${API_BASE}/admin/safety-incidents/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...data, adminName })
+  });
+  return res.json();
+}
+
+// 11. Coupons & Promotions
+export async function fetchAdminCoupons() {
+  const res = await fetch(`${API_BASE}/admin/coupons`);
+  return res.json();
+}
+
+export async function createCouponAdmin(couponData, adminName) {
+  const res = await fetch(`${API_BASE}/admin/coupons`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...couponData, adminName })
+  });
+  return res.json();
+}
+
+export async function toggleCouponStatusAdmin(id) {
+  const res = await fetch(`${API_BASE}/admin/coupons/${id}/toggle`, {
+    method: 'PUT'
+  });
+  return res.json();
+}
+
+// 12. Notifications
+export async function fetchAdminNotifications() {
+  const res = await fetch(`${API_BASE}/admin/notifications`);
+  return res.json();
+}
+
+export async function sendBroadcastAdmin(broadcastData, adminName) {
+  const res = await fetch(`${API_BASE}/admin/notifications/broadcast`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...broadcastData, adminName })
+  });
+  return res.json();
+}
+
+// 13. CMS
+export async function fetchAdminCMS() {
+  const res = await fetch(`${API_BASE}/admin/cms`);
+  return res.json();
+}
+
+export async function updateCMSPageAdmin(slug, pageData, adminName) {
+  const res = await fetch(`${API_BASE}/admin/cms/pages/${slug}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...pageData, adminName })
+  });
+  return res.json();
+}
+
+// 14. Admin Users
+export async function fetchAdminStaffUsers() {
+  const res = await fetch(`${API_BASE}/admin/admin-users`);
+  return res.json();
+}
+
+export async function createAdminStaffUser(userData, adminName) {
+  const res = await fetch(`${API_BASE}/admin/admin-users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...userData, adminName })
+  });
+  return res.json();
+}
+
+// 15. Audit Logs
+export async function fetchAdminAuditLogs() {
+  const res = await fetch(`${API_BASE}/admin/audit-logs`);
+  return res.json();
+}
+
+
 

@@ -95,16 +95,42 @@ export default function Navbar({ activePage, setActivePage }) {
           /* ── ADMIN NAV LINKS: ONLY ADMIN-RELATED OPTIONS (NO FIND OPTION) ── */
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }} className="desktop-links">
             <button
-              onClick={() => { setActivePage('admin-dashboard'); setAdminActiveTab('overview'); }}
+              onClick={() => { setActivePage('admin-dashboard'); setAdminActiveTab('dashboard'); }}
               style={{
-                color: activePage === 'admin-dashboard' && adminActiveTab === 'overview' ? '#38bdf8' : '#94a3b8',
+                color: activePage === 'admin-dashboard' && (adminActiveTab === 'dashboard' || !adminActiveTab) ? '#38bdf8' : '#94a3b8',
                 fontWeight: 600, fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: '5px',
                 padding: '6px 10px', borderRadius: '8px',
-                background: activePage === 'admin-dashboard' && adminActiveTab === 'overview' ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
-                border: activePage === 'admin-dashboard' && adminActiveTab === 'overview' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent'
+                background: activePage === 'admin-dashboard' && (adminActiveTab === 'dashboard' || !adminActiveTab) ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
+                border: activePage === 'admin-dashboard' && (adminActiveTab === 'dashboard' || !adminActiveTab) ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent'
               }}
             >
               <LayoutDashboard size={14} /> Dashboard
+            </button>
+
+            <button
+              onClick={() => { setActivePage('admin-dashboard'); setAdminActiveTab('customers'); }}
+              style={{
+                color: activePage === 'admin-dashboard' && adminActiveTab === 'customers' ? '#38bdf8' : '#94a3b8',
+                fontWeight: 600, fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: '5px',
+                padding: '6px 10px', borderRadius: '8px',
+                background: activePage === 'admin-dashboard' && adminActiveTab === 'customers' ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
+                border: activePage === 'admin-dashboard' && adminActiveTab === 'customers' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent'
+              }}
+            >
+              <Users size={14} /> Customers
+            </button>
+
+            <button
+              onClick={() => { setActivePage('admin-dashboard'); setAdminActiveTab('partners'); }}
+              style={{
+                color: activePage === 'admin-dashboard' && adminActiveTab === 'partners' ? '#38bdf8' : '#94a3b8',
+                fontWeight: 600, fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: '5px',
+                padding: '6px 10px', borderRadius: '8px',
+                background: activePage === 'admin-dashboard' && adminActiveTab === 'partners' ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
+                border: activePage === 'admin-dashboard' && adminActiveTab === 'partners' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent'
+              }}
+            >
+              <HeartHandshake size={14} /> Partners
             </button>
 
             <button
@@ -121,19 +147,6 @@ export default function Navbar({ activePage, setActivePage }) {
             </button>
 
             <button
-              onClick={() => { setActivePage('admin-dashboard'); setAdminActiveTab('payouts'); }}
-              style={{
-                color: activePage === 'admin-dashboard' && adminActiveTab === 'payouts' ? '#38bdf8' : '#94a3b8',
-                fontWeight: 600, fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: '5px',
-                padding: '6px 10px', borderRadius: '8px',
-                background: activePage === 'admin-dashboard' && adminActiveTab === 'payouts' ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
-                border: activePage === 'admin-dashboard' && adminActiveTab === 'payouts' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent'
-              }}
-            >
-              <Wallet size={14} /> Payouts
-            </button>
-
-            <button
               onClick={() => { setActivePage('admin-dashboard'); setAdminActiveTab('bookings'); }}
               style={{
                 color: activePage === 'admin-dashboard' && adminActiveTab === 'bookings' ? '#38bdf8' : '#94a3b8',
@@ -147,42 +160,29 @@ export default function Navbar({ activePage, setActivePage }) {
             </button>
 
             <button
-              onClick={() => { setActivePage('admin-dashboard'); setAdminActiveTab('sos'); }}
+              onClick={() => { setActivePage('admin-dashboard'); setAdminActiveTab('payouts'); }}
               style={{
-                color: activePage === 'admin-dashboard' && adminActiveTab === 'sos' ? '#f87171' : '#94a3b8',
+                color: activePage === 'admin-dashboard' && adminActiveTab === 'payouts' ? '#38bdf8' : '#94a3b8',
                 fontWeight: 600, fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: '5px',
                 padding: '6px 10px', borderRadius: '8px',
-                background: activePage === 'admin-dashboard' && adminActiveTab === 'sos' ? 'rgba(239, 68, 68, 0.15)' : 'transparent',
-                border: activePage === 'admin-dashboard' && adminActiveTab === 'sos' ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid transparent'
+                background: activePage === 'admin-dashboard' && adminActiveTab === 'payouts' ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
+                border: activePage === 'admin-dashboard' && adminActiveTab === 'payouts' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent'
               }}
             >
-              <AlertTriangle size={14} /> SOS Alerts
+              <Wallet size={14} /> Payouts
             </button>
 
             <button
-              onClick={() => { setActivePage('admin-dashboard'); setAdminActiveTab('partners'); }}
+              onClick={() => { setActivePage('admin-dashboard'); setAdminActiveTab('safety'); }}
               style={{
-                color: activePage === 'admin-dashboard' && adminActiveTab === 'partners' ? '#38bdf8' : '#94a3b8',
+                color: activePage === 'admin-dashboard' && adminActiveTab === 'safety' ? '#f87171' : '#94a3b8',
                 fontWeight: 600, fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: '5px',
                 padding: '6px 10px', borderRadius: '8px',
-                background: activePage === 'admin-dashboard' && adminActiveTab === 'partners' ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
-                border: activePage === 'admin-dashboard' && adminActiveTab === 'partners' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent'
+                background: activePage === 'admin-dashboard' && adminActiveTab === 'safety' ? 'rgba(239, 68, 68, 0.15)' : 'transparent',
+                border: activePage === 'admin-dashboard' && adminActiveTab === 'safety' ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid transparent'
               }}
             >
-              <Users size={14} /> Partners
-            </button>
-
-            <button
-              onClick={() => { setActivePage('admin-dashboard'); setAdminActiveTab('users'); }}
-              style={{
-                color: activePage === 'admin-dashboard' && adminActiveTab === 'users' ? '#38bdf8' : '#94a3b8',
-                fontWeight: 600, fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: '5px',
-                padding: '6px 10px', borderRadius: '8px',
-                background: activePage === 'admin-dashboard' && adminActiveTab === 'users' ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
-                border: activePage === 'admin-dashboard' && adminActiveTab === 'users' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent'
-              }}
-            >
-              <User size={14} /> Hirers
+              <AlertTriangle size={14} /> Safety Center
             </button>
 
             <button
@@ -196,19 +196,6 @@ export default function Navbar({ activePage, setActivePage }) {
               }}
             >
               <Sliders size={14} /> Settings
-            </button>
-
-            <button
-              onClick={() => { setActivePage('admin-dashboard'); setAdminActiveTab('security'); }}
-              style={{
-                color: activePage === 'admin-dashboard' && adminActiveTab === 'security' ? '#38bdf8' : '#94a3b8',
-                fontWeight: 600, fontSize: '0.84rem', display: 'flex', alignItems: 'center', gap: '5px',
-                padding: '6px 10px', borderRadius: '8px',
-                background: activePage === 'admin-dashboard' && adminActiveTab === 'security' ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
-                border: activePage === 'admin-dashboard' && adminActiveTab === 'security' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent'
-              }}
-            >
-              <Lock size={14} /> Security
             </button>
           </div>
         ) : (
@@ -407,9 +394,9 @@ export default function Navbar({ activePage, setActivePage }) {
                     )}
                     {currentRole === 'partner' && (
                       <>
-                        <DropdownItem icon={<Briefcase size={14} />} onClick={() => { setActivePage('partner-dashboard'); setProfileMenuOpen(false); }}>My Dashboard</DropdownItem>
-                        <DropdownItem icon={<Wallet size={14} />} onClick={() => { setActivePage('partner-earnings'); setProfileMenuOpen(false); }}>Earnings</DropdownItem>
-                        <DropdownItem icon={<ShieldCheck size={14} />} onClick={() => { setActivePage('partner-kyc'); setProfileMenuOpen(false); }}>KYC Status</DropdownItem>
+                        <DropdownItem icon={<Briefcase size={14} />} onClick={() => { setActivePage('partner-dashboard'); setProfileMenuOpen(false); }}>Partner Console</DropdownItem>
+                        <DropdownItem icon={<Wallet size={14} />} onClick={() => { setActivePage('partner-earnings'); setProfileMenuOpen(false); }}>Earnings & Balance</DropdownItem>
+                        <DropdownItem icon={<ShieldCheck size={14} />} onClick={() => { setActivePage('partner-kyc'); setProfileMenuOpen(false); }}>Verification / KYC</DropdownItem>
                       </>
                     )}
                     {currentRole === 'admin' && (

@@ -1,82 +1,145 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
-import { 
-  fetchBookings, 
-  fetchPartnerById, 
-  togglePartnerOnline, 
-  updateBookingStatus, 
-  startSessionWithOTP, 
-  endSession 
+import './partner.css';
+
+// API utilities
+import {
+  fetchBookings,
+  fetchPartnerById,
+  togglePartnerOnline,
+  updatePartnerProfile,
+  submitPartnerKYC,
+  updateBookingStatus,
+  startSessionWithOTP,
+  endSession,
+  fetchPayouts,
+  requestPayout
 } from '../../utils/api';
-import { formatCurrency, getStatusBadge } from '../../utils/helpers';
-import SafetyBanner from '../../components/SafetyBanner';
-import { 
-  Briefcase, 
-  Power, 
-  ShieldCheck, 
-  Wallet, 
-  Clock, 
-  Star, 
-  CheckCircle2, 
-  XCircle, 
-  Play, 
-  Square, 
-  MessageCircle, 
-  AlertTriangle, 
-  KeyRound,
-  MapPin,
-  TrendingUp,
-  FileCheck
+
+// Components & Tabs
+import PartnerSidebar from './PartnerSidebar';
+import DashboardTab from './tabs/DashboardTab';
+import ProfileTab from './tabs/ProfileTab';
+import KycTab from './tabs/KycTab';
+import ServicesTab from './tabs/ServicesTab';
+import PricingTab from './tabs/PricingTab';
+import AvailabilityTab from './tabs/AvailabilityTab';
+import BookingsTab from './tabs/BookingsTab';
+import LocationTab from './tabs/LocationTab';
+import EarningsTab from './tabs/EarningsTab';
+import BankDetailsTab from './tabs/BankDetailsTab';
+import ReviewsTab from './tabs/ReviewsTab';
+import MessagesTab from './tabs/MessagesTab';
+import SafetyCenterTab from './tabs/SafetyCenterTab';
+import ComplaintsTab from './tabs/ComplaintsTab';
+import NotificationsTab from './tabs/NotificationsTab';
+import GuidelinesTab from './tabs/GuidelinesTab';
+import SettingsTab from './tabs/SettingsTab';
+
+// Icons
+import {
+  Menu,
+  Bell,
+  Power,
+  AlertTriangle,
+  RefreshCw,
+  Wallet
 } from 'lucide-react';
 
-export default function PartnerDashboard({ setActivePage }) {
-  const { activePartner, setActivePartner } = useAuth();
+export default function PartnerDashboard({ initialTab = 'dashboard', setActivePage }) {
+  const { activePartner, logout } = useAuth();
   const { openChat, openSOS, showToast } = useApp();
-  const [partnerData, setPartnerData] = useState(activePartner || null);
+
+  // Navigation State
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  // Partner & Bookings Data State
+  const [partner, setPartner] = useState(activePartner || null);
   const [bookings, setBookings] = useState([]);
+  const [payouts, setPayouts] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // OTP inputs for starting sessions
   const [otpInputs, setOtpInputs] = useState({});
   const [verifyingOtp, setVerifyingOtp] = useState(false);
 
   useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 5000);
+    loadAllData();
+    const interval = setInterval(loadAllData, 8000);
     return () => clearInterval(interval);
   }, [activePartner?.id]);
 
-  const loadData = async () => {
+  const loadAllData = async () => {
+    const partnerId = activePartner?.id || 'partner-p1';
     try {
-      const [partner, bData] = await Promise.all([
-        fetchPartnerById(activePartner?.id || 'partner-p1'),
-        fetchBookings({ partnerId: activePartner?.id || 'partner-p1' })
+      const [partnerData, bookingList, payoutList] = await Promise.all([
+        fetchPartnerById(partnerId),
+        fetchBookings({ partnerId }),
+        fetchPayouts({ partnerId })
       ]);
-      if (partner) setPartnerData(partner);
-      if (bData) setBookings(bData);
+      if (partnerData) setPartner(partnerData);
+      if (bookingList) setBookings(bookingList);
+      if (payoutList) setPayouts(payoutList);
     } catch (err) {
-      console.error(err);
+      console.error('Error loading partner dashboard data:', err);
     } finally {
       setLoading(false);
     }
   };
 
+  // 1. Online / Offline toggle
   const handleToggleOnline = async () => {
     try {
-      const res = await togglePartnerOnline(activePartner?.id || 'partner-p1');
-      setPartnerData(prev => ({ ...prev, isOnline: res.isOnline }));
-      showToast(res.isOnline ? 'You are now ONLINE & accepting hire requests!' : 'You are now OFFLINE.');
+      const res = await togglePartnerOnline(partner?.id || 'partner-p1');
+      setPartner(prev => ({ ...prev, isOnline: res.isOnline }));
+      showToast(res.isOnline ? 'You are now ONLINE & accepting hire requests!' : 'You are now OFFLINE (Shift Ended).');
     } catch (err) {
-      console.error(err);
+      showToast('Failed to toggle online status', 'danger');
     }
   };
 
+  // 2. Profile update
+  const handleUpdateProfile = async (profileData) => {
+    const updated = await updatePartnerProfile(partner?.id || 'partner-p1', profileData);
+    setPartner(prev => ({ ...prev, ...updated }));
+    return updated;
+  };
+
+  // 3. KYC submission
+  const handleSubmitKYC = async (kycData) => {
+    const res = await submitPartnerKYC(partner?.id || 'partner-p1', kycData);
+    if (res.partner) setPartner(res.partner);
+    loadAllData();
+  };
+
+  // 4. Update services & pricing
+  const handleUpdateServices = async (servicesList) => {
+    const updated = await updatePartnerProfile(partner?.id || 'partner-p1', { services: servicesList });
+    setPartner(prev => ({ ...prev, services: servicesList }));
+  };
+
+  // 5. Update availability
+  const handleUpdateAvailability = async (availabilityData) => {
+    const updated = await updatePartnerProfile(partner?.id || 'partner-p1', availabilityData);
+    setPartner(prev => ({ ...prev, ...availabilityData }));
+  };
+
+  // 6. Update bank details
+  const handleUpdateBankDetails = async (bankDetails) => {
+    const updated = await updatePartnerProfile(partner?.id || 'partner-p1', { bankDetails });
+    setPartner(prev => ({ ...prev, bankDetails }));
+  };
+
+  // 7. Booking actions
   const handleAcceptBooking = async (bookingId) => {
     try {
       await updateBookingStatus(bookingId, 'confirmed');
       showToast('Booking request accepted! Client has been notified.');
-      loadData();
+      loadAllData();
     } catch (err) {
-      console.error(err);
+      showToast('Failed to accept booking', 'danger');
     }
   };
 
@@ -85,16 +148,27 @@ export default function PartnerDashboard({ setActivePage }) {
     try {
       await updateBookingStatus(bookingId, 'declined');
       showToast('Booking request declined.', 'warning');
-      loadData();
+      loadAllData();
     } catch (err) {
-      console.error(err);
+      showToast('Failed to decline booking', 'danger');
+    }
+  };
+
+  const handleCancelBooking = async (bookingId) => {
+    if (!confirm('Are you sure you want to cancel this confirmed booking? Please give hirer sufficient notice.')) return;
+    try {
+      await updateBookingStatus(bookingId, 'cancelled');
+      showToast('Booking cancelled.', 'warning');
+      loadAllData();
+    } catch (err) {
+      showToast('Failed to cancel booking', 'danger');
     }
   };
 
   const handleStartSession = async (bookingId) => {
     const otp = otpInputs[bookingId];
     if (!otp || otp.trim().length !== 4) {
-      alert('Please enter the 4-digit OTP provided by the client.');
+      alert('Please ask the client for their 4-digit session OTP.');
       return;
     }
 
@@ -103,10 +177,9 @@ export default function PartnerDashboard({ setActivePage }) {
       await startSessionWithOTP(bookingId, otp);
       showToast('Session verified & started! Timer is now active.');
       setOtpInputs(prev => ({ ...prev, [bookingId]: '' }));
-      loadData();
+      loadAllData();
     } catch (err) {
-      console.error(err);
-      alert(err.message || 'Invalid OTP code.');
+      alert(err.message || 'Invalid OTP code. Please ask hirer to verify.');
     } finally {
       setVerifyingOtp(false);
     }
@@ -116,366 +189,313 @@ export default function PartnerDashboard({ setActivePage }) {
     if (!confirm('Confirm session completion? Your 80% earnings will be immediately released to your wallet.')) return;
     try {
       await endSession(bookingId);
-      showToast('Session completed! Earnings credited to your wallet.');
-      loadData();
+      showToast('Session completed! 80% earnings credited to your wallet.');
+      loadAllData();
     } catch (err) {
-      console.error(err);
-      alert('Failed to end session');
+      showToast('Failed to complete session', 'danger');
     }
   };
 
-  const incomingRequests = bookings.filter(b => b.status === 'pending');
-  const activeSessions = bookings.filter(b => b.status === 'in-progress');
-  const confirmedUpcoming = bookings.filter(b => b.status === 'confirmed');
+  // 8. Payout request
+  const handleRequestPayout = async (payoutPayload) => {
+    await requestPayout(payoutPayload);
+    loadAllData();
+  };
+
+  const handleLogout = () => {
+    logout();
+    if (setActivePage) setActivePage('home');
+  };
+
+  const pendingCount = bookings.filter(b => b.status === 'pending').length;
 
   return (
-    <div className="container" style={{ paddingBottom: '70px' }}>
-      
-      {/* Partner Header */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '24px 0 10px',
-        flexWrap: 'wrap',
-        gap: '16px'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <img 
-            src={partnerData?.avatar || activePartner?.avatar} 
-            alt={partnerData?.name}
-            style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #10b981' }}
-          />
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="badge badge-verified">
-                <ShieldCheck size={13} /> {partnerData?.kycStatus === 'verified' ? 'Verified Partner' : 'KYC Under Review'}
-              </span>
-              <span style={{ fontSize: '0.82rem', color: '#94a3b8' }}>{partnerData?.city}</span>
-            </div>
-            <h1 style={{ fontSize: '2rem' }}>{partnerData?.name}</h1>
-          </div>
-        </div>
+    <div className="partner-layout">
+      {/* Sidebar Navigation */}
+      <PartnerSidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        partner={partner}
+        isOnline={partner?.isOnline}
+        onToggleOnline={handleToggleOnline}
+        pendingBookingsCount={pendingCount}
+        unreadNotificationsCount={3}
+        onLogout={handleLogout}
+        isOpen={mobileSidebarOpen}
+        onClose={() => setMobileSidebarOpen(false)}
+      />
 
-        {/* Online / Offline Toggle Button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <button 
-            onClick={handleToggleOnline}
-            style={{
-              padding: '10px 20px',
-              borderRadius: 'var(--radius-full)',
-              background: partnerData?.isOnline ? 'rgba(16, 185, 129, 0.15)' : 'rgba(100, 116, 139, 0.2)',
-              border: partnerData?.isOnline ? '1px solid #10b981' : '1px solid var(--border-subtle)',
-              color: partnerData?.isOnline ? '#34d399' : '#94a3b8',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            <Power size={18} color={partnerData?.isOnline ? '#34d399' : '#94a3b8'} />
-            <span>{partnerData?.isOnline ? 'ONLINE & ACCEPTING' : 'OFFLINE (Shift Ended)'}</span>
-          </button>
-
-          <button 
-            className="btn-secondary"
-            onClick={() => setActivePage('partner-earnings')}
-          >
-            <Wallet size={16} /> Earnings & Payouts
-          </button>
-        </div>
-      </div>
-
-      <SafetyBanner />
-
-      {/* KPI Stats Grid */}
-      <div className="grid-4" style={{ marginBottom: '30px' }}>
-        
-        <div className="glass-panel" style={{ padding: '20px' }}>
-          <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, marginBottom: '6px' }}>
-            Available Wallet
-          </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#34d399', marginBottom: '4px' }}>
-            {formatCurrency(partnerData?.walletBalance || 0)}
-          </div>
-          <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
-            Ready for instant UPI/Bank withdrawal
-          </div>
-        </div>
-
-        <div className="glass-panel" style={{ padding: '20px' }}>
-          <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, marginBottom: '6px' }}>
-            Total Lifetime Earned (80%)
-          </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>
-            {formatCurrency(partnerData?.totalEarnings || 0)}
-          </div>
-          <div style={{ fontSize: '0.78rem', color: '#a78bfa' }}>
-            Keep 80% of all hourly fees
-          </div>
-        </div>
-
-        <div className="glass-panel" style={{ padding: '20px' }}>
-          <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, marginBottom: '6px' }}>
-            Completed Companionship
-          </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>
-            {partnerData?.completedHours || 0} Hours
-          </div>
-          <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
-            {bookings.filter(b => b.status === 'completed').length} completed sessions
-          </div>
-        </div>
-
-        <div className="glass-panel" style={{ padding: '20px' }}>
-          <div style={{ fontSize: '0.78rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, marginBottom: '6px' }}>
-            Client Rating
-          </div>
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
-            <Star size={24} fill="#fbbf24" /> {partnerData?.rating || '5.0'}
-          </div>
-          <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
-            Based on {partnerData?.reviewCount || 0} reviews
-          </div>
-        </div>
-
-      </div>
-
-      {/* 1. Live Active Sessions */}
-      {activeSessions.length > 0 && (
-        <div style={{ marginBottom: '32px' }}>
-          <h2 style={{ fontSize: '1.3rem', color: '#f59e0b', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span className="badge-online" style={{ background: '#f59e0b', boxShadow: '0 0 10px #f59e0b' }} />
-            Active Ongoing Session
-          </h2>
-
-          {activeSessions.map(session => (
-            <div 
-              key={session.id}
+      {/* Main Content Area */}
+      <main className="partner-main">
+        {/* Top bar */}
+        <div className="partner-topbar">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
               style={{
-                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(30, 41, 59, 0.9) 100%)',
-                border: '2px solid rgba(245, 158, 11, 0.5)',
-                borderRadius: 'var(--radius-lg)',
-                padding: '24px',
+                display: 'none',
+                padding: '8px',
+                borderRadius: '8px',
+                background: 'rgba(255, 255, 255, 0.05)',
+                color: '#fff'
+              }}
+              className="mobile-hamburger"
+            >
+              <Menu size={20} />
+            </button>
+
+            <div className="partner-title-area">
+              <h1 style={{ textTransform: 'capitalize' }}>
+                {activeTab.replace('-', ' ')}
+              </h1>
+            </div>
+          </div>
+
+          {/* Quick Header Actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {/* Quick Online Switch */}
+            <button
+              onClick={handleToggleOnline}
+              style={{
                 display: 'flex',
-                justifyContent: 'space-between',
                 alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '20px',
-                boxShadow: '0 4px 20px rgba(245, 158, 11, 0.2)'
+                gap: '8px',
+                padding: '8px 16px',
+                borderRadius: '9999px',
+                background: partner?.isOnline ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                border: partner?.isOnline ? '1px solid #10b981' : '1px solid rgba(255, 255, 255, 0.1)',
+                color: partner?.isOnline ? '#34d399' : '#94a3b8',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                cursor: 'pointer'
               }}
             >
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <span className="badge badge-warning">Session In Progress</span>
-                  <span style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>Booking #{session.id}</span>
-                </div>
-                <h3 style={{ fontSize: '1.25rem', color: '#fff' }}>
-                  Hirer: {session.clientName} ({session.clientPhone})
-                </h3>
-                <div style={{ fontSize: '0.85rem', color: '#cbd5e1', marginTop: '4px' }}>
-                  Activity: <strong>{session.serviceName}</strong> • {session.durationHours} hours
-                </div>
-                <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginTop: '4px' }}>
-                  <MapPin size={13} style={{ display: 'inline' }} /> {session.meetingLocation}
-                </div>
-                <div style={{ fontSize: '0.92rem', color: '#34d399', fontWeight: 700, marginTop: '8px' }}>
-                  Your 80% Earnings Upon Completion: {formatCurrency(session.partnerShare)}
-                </div>
-              </div>
+              <Power size={14} />
+              <span>{partner?.isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+            </button>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <button 
-                  className="btn-secondary"
-                  onClick={() => openChat(session)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <MessageCircle size={16} /> Chat Hirer
-                </button>
+            {/* Quick SOS Trigger */}
+            <button
+              onClick={() => openSOS({ id: 'EMERGENCY', clientName: 'Partner Distress Trigger' })}
+              style={{
+                background: 'rgba(239, 68, 68, 0.2)',
+                border: '1px solid #ef4444',
+                color: '#f87171',
+                padding: '8px 14px',
+                borderRadius: '9999px',
+                fontSize: '0.82rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer'
+              }}
+            >
+              <AlertTriangle size={14} />
+              <span>SOS</span>
+            </button>
 
-                <button 
-                  className="btn-danger"
-                  onClick={() => openSOS(session)}
-                >
-                  <AlertTriangle size={16} /> SOS
-                </button>
+            {/* Notifications Shortcut */}
+            <button
+              onClick={() => setActiveTab('notifications')}
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: '#cbd5e1',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                cursor: 'pointer'
+              }}
+            >
+              <Bell size={16} />
+              <span style={{
+                position: 'absolute',
+                top: 6,
+                right: 6,
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#38bdf8'
+              }} />
+            </button>
 
-                <button 
-                  className="btn-primary"
-                  onClick={() => handleEndSession(session.id)}
-                  style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
-                >
-                  <Square size={16} /> End Session & Release {formatCurrency(session.partnerShare)}
-                </button>
-              </div>
-            </div>
-          ))}
+            {/* Refresh Data */}
+            <button
+              onClick={loadAllData}
+              title="Refresh data"
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '50%',
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                color: '#cbd5e1',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer'
+              }}
+            >
+              <RefreshCw size={15} />
+            </button>
+          </div>
         </div>
-      )}
 
-      {/* 2. Incoming Hire Requests (Need Acceptance) */}
-      <div className="glass-panel" style={{ padding: '24px', marginBottom: '32px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '1.3rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>Incoming Hire Requests</span>
-            {incomingRequests.length > 0 && (
-              <span className="badge badge-warning">{incomingRequests.length} Pending</span>
-            )}
-          </h2>
-          <span style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
-            Review venue and time before accepting
-          </span>
-        </div>
-
-        {incomingRequests.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '30px 0', color: '#64748b', fontSize: '0.9rem' }}>
-            No pending hire requests right now. Keep your toggle ONLINE to receive new client bookings.
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {incomingRequests.map(req => (
-              <div 
-                key={req.id}
-                style={{
-                  padding: '18px',
-                  borderRadius: 'var(--radius-md)',
-                  background: 'rgba(15, 23, 42, 0.6)',
-                  border: '1px solid var(--border-active)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '16px'
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#fff', marginBottom: '4px' }}>
-                    {req.clientName} hired you for {req.serviceName}
-                  </div>
-                  <div style={{ fontSize: '0.85rem', color: '#cbd5e1', display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-                    <span>📅 {req.date} at {req.startTime} ({req.durationHours} hrs)</span>
-                    <span>📍 {req.meetingLocation}</span>
-                  </div>
-                  {req.clientNotes && (
-                    <div style={{ fontSize: '0.8rem', color: '#c084fc', marginTop: '4px' }}>
-                      Note: "{req.clientNotes}"
-                    </div>
-                  )}
-                  <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#34d399', marginTop: '6px' }}>
-                    Your Earnings: {formatCurrency(req.partnerShare)} (80% share)
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button 
-                    className="btn-secondary btn-sm"
-                    onClick={() => handleDeclineBooking(req.id)}
-                    style={{ color: '#f87171' }}
-                  >
-                    <XCircle size={16} /> Decline
-                  </button>
-                  <button 
-                    className="btn-primary btn-sm"
-                    onClick={() => handleAcceptBooking(req.id)}
-                    style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}
-                  >
-                    <CheckCircle2 size={16} /> Accept Request
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Dynamic Tab Content Rendering */}
+        {activeTab === 'dashboard' && (
+          <DashboardTab
+            partner={partner}
+            bookings={bookings}
+            onToggleOnline={handleToggleOnline}
+            onTabChange={setActiveTab}
+            onAcceptBooking={handleAcceptBooking}
+            onDeclineBooking={handleDeclineBooking}
+            onStartSession={handleStartSession}
+            onEndSession={handleEndSession}
+            otpInputs={otpInputs}
+            setOtpInputs={setOtpInputs}
+            verifyingOtp={verifyingOtp}
+            openChat={openChat}
+            openSOS={openSOS}
+          />
         )}
-      </div>
 
-      {/* 3. Confirmed Upcoming Sessions & OTP Verification */}
-      <div className="glass-panel" style={{ padding: '24px' }}>
-        <h2 style={{ fontSize: '1.3rem', marginBottom: '16px' }}>Confirmed Upcoming Sessions</h2>
-
-        {confirmedUpcoming.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '30px 0', color: '#64748b', fontSize: '0.9rem' }}>
-            No confirmed upcoming sessions scheduled.
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {confirmedUpcoming.map(bk => (
-              <div 
-                key={bk.id}
-                style={{
-                  padding: '18px',
-                  borderRadius: 'var(--radius-md)',
-                  background: 'rgba(15, 23, 42, 0.5)',
-                  border: '1px solid var(--border-subtle)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '16px'
-                }}
-              >
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <span className="badge badge-verified">Confirmed</span>
-                    <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>#{bk.id}</span>
-                  </div>
-                  <h4 style={{ fontSize: '1.1rem', color: '#fff' }}>
-                    {bk.clientName} • {bk.serviceName}
-                  </h4>
-                  <div style={{ fontSize: '0.84rem', color: '#cbd5e1', marginTop: '4px' }}>
-                    📅 {bk.date} at {bk.startTime} ({bk.durationHours} hrs) • 📍 {bk.meetingLocation}
-                  </div>
-                  <div style={{ fontSize: '0.88rem', color: '#34d399', fontWeight: 700, marginTop: '4px' }}>
-                    Payout upon completion: {formatCurrency(bk.partnerShare)}
-                  </div>
-                </div>
-
-                {/* OTP Entry to Start Session */}
-                <div style={{
-                  background: 'rgba(30, 41, 59, 0.7)',
-                  border: '1px solid var(--border-active)',
-                  borderRadius: 'var(--radius-md)',
-                  padding: '14px 18px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px'
-                }}>
-                  <div>
-                    <div style={{ fontSize: '0.72rem', color: '#cbd5e1', textTransform: 'uppercase', fontWeight: 700 }}>
-                      Ask Client for OTP
-                    </div>
-                    <input 
-                      type="text"
-                      maxLength="4"
-                      placeholder="4-digit OTP"
-                      value={otpInputs[bk.id] || ''}
-                      onChange={e => setOtpInputs({ ...otpInputs, [bk.id]: e.target.value })}
-                      style={{ width: '110px', textAlign: 'center', fontSize: '1.1rem', fontWeight: 800, letterSpacing: '0.15em' }}
-                    />
-                  </div>
-
-                  <button 
-                    className="btn-primary btn-sm"
-                    onClick={() => handleStartSession(bk.id)}
-                    disabled={verifyingOtp}
-                    style={{ height: '42px', marginTop: '16px' }}
-                  >
-                    <Play size={16} /> Start Session
-                  </button>
-                  <button 
-                    className="btn-secondary btn-sm"
-                    onClick={() => openChat(bk)}
-                    style={{ height: '42px', marginTop: '16px' }}
-                  >
-                    <MessageCircle size={16} />
-                  </button>
-                </div>
-
-              </div>
-            ))}
-          </div>
+        {activeTab === 'profile' && (
+          <ProfileTab
+            partner={partner}
+            onUpdateProfile={handleUpdateProfile}
+            showToast={showToast}
+          />
         )}
-      </div>
 
+        {activeTab === 'kyc' && (
+          <KycTab
+            partner={partner}
+            onSubmitKYC={handleSubmitKYC}
+            showToast={showToast}
+          />
+        )}
+
+        {activeTab === 'services' && (
+          <ServicesTab
+            partner={partner}
+            onUpdateServices={handleUpdateServices}
+            showToast={showToast}
+          />
+        )}
+
+        {activeTab === 'pricing' && (
+          <PricingTab
+            partner={partner}
+            onTabChange={setActiveTab}
+            showToast={showToast}
+          />
+        )}
+
+        {activeTab === 'availability' && (
+          <AvailabilityTab
+            partner={partner}
+            onUpdateAvailability={handleUpdateAvailability}
+            showToast={showToast}
+          />
+        )}
+
+        {activeTab === 'bookings' && (
+          <BookingsTab
+            bookings={bookings}
+            onAcceptBooking={handleAcceptBooking}
+            onDeclineBooking={handleDeclineBooking}
+            onStartSession={handleStartSession}
+            onEndSession={handleEndSession}
+            onCancelBooking={handleCancelBooking}
+            otpInputs={otpInputs}
+            setOtpInputs={setOtpInputs}
+            verifyingOtp={verifyingOtp}
+            openChat={openChat}
+            openSOS={openSOS}
+            showToast={showToast}
+          />
+        )}
+
+        {activeTab === 'location' && (
+          <LocationTab
+            bookings={bookings}
+            showToast={showToast}
+          />
+        )}
+
+        {activeTab === 'earnings' && (
+          <EarningsTab
+            partner={partner}
+            payouts={payouts}
+            bookings={bookings}
+            onTabChange={setActiveTab}
+            showToast={showToast}
+          />
+        )}
+
+        {activeTab === 'payouts' && (
+          <BankDetailsTab
+            partner={partner}
+            payouts={payouts}
+            onRequestPayout={handleRequestPayout}
+            onUpdateBankDetails={handleUpdateBankDetails}
+            showToast={showToast}
+          />
+        )}
+
+        {activeTab === 'reviews' && (
+          <ReviewsTab
+            partner={partner}
+            showToast={showToast}
+          />
+        )}
+
+        {activeTab === 'messages' && (
+          <MessagesTab
+            partner={partner}
+            showToast={showToast}
+          />
+        )}
+
+        {activeTab === 'safety' && (
+          <SafetyCenterTab
+            partner={partner}
+            showToast={showToast}
+          />
+        )}
+
+        {activeTab === 'disputes' && (
+          <ComplaintsTab
+            partner={partner}
+            bookings={bookings}
+            showToast={showToast}
+          />
+        )}
+
+        {activeTab === 'notifications' && (
+          <NotificationsTab
+            showToast={showToast}
+          />
+        )}
+
+        {activeTab === 'guidelines' && (
+          <GuidelinesTab />
+        )}
+
+        {activeTab === 'settings' && (
+          <SettingsTab
+            partner={partner}
+            onLogout={handleLogout}
+            showToast={showToast}
+          />
+        )}
+      </main>
     </div>
   );
 }

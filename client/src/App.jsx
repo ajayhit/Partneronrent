@@ -16,7 +16,7 @@ import PartnerDirectory from './pages/PartnerDirectory';
 import PartnerProfile from './pages/PartnerProfile';
 import SignIn from './pages/SignIn';
 import ClientDashboard from './pages/client/ClientDashboard';
-import ClientWallet from './pages/client/ClientWallet';
+// ClientWallet is now integrated inside ClientDashboard (wallet tab)
 import PartnerDashboard from './pages/partner/PartnerDashboard';
 import PartnerEarnings from './pages/partner/PartnerEarnings';
 import PartnerKYC from './pages/partner/PartnerKYC';
@@ -26,6 +26,10 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 const PROTECTED_PAGES = new Set([
   'client-dashboard',
   'client-wallet',
+  'client-bookings',
+  'client-messages',
+  'client-profile',
+  'client-settings',
   'partner-dashboard',
   'partner-earnings',
   'partner-kyc',
@@ -34,7 +38,7 @@ const PROTECTED_PAGES = new Set([
 
 // Map: which role can access which pages
 const ROLE_PAGES = {
-  client: new Set(['client-dashboard', 'client-wallet']),
+  client: new Set(['client-dashboard', 'client-wallet', 'client-bookings', 'client-messages', 'client-profile', 'client-settings']),
   partner: new Set(['partner-dashboard', 'partner-earnings', 'partner-kyc']),
   admin: new Set(['admin-dashboard'])
 };
@@ -138,16 +142,44 @@ function MainLayout() {
         {/* ── Client Portal Pages ────────────────────────────────── */}
         {activePage === 'client-dashboard' && isAuthenticated && currentRole === 'client' && (
           <ClientDashboard
+            initialTab="dashboard"
             setActivePage={safeguardedSetPage}
-            onSelectPartner={(partner) => {
-              setSelectedPartner(partner);
-              safeguardedSetPage('partner-detail');
-            }}
           />
         )}
 
         {activePage === 'client-wallet' && isAuthenticated && currentRole === 'client' && (
-          <ClientWallet />
+          <ClientDashboard
+            initialTab="wallet"
+            setActivePage={safeguardedSetPage}
+          />
+        )}
+
+        {activePage === 'client-bookings' && isAuthenticated && currentRole === 'client' && (
+          <ClientDashboard
+            initialTab="bookings"
+            setActivePage={safeguardedSetPage}
+          />
+        )}
+
+        {activePage === 'client-messages' && isAuthenticated && currentRole === 'client' && (
+          <ClientDashboard
+            initialTab="messages"
+            setActivePage={safeguardedSetPage}
+          />
+        )}
+
+        {activePage === 'client-profile' && isAuthenticated && currentRole === 'client' && (
+          <ClientDashboard
+            initialTab="profile"
+            setActivePage={safeguardedSetPage}
+          />
+        )}
+
+        {activePage === 'client-settings' && isAuthenticated && currentRole === 'client' && (
+          <ClientDashboard
+            initialTab="settings"
+            setActivePage={safeguardedSetPage}
+          />
         )}
 
         {/* ── Partner Portal Pages ───────────────────────────────── */}
@@ -156,11 +188,11 @@ function MainLayout() {
         )}
 
         {activePage === 'partner-earnings' && isAuthenticated && currentRole === 'partner' && (
-          <PartnerEarnings />
+          <PartnerDashboard initialTab="earnings" setActivePage={safeguardedSetPage} />
         )}
 
         {activePage === 'partner-kyc' && isAuthenticated && currentRole === 'partner' && (
-          <PartnerKYC />
+          <PartnerDashboard initialTab="kyc" setActivePage={safeguardedSetPage} />
         )}
 
         {/* ── Admin Portal Pages ─────────────────────────────────── */}

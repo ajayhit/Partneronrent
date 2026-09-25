@@ -107,7 +107,19 @@
       "walletBalance": 1035,
       "emergencyContact": "+91 98111 22334 (Brother)",
       "totalBookings": 6,
-      "joinedDate": "2024-01-15"
+      "completedBookings": 4,
+      "cancellationsCount": 1,
+      "complaintsCount": 0,
+      "status": "blocked",
+      "kycStatus": "verified",
+      "idType": "Aadhaar Card",
+      "idNumber": "XXXX-XXXX-9214",
+      "joinedDate": "2024-01-15",
+      "adminNotes": [
+        "Status changed from active to blocked: Blocked via customer directory",
+        "Verified corporate ID from DLF CyberCity Gurgaon.",
+        "Courteous hirer, punctual for meetings."
+      ]
     },
     {
       "id": "client-2",
@@ -121,7 +133,17 @@
       "walletBalance": 3200,
       "emergencyContact": "+91 98333 44556 (Sister)",
       "totalBookings": 3,
-      "joinedDate": "2024-02-10"
+      "completedBookings": 3,
+      "cancellationsCount": 0,
+      "complaintsCount": 0,
+      "status": "active",
+      "kycStatus": "verified",
+      "idType": "Passport",
+      "idNumber": "PXXXX7891",
+      "joinedDate": "2024-02-10",
+      "adminNotes": [
+        "Frequent user for shopping and art exhibitions in Bandra."
+      ]
     },
     {
       "id": "partner-1",
@@ -149,6 +171,79 @@
       "password": "Admin@12345",
       "role": "admin",
       "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=250&q=80"
+    },
+    {
+      "id": "client-3",
+      "name": "Vikram Malhotra",
+      "email": "vikram.m@example.com",
+      "phone": "+91 98345 67890",
+      "password": "demo1234",
+      "role": "client",
+      "city": "Bangalore",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=250&q=80",
+      "walletBalance": 850,
+      "emergencyContact": "+91 98444 55667 (Friend)",
+      "totalBookings": 2,
+      "completedBookings": 1,
+      "cancellationsCount": 1,
+      "complaintsCount": 1,
+      "status": "suspended",
+      "kycStatus": "verified",
+      "idType": "Driving License",
+      "idNumber": "DL-04-2018-0912",
+      "joinedDate": "2024-03-01",
+      "adminNotes": [
+        "Flagged for late arrival dispute on booking BK-1002. Under 14-day review."
+      ]
+    },
+    {
+      "id": "client-4",
+      "name": "Pooja Hegde",
+      "email": "pooja.h@example.com",
+      "phone": "+91 98112 33445",
+      "password": "demo1234",
+      "role": "client",
+      "city": "Jaipur",
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=250&q=80",
+      "walletBalance": 1500,
+      "emergencyContact": "+91 98222 11009 (Mother)",
+      "totalBookings": 1,
+      "completedBookings": 0,
+      "cancellationsCount": 0,
+      "complaintsCount": 0,
+      "status": "pending_verification",
+      "kycStatus": "pending",
+      "idType": "Aadhaar Card",
+      "idNumber": "XXXX-XXXX-3341",
+      "joinedDate": "2024-03-18",
+      "adminNotes": [
+        "Aadhaar front image submitted; selfie verification pending."
+      ]
+    },
+    {
+      "id": "client-5",
+      "name": "Karan Johar",
+      "email": "karan.temp@example.com",
+      "phone": "+91 99999 88888",
+      "password": "demo1234",
+      "role": "client",
+      "city": "Delhi NCR",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=250&q=80",
+      "walletBalance": 0,
+      "emergencyContact": "+91 98888 77777",
+      "totalBookings": 1,
+      "completedBookings": 0,
+      "cancellationsCount": 1,
+      "complaintsCount": 2,
+      "status": "active",
+      "kycStatus": "rejected",
+      "idType": "Voter ID",
+      "idNumber": "VTR992831",
+      "joinedDate": "2024-02-28",
+      "adminNotes": [
+        "Status changed from blocked to active: Re-activated via customer directory",
+        "Permanent account freeze due to policy violation & disrespectful chat."
+      ]
     }
   ],
   "partners": [
@@ -225,8 +320,30 @@
         "idType": "Aadhaar Card",
         "idNumber": "XXXX-XXXX-8912",
         "verifiedOn": "2024-01-20",
-        "backgroundCheck": "Cleared by VerifiedID India"
-      }
+        "backgroundCheck": "Cleared by VerifiedID India",
+        "panNumber": "ABCDE5500K",
+        "selfieVerified": true,
+        "expiryDate": "2029-06-30",
+        "verificationHistory": [
+          {
+            "date": "2024-01-10",
+            "status": "Submitted",
+            "note": "Application with ID proofs uploaded"
+          },
+          {
+            "date": "2024-01-12",
+            "status": "Approved",
+            "note": "Automated OCR and manual check"
+          }
+        ]
+      },
+      "status": "verified",
+      "cancellationRate": "1.8%",
+      "noShowCount": 0,
+      "adminNotes": [
+        "Joined platform in Delhi NCR. Background checks clear.",
+        "Consistently prompt in response to bookings."
+      ]
     },
     {
       "id": "partner-p2",
@@ -297,8 +414,30 @@
         "idType": "Passport",
         "idNumber": "Z9817291",
         "verifiedOn": "2024-02-01",
-        "backgroundCheck": "Cleared by VerifiedID India"
-      }
+        "backgroundCheck": "Cleared by VerifiedID India",
+        "panNumber": "ABCDE5501K",
+        "selfieVerified": true,
+        "expiryDate": "2029-06-30",
+        "verificationHistory": [
+          {
+            "date": "2024-01-10",
+            "status": "Submitted",
+            "note": "Application with ID proofs uploaded"
+          },
+          {
+            "date": "2024-01-12",
+            "status": "Approved",
+            "note": "Automated OCR and manual check"
+          }
+        ]
+      },
+      "status": "verified",
+      "cancellationRate": "2.4%",
+      "noShowCount": 0,
+      "adminNotes": [
+        "Joined platform in Mumbai. Background checks clear.",
+        "Consistently prompt in response to bookings."
+      ]
     },
     {
       "id": "partner-p3",
@@ -370,8 +509,30 @@
         "idType": "Aadhaar Card",
         "idNumber": "XXXX-XXXX-4419",
         "verifiedOn": "2024-01-10",
-        "backgroundCheck": "Cleared with distinction"
-      }
+        "backgroundCheck": "Cleared with distinction",
+        "panNumber": "ABCDE5502K",
+        "selfieVerified": true,
+        "expiryDate": "2029-06-30",
+        "verificationHistory": [
+          {
+            "date": "2024-01-10",
+            "status": "Submitted",
+            "note": "Application with ID proofs uploaded"
+          },
+          {
+            "date": "2024-01-12",
+            "status": "Approved",
+            "note": "Automated OCR and manual check"
+          }
+        ]
+      },
+      "status": "verified",
+      "cancellationRate": "2.4%",
+      "noShowCount": 0,
+      "adminNotes": [
+        "Joined platform in Bangalore. Background checks clear.",
+        "Consistently prompt in response to bookings."
+      ]
     },
     {
       "id": "partner-p4",
@@ -435,8 +596,30 @@
         "idType": "Driving License",
         "idNumber": "MH-12-2020-009182",
         "verifiedOn": "2024-02-18",
-        "backgroundCheck": "Cleared by VerifiedID India"
-      }
+        "backgroundCheck": "Cleared by VerifiedID India",
+        "panNumber": "ABCDE5503K",
+        "selfieVerified": true,
+        "expiryDate": "2029-06-30",
+        "verificationHistory": [
+          {
+            "date": "2024-01-10",
+            "status": "Submitted",
+            "note": "Application with ID proofs uploaded"
+          },
+          {
+            "date": "2024-01-12",
+            "status": "Approved",
+            "note": "Automated OCR and manual check"
+          }
+        ]
+      },
+      "status": "verified",
+      "cancellationRate": "2.4%",
+      "noShowCount": 0,
+      "adminNotes": [
+        "Joined platform in Pune. Background checks clear.",
+        "Consistently prompt in response to bookings."
+      ]
     },
     {
       "id": "partner-p5",
@@ -502,8 +685,30 @@
         "idType": "Aadhaar Card",
         "idNumber": "XXXX-XXXX-9102",
         "verifiedOn": "2024-03-01",
-        "backgroundCheck": "Cleared by VerifiedID India"
-      }
+        "backgroundCheck": "Cleared by VerifiedID India",
+        "panNumber": "ABCDE5504K",
+        "selfieVerified": true,
+        "expiryDate": "2029-06-30",
+        "verificationHistory": [
+          {
+            "date": "2024-01-10",
+            "status": "Submitted",
+            "note": "Application with ID proofs uploaded"
+          },
+          {
+            "date": "2024-01-12",
+            "status": "Approved",
+            "note": "Automated OCR and manual check"
+          }
+        ]
+      },
+      "status": "verified",
+      "cancellationRate": "2.4%",
+      "noShowCount": 0,
+      "adminNotes": [
+        "Joined platform in Jaipur. Background checks clear.",
+        "Consistently prompt in response to bookings."
+      ]
     },
     {
       "id": "partner-p6",
@@ -564,7 +769,129 @@
         "verifiedOn": null,
         "backgroundCheck": "Verification in progress",
         "reviewedAt": "2026-09-22T15:38:41.072Z",
-        "reviewNotes": "Approved by Operations Admin Team"
+        "reviewNotes": "Approved by Operations Admin Team",
+        "panNumber": "ABCDE5505K",
+        "selfieVerified": true,
+        "expiryDate": "2029-06-30",
+        "verificationHistory": [
+          {
+            "date": "2024-01-10",
+            "status": "Submitted",
+            "note": "Application with ID proofs uploaded"
+          },
+          {
+            "date": "2024-01-12",
+            "status": "Approved",
+            "note": "Automated OCR and manual check"
+          }
+        ]
+      },
+      "status": "verified",
+      "cancellationRate": "2.4%",
+      "noShowCount": 0,
+      "adminNotes": [
+        "Joined platform in Hyderabad. Background checks clear.",
+        "Consistently prompt in response to bookings."
+      ]
+    },
+    {
+      "id": "partner-p7",
+      "userId": "partner-7",
+      "name": "Arjun Rampal",
+      "tagline": "Fitness & Adventure Companion • Outdoor Trails",
+      "bio": "Ex-marathon runner and fitness coach based in Pune.",
+      "city": "Pune",
+      "areas": [
+        "Koregaon Park",
+        "Kalyani Nagar",
+        "Viman Nagar"
+      ],
+      "gender": "Male",
+      "age": 29,
+      "languages": [
+        "English",
+        "Hindi",
+        "Marathi"
+      ],
+      "avatar": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80",
+      "rating": 4.1,
+      "reviewCount": 14,
+      "completedHours": 36,
+      "badge": "Suspended",
+      "kycStatus": "suspended",
+      "status": "suspended",
+      "isOnline": false,
+      "hourlyRate": 1400,
+      "services": [
+        {
+          "serviceId": "shopping-buddy",
+          "ratePerHour": 1400
+        }
+      ],
+      "walletBalance": 4200,
+      "totalEarnings": 31000,
+      "cancellationRate": "14.5%",
+      "noShowCount": 2,
+      "adminNotes": [
+        "Suspended on 2026-09-19 due to 2 unexcused no-shows. Re-education course required."
+      ],
+      "kycDocuments": {
+        "idType": "Aadhaar Card",
+        "idNumber": "XXXX-XXXX-1948",
+        "panNumber": "BFGPR9124L",
+        "selfieVerified": true,
+        "expiryDate": "2028-09-30",
+        "backgroundCheck": "Cleared",
+        "reviewNotes": "Suspended due to attendance infractions"
+      }
+    },
+    {
+      "id": "partner-p8",
+      "userId": "partner-8",
+      "name": "Divya Nambiar",
+      "tagline": "New Applicant • Weekend Hangouts",
+      "bio": "Student looking to offer cafe and companion services in Kochi/Bangalore.",
+      "city": "Bangalore",
+      "areas": [
+        "Indiranagar",
+        "Koramangala"
+      ],
+      "gender": "Female",
+      "age": 21,
+      "languages": [
+        "English",
+        "Malayalam"
+      ],
+      "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
+      "rating": 0,
+      "reviewCount": 0,
+      "completedHours": 0,
+      "badge": "Rejected Applicant",
+      "kycStatus": "rejected",
+      "status": "rejected",
+      "isOnline": false,
+      "hourlyRate": 1100,
+      "services": [
+        {
+          "serviceId": "in-person-hangout",
+          "ratePerHour": 1100
+        }
+      ],
+      "walletBalance": 0,
+      "totalEarnings": 0,
+      "cancellationRate": "0%",
+      "noShowCount": 0,
+      "adminNotes": [
+        "Rejected KYC: Aadhaar photo mismatched with live selfie verification."
+      ],
+      "kycDocuments": {
+        "idType": "PAN Card",
+        "idNumber": "CKLPD9912Q",
+        "panNumber": "CKLPD9912Q",
+        "selfieVerified": false,
+        "expiryDate": "2030-01-01",
+        "backgroundCheck": "Failed biometric mismatch",
+        "reviewNotes": "Selfie does not match photo ID provided."
       }
     }
   ],
@@ -745,10 +1072,10 @@
       "amount": 10000,
       "method": "UPI",
       "destination": "aanya@okhdfcbank",
-      "status": "pending",
+      "status": "completed",
       "requestedAt": "2026-09-22T11:00:00Z",
-      "processedAt": null,
-      "transactionRef": null
+      "processedAt": "2026-09-24T17:21:18.494Z",
+      "transactionRef": "CMS70478484"
     },
     {
       "id": "PAY-702",
@@ -866,5 +1193,838 @@
       "status": "resolved",
       "resolutionNotes": "Safety dispatch test drill successfully verified with local emergency contact."
     }
-  ]
+  ],
+  "locations": [
+    {
+      "state": "Delhi NCR",
+      "cities": [
+        {
+          "name": "Delhi",
+          "areas": [
+            "Connaught Place",
+            "Hauz Khas",
+            "Saket",
+            "Vasant Kunj",
+            "Khan Market",
+            "Karol Bagh",
+            "Dwarka"
+          ],
+          "partnerCount": 14,
+          "customerCount": 180,
+          "bookingCount": 84,
+          "totalRevenue": 284000,
+          "isActive": true,
+          "popular": true
+        },
+        {
+          "name": "Gurgaon",
+          "areas": [
+            "Cyber Hub",
+            "Golf Course Road",
+            "Sector 29",
+            "Ambience Island",
+            "Sohna Road"
+          ],
+          "partnerCount": 9,
+          "customerCount": 120,
+          "bookingCount": 52,
+          "totalRevenue": 195000,
+          "isActive": true,
+          "popular": true
+        },
+        {
+          "name": "Noida",
+          "areas": [
+            "Sector 18",
+            "Sector 62",
+            "Noida Expressway",
+            "Botanical Garden"
+          ],
+          "partnerCount": 6,
+          "customerCount": 65,
+          "bookingCount": 28,
+          "totalRevenue": 98000,
+          "isActive": true,
+          "popular": false
+        }
+      ]
+    },
+    {
+      "state": "Maharashtra",
+      "cities": [
+        {
+          "name": "Mumbai",
+          "areas": [
+            "Bandra West",
+            "Juhu",
+            "Colaba",
+            "Lower Parel",
+            "Andheri West",
+            "Powai"
+          ],
+          "partnerCount": 18,
+          "customerCount": 240,
+          "bookingCount": 110,
+          "totalRevenue": 412000,
+          "isActive": true,
+          "popular": true
+        },
+        {
+          "name": "Pune",
+          "areas": [
+            "Koregaon Park",
+            "Kalyani Nagar",
+            "FC Road",
+            "Viman Nagar",
+            "Baner"
+          ],
+          "partnerCount": 8,
+          "customerCount": 95,
+          "bookingCount": 41,
+          "totalRevenue": 135000,
+          "isActive": true,
+          "popular": false
+        }
+      ]
+    },
+    {
+      "state": "Karnataka",
+      "cities": [
+        {
+          "name": "Bangalore",
+          "areas": [
+            "Indiranagar",
+            "Koramangala",
+            "HSR Layout",
+            "MG Road",
+            "Church Street",
+            "Whitefield"
+          ],
+          "partnerCount": 16,
+          "customerCount": 210,
+          "bookingCount": 98,
+          "totalRevenue": 345000,
+          "isActive": true,
+          "popular": true
+        }
+      ]
+    },
+    {
+      "state": "Rajasthan",
+      "cities": [
+        {
+          "name": "Jaipur",
+          "areas": [
+            "C-Scheme",
+            "Malviya Nagar",
+            "Civil Lines",
+            "Amer Road",
+            "Raja Park"
+          ],
+          "partnerCount": 6,
+          "customerCount": 75,
+          "bookingCount": 34,
+          "totalRevenue": 112000,
+          "isActive": true,
+          "popular": true
+        },
+        {
+          "name": "Jodhpur",
+          "areas": [
+            "Clock Tower",
+            "Ratanada",
+            "Sardarpura"
+          ],
+          "partnerCount": 3,
+          "customerCount": 25,
+          "bookingCount": 12,
+          "totalRevenue": 42000,
+          "isActive": true,
+          "popular": false
+        },
+        {
+          "name": "Udaipur",
+          "areas": [
+            "Lake Pichola",
+            "Fateh Sagar",
+            "Sukhadia Circle"
+          ],
+          "partnerCount": 4,
+          "customerCount": 35,
+          "bookingCount": 18,
+          "totalRevenue": 64000,
+          "isActive": true,
+          "popular": true
+        }
+      ]
+    },
+    {
+      "state": "Telangana",
+      "cities": [
+        {
+          "name": "Hyderabad",
+          "areas": [
+            "Banjara Hills",
+            "Jubilee Hills",
+            "Gachibowli",
+            "Hitec City",
+            "Madhapur"
+          ],
+          "partnerCount": 10,
+          "customerCount": 130,
+          "bookingCount": 49,
+          "totalRevenue": 168000,
+          "isActive": true,
+          "popular": true
+        }
+      ]
+    },
+    {
+      "state": "Gujarat",
+      "cities": [
+        {
+          "name": "Ahmedabad",
+          "areas": [
+            "CG Road",
+            "Bodakdev",
+            "Satellite",
+            "Sindhu Bhavan"
+          ],
+          "partnerCount": 5,
+          "customerCount": 50,
+          "bookingCount": 20,
+          "totalRevenue": 72000,
+          "isActive": true,
+          "popular": false
+        }
+      ]
+    }
+  ],
+  "commissionRules": {
+    "platformBaseCommission": 20,
+    "partnerBaseRate": 80,
+    "minPlatformFee": 150,
+    "promoDiscountSharePct": 50,
+    "services": [
+      {
+        "serviceId": "movie-companion",
+        "name": "Movie Companion",
+        "commissionPct": 15,
+        "minBookingHours": 2,
+        "defaultDurationHours": 3
+      },
+      {
+        "serviceId": "in-person-hangout",
+        "name": "Cafe & Conversation",
+        "commissionPct": 15,
+        "minBookingHours": 1,
+        "defaultDurationHours": 2
+      },
+      {
+        "serviceId": "shopping-buddy",
+        "name": "Shopping Buddy",
+        "commissionPct": 15,
+        "minBookingHours": 2,
+        "defaultDurationHours": 3
+      },
+      {
+        "serviceId": "travel-partner",
+        "name": "City Exploration & Travel",
+        "commissionPct": 18,
+        "minBookingHours": 3,
+        "defaultDurationHours": 4
+      },
+      {
+        "serviceId": "elder-care",
+        "name": "Elder Companionship",
+        "commissionPct": 10,
+        "minBookingHours": 2,
+        "defaultDurationHours": 2
+      },
+      {
+        "serviceId": "medical-support",
+        "name": "Clinic & Medical Support",
+        "commissionPct": 10,
+        "minBookingHours": 2,
+        "defaultDurationHours": 3
+      },
+      {
+        "serviceId": "clubbing-events",
+        "name": "Events & Clubbing",
+        "commissionPct": 20,
+        "minBookingHours": 3,
+        "defaultDurationHours": 4
+      },
+      {
+        "serviceId": "consultation",
+        "name": "Emotional Wellness Talk",
+        "commissionPct": 12,
+        "minBookingHours": 1,
+        "defaultDurationHours": 1
+      }
+    ],
+    "cityOverrides": [
+      {
+        "city": "Delhi NCR",
+        "commissionPct": 15
+      },
+      {
+        "city": "Mumbai",
+        "commissionPct": 18
+      },
+      {
+        "city": "Bangalore",
+        "commissionPct": 16
+      },
+      {
+        "city": "Jaipur",
+        "commissionPct": 12
+      }
+    ]
+  },
+  "cancellationPolicy": {
+    "freeCancellationHours": 24,
+    "noShowPenaltyAmount": 500,
+    "tiers": [
+      {
+        "window": "> 24 hours before start",
+        "customerRefundPct": 100,
+        "partnerCompensationPct": 0,
+        "description": "Full refund to customer wallet/source."
+      },
+      {
+        "window": "12 – 24 hours before start",
+        "customerRefundPct": 75,
+        "partnerCompensationPct": 20,
+        "description": "75% refund; 20% platform credit to partner for blocked time."
+      },
+      {
+        "window": "2 – 12 hours before start",
+        "customerRefundPct": 50,
+        "partnerCompensationPct": 35,
+        "description": "50% refund; 35% paid to partner as late cancellation compensation."
+      },
+      {
+        "window": "< 2 hours / No-Show",
+        "customerRefundPct": 0,
+        "partnerCompensationPct": 75,
+        "description": "Non-refundable. 75% disbursed to partner; 25% retained by platform."
+      }
+    ]
+  },
+  "complaints": [
+    {
+      "id": "DISP-101",
+      "bookingId": "BK-1002",
+      "complainantRole": "client",
+      "complainantName": "Vikram Malhotra",
+      "partnerName": "Aanya Sharma",
+      "category": "Late arrival",
+      "severity": "Medium",
+      "status": "investigating",
+      "date": "2026-09-22T20:15:00Z",
+      "description": "Partner arrived 25 minutes past scheduled start time at Hauz Khas cafe.",
+      "evidenceUrl": "https://example.com/chat-screenshot.jpg",
+      "assignedAdmin": "Operations Admin",
+      "adminNotes": "Checking Google Maps traffic and cafe check-in OTP logs.",
+      "resolution": null
+    },
+    {
+      "id": "DISP-102",
+      "bookingId": "BK-1001",
+      "complainantRole": "partner",
+      "complainantName": "Aanya Sharma",
+      "partnerName": "Aanya Sharma",
+      "clientName": "Rahul Verma",
+      "category": "Payment issue",
+      "severity": "Low",
+      "status": "resolved",
+      "date": "2026-09-21T21:00:00Z",
+      "description": "Extra 1 hour extension during movie session not credited yet in partner ledger.",
+      "assignedAdmin": "Finance Admin",
+      "adminNotes": "Settled 1-hour overtime manually from client wallet. Credited ₹1,500 to partner wallet.",
+      "resolution": "Resolved with ₹1,500 wallet credit on 2026-09-22."
+    },
+    {
+      "id": "DISP-103",
+      "bookingId": "BK-8853",
+      "complainantRole": "client",
+      "complainantName": "Karan Johar",
+      "partnerName": "Aanya Sharma",
+      "category": "Misconduct",
+      "severity": "High",
+      "status": "rejected",
+      "date": "2026-09-22T18:00:00Z",
+      "description": "Hirer complained that partner refused to attend private residence.",
+      "assignedAdmin": "Safety Admin",
+      "adminNotes": "Partner strictly adhered to Terms of Service: Meetups only in public cafes/theatres. Complaint baseless.",
+      "resolution": "Rejected. Client account suspended for breach of platonic public-only guidelines."
+    }
+  ],
+  "safetyIncidents": [
+    {
+      "id": "INC-501",
+      "bookingId": "BK-1002",
+      "reportedBy": "Aanya Sharma",
+      "reporterRole": "partner",
+      "dateTime": "2026-09-22T19:42:00Z",
+      "location": "Blue Tokai Coffee, Hauz Khas, Delhi",
+      "threatLevel": "Critical",
+      "category": "Emergency SOS Trigger",
+      "description": "Hirer was verbally aggressive regarding venue change to an off-site location.",
+      "evidence": "Audio emergency recording & live GPS lock verified.",
+      "assignedAdmin": "Safety Head (Suraj Rao)",
+      "status": "resolved",
+      "resolution": "Dispatched local security support. Both parties safely dispersed. Hirer banned from platform."
+    },
+    {
+      "id": "INC-502",
+      "bookingId": "BK-904",
+      "reportedBy": "System Monitoring Bot",
+      "reporterRole": "system",
+      "dateTime": "2026-09-23T11:20:00Z",
+      "location": "Bandra Promenade, Mumbai",
+      "threatLevel": "Medium",
+      "category": "Suspicious Chat Flag",
+      "description": "Automated keyword filter flagged attempts to arrange non-platonic private stay.",
+      "evidence": "Chat transcript snippet flagged by AI guardrail.",
+      "assignedAdmin": "Operations Admin",
+      "status": "investigating",
+      "resolution": null
+    }
+  ],
+  "coupons": [
+    {
+      "id": "CPN-1",
+      "code": "WELCOME100",
+      "discountType": "flat",
+      "discountValue": 100,
+      "minBookingAmount": 500,
+      "targetCity": "All",
+      "maxUses": 500,
+      "usedCount": 284,
+      "validUntil": "2026-12-31",
+      "status": "active",
+      "description": "Flat ₹100 OFF on your first verified companion booking."
+    },
+    {
+      "id": "CPN-2",
+      "code": "JAIPUR20",
+      "discountType": "percentage",
+      "discountValue": 20,
+      "maxDiscount": 400,
+      "minBookingAmount": 1200,
+      "targetCity": "Jaipur",
+      "maxUses": 200,
+      "usedCount": 78,
+      "validUntil": "2026-11-30",
+      "status": "active",
+      "description": "20% OFF for City Exploration & Heritage walks in Jaipur."
+    },
+    {
+      "id": "CPN-3",
+      "code": "FIRSTCOMPANION",
+      "discountType": "flat",
+      "discountValue": 250,
+      "minBookingAmount": 1500,
+      "targetCity": "All",
+      "maxUses": 1000,
+      "usedCount": 620,
+      "validUntil": "2026-12-31",
+      "status": "active",
+      "description": "₹250 off for first-time cafe and conversation bookings."
+    },
+    {
+      "id": "CPN-4",
+      "code": "DIWALI500",
+      "discountType": "flat",
+      "discountValue": 500,
+      "minBookingAmount": 2500,
+      "targetCity": "All",
+      "maxUses": 300,
+      "usedCount": 300,
+      "validUntil": "2026-08-30",
+      "status": "expired",
+      "description": "Festive companion discount voucher."
+    }
+  ],
+  "transactions": [
+    {
+      "id": "TXN-901",
+      "bookingId": "BK-1001",
+      "customerName": "Rahul Verma",
+      "partnerName": "Aanya Sharma",
+      "amount": 6037,
+      "gatewayFee": 120,
+      "platformCommission": 905,
+      "partnerAmount": 4320,
+      "refundAmount": 0,
+      "netPlatformEarnings": 785,
+      "paymentMethod": "UPI / Razorpay",
+      "status": "successful",
+      "date": "2026-09-21T18:32:00Z"
+    },
+    {
+      "id": "TXN-902",
+      "bookingId": "BK-1002",
+      "customerName": "Rahul Verma",
+      "partnerName": "Aanya Sharma",
+      "amount": 3354,
+      "gatewayFee": 67,
+      "platformCommission": 503,
+      "partnerAmount": 2400,
+      "refundAmount": 0,
+      "netPlatformEarnings": 436,
+      "paymentMethod": "PartnerOnRent Wallet",
+      "status": "successful",
+      "date": "2026-09-22T14:11:00Z"
+    },
+    {
+      "id": "TXN-903",
+      "bookingId": "BK-1003",
+      "customerName": "Sneha Roy",
+      "partnerName": "Kabir Mathur",
+      "amount": 4360,
+      "gatewayFee": 87,
+      "platformCommission": 654,
+      "partnerAmount": 3120,
+      "refundAmount": 0,
+      "netPlatformEarnings": 567,
+      "paymentMethod": "Credit Card (HDFC)",
+      "status": "successful",
+      "date": "2026-09-18T10:02:00Z"
+    },
+    {
+      "id": "TXN-904",
+      "bookingId": "BK-998",
+      "customerName": "Vikram Malhotra",
+      "partnerName": "Kabir Mathur",
+      "amount": 2800,
+      "gatewayFee": 56,
+      "platformCommission": 0,
+      "partnerAmount": 0,
+      "refundAmount": 2800,
+      "netPlatformEarnings": -56,
+      "paymentMethod": "Net Banking (SBI)",
+      "status": "refunded",
+      "date": "2026-09-19T09:15:00Z"
+    },
+    {
+      "id": "TXN-905",
+      "bookingId": "BK-999",
+      "customerName": "Karan Johar",
+      "partnerName": "Meera Joshi",
+      "amount": 1800,
+      "gatewayFee": 36,
+      "platformCommission": 270,
+      "partnerAmount": 900,
+      "refundAmount": 900,
+      "netPlatformEarnings": 234,
+      "paymentMethod": "UPI",
+      "status": "partial_refund",
+      "date": "2026-09-17T16:40:00Z"
+    }
+  ],
+  "cms": {
+    "pages": [
+      {
+        "slug": "home",
+        "title": "Homepage Hero & USP Highlights",
+        "updatedAt": "2026-09-20",
+        "published": true,
+        "headline": "Find a Trusted Companion for Events, Dining & Everyday Moments",
+        "subheadline": "100% Platonic, Verified Profiles, Background-Checked in 20+ Indian Cities."
+      },
+      {
+        "slug": "about",
+        "title": "About PartnerOnRent",
+        "updatedAt": "2026-09-15",
+        "published": true,
+        "content": "PartnerOnRent is India's pioneer platonic companion ecosystem connecting urban professionals, travelers, and seniors with verified local partners for movies, cafes, family events, and wellness talks."
+      },
+      {
+        "slug": "safety",
+        "title": "Trust, Safety & Zero-Tolerance Protocols",
+        "updatedAt": "2026-09-22",
+        "published": true,
+        "content": "All companions undergo government ID checks (Aadhaar & PAN) with live biometric matching. All bookings must take place in public venues with one-tap emergency SOS dispatch."
+      },
+      {
+        "slug": "faqs",
+        "title": "Frequently Asked Questions",
+        "updatedAt": "2026-09-18",
+        "published": true,
+        "items": [
+          {
+            "q": "Is this a dating or escort service?",
+            "a": "No. PartnerOnRent is strictly a platonic companionship platform for social company, events, travel, and emotional wellness. Any misconduct leads to an instant ban and legal reporting."
+          },
+          {
+            "q": "How are partners vetted?",
+            "a": "Every partner undergoes mandatory Aadhaar/Govt ID verification, criminal background screening, and video interview verification."
+          },
+          {
+            "q": "What is the cancellation policy?",
+            "a": "Cancellations made >24 hours in advance receive a 100% refund. 12-24 hours receive 75% refund."
+          }
+        ]
+      },
+      {
+        "slug": "cancellation-policy",
+        "title": "Cancellation & Refund Terms",
+        "updatedAt": "2026-09-20",
+        "published": true,
+        "content": "Detailed breakdown of customer windows, partner compensation, and wallet reversals."
+      }
+    ],
+    "banners": [
+      {
+        "id": "BAN-1",
+        "title": "Festive Companionship Launch",
+        "message": "Now serving Jaipur, Udaipur, and Chandigarh with verified culture companions!",
+        "bgColor": "#7c3aed",
+        "active": true,
+        "targetAudience": "All"
+      },
+      {
+        "id": "BAN-2",
+        "title": "Strict Platonic Advisory",
+        "message": "All sessions are tracked with OTP checks. Private home meetups are strictly prohibited.",
+        "bgColor": "#0284c7",
+        "active": true,
+        "targetAudience": "All"
+      }
+    ]
+  },
+  "adminUsers": [
+    {
+      "id": "ADM-1",
+      "name": "Super Administrator",
+      "email": "admin@partneronrent.in",
+      "role": "Super Admin",
+      "department": "Executive & Governance",
+      "status": "active",
+      "avatar": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=250&q=80",
+      "permissions": [
+        "all"
+      ],
+      "lastLogin": "2026-09-24T18:40:00Z"
+    },
+    {
+      "id": "ADM-2",
+      "name": "Pooja Malhotra",
+      "email": "ops.pooja@partneronrent.in",
+      "role": "Operations Admin",
+      "department": "City Operations",
+      "status": "active",
+      "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=250&q=80",
+      "permissions": [
+        "partners",
+        "bookings",
+        "calendar",
+        "cities"
+      ],
+      "lastLogin": "2026-09-24T14:15:00Z"
+    },
+    {
+      "id": "ADM-3",
+      "name": "Karan Singhal",
+      "email": "kyc.karan@partneronrent.in",
+      "role": "KYC Admin",
+      "department": "Partner Onboarding & Vetting",
+      "status": "active",
+      "avatar": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=250&q=80",
+      "permissions": [
+        "kyc",
+        "partners",
+        "audit"
+      ],
+      "lastLogin": "2026-09-24T17:00:00Z"
+    },
+    {
+      "id": "ADM-4",
+      "name": "Sneha Kapur",
+      "email": "finance.sneha@partneronrent.in",
+      "role": "Finance Admin",
+      "department": "Treasury & Settlements",
+      "status": "active",
+      "avatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80",
+      "permissions": [
+        "payments",
+        "payouts",
+        "commission",
+        "refunds"
+      ],
+      "lastLogin": "2026-09-24T16:30:00Z"
+    },
+    {
+      "id": "ADM-5",
+      "name": "Suraj Rao",
+      "email": "safety.suraj@partneronrent.in",
+      "role": "Safety Admin",
+      "department": "Trust & Safety Command",
+      "status": "active",
+      "avatar": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=250&q=80",
+      "permissions": [
+        "safety",
+        "sos",
+        "disputes",
+        "suspensions"
+      ],
+      "lastLogin": "2026-09-24T18:10:00Z"
+    },
+    {
+      "id": "ADM-6",
+      "name": "Vikrant Joshi",
+      "email": "content.vikrant@partneronrent.in",
+      "role": "Content Admin",
+      "department": "Marketing & CMS",
+      "status": "active",
+      "avatar": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=250&q=80",
+      "permissions": [
+        "cms",
+        "notifications",
+        "coupons"
+      ],
+      "lastLogin": "2026-09-23T11:00:00Z"
+    }
+  ],
+  "auditLogs": [
+    {
+      "id": "LOG-39676",
+      "adminName": "Super Administrator",
+      "action": "Customer Status Update",
+      "entity": "Customer",
+      "entityId": "client-1",
+      "oldValue": "active",
+      "newValue": "blocked",
+      "reason": "Blocked via customer directory",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T17:08:59.676Z"
+    },
+    {
+      "id": "LOG-31190",
+      "adminName": "Super Administrator",
+      "action": "Customer Status Update",
+      "entity": "Customer",
+      "entityId": "client-5",
+      "oldValue": "blocked",
+      "newValue": "active",
+      "reason": "Re-activated via customer directory",
+      "ipAddress": "127.0.0.1",
+      "timestamp": "2026-09-24T17:08:51.190Z"
+    },
+    {
+      "id": "LOG-301",
+      "adminName": "Super Administrator",
+      "action": "KYC Approved",
+      "entity": "Partner",
+      "entityId": "partner-p6",
+      "oldValue": "Pending Review",
+      "newValue": "Verified Partner",
+      "reason": "Aadhaar verified via Digilocker. Police clearance certificate uploaded.",
+      "ipAddress": "103.21.244.18",
+      "timestamp": "2026-09-22T15:38:41Z"
+    },
+    {
+      "id": "LOG-302",
+      "adminName": "Suraj Rao (Safety Admin)",
+      "action": "Account Blocked",
+      "entity": "Customer",
+      "entityId": "client-5",
+      "oldValue": "Active",
+      "newValue": "Blocked",
+      "reason": "Off-platform inappropriate request violation flagged in chat.",
+      "ipAddress": "115.110.12.94",
+      "timestamp": "2026-09-22T18:05:00Z"
+    },
+    {
+      "id": "LOG-303",
+      "adminName": "Sneha Kapur (Finance Admin)",
+      "action": "Payout Disbursed",
+      "entity": "Payout",
+      "entityId": "PAY-702",
+      "oldValue": "Pending",
+      "newValue": "Completed",
+      "reason": "Settlement via ICICI Corporate Banking. UTR: CMS99482910482",
+      "ipAddress": "14.139.122.4",
+      "timestamp": "2026-09-15T15:45:00Z"
+    },
+    {
+      "id": "LOG-304",
+      "adminName": "Super Administrator",
+      "action": "Commission Tier Updated",
+      "entity": "Commission",
+      "entityId": "travel-partner",
+      "oldValue": "20%",
+      "newValue": "18%",
+      "reason": "Promotional rate adjustment for festive travel season.",
+      "ipAddress": "103.21.244.18",
+      "timestamp": "2026-09-20T10:00:00Z"
+    },
+    {
+      "id": "LOG-305",
+      "adminName": "Suraj Rao (Safety Admin)",
+      "action": "SOS Alert Resolved",
+      "entity": "SOS Alert",
+      "entityId": "SOS-2827",
+      "oldValue": "Active Alert",
+      "newValue": "Resolved Safe",
+      "reason": "Spoke with both parties; verified safe departure from venue.",
+      "ipAddress": "115.110.12.94",
+      "timestamp": "2026-09-22T17:45:00Z"
+    }
+  ],
+  "notifications": {
+    "broadcasts": [
+      {
+        "id": "NOTIF-1",
+        "title": "Weekend Companion Booking Surge",
+        "target": "All Partners",
+        "channel": "Push & WhatsApp",
+        "message": "High demand expected in Delhi NCR, Mumbai & Bangalore this weekend! Turn your Online toggle on.",
+        "sentAt": "2026-09-23T10:00:00Z",
+        "deliveredCount": 42
+      },
+      {
+        "id": "NOTIF-2",
+        "title": "Zero-Tolerance Safety Protocol Reminder",
+        "target": "All Users",
+        "channel": "Push & Email",
+        "message": "Remember: All meetups must strictly take place in public venues. Always share meeting OTP before session starts.",
+        "sentAt": "2026-09-21T09:00:00Z",
+        "deliveredCount": 310
+      }
+    ],
+    "templates": [
+      {
+        "id": "TMPL-1",
+        "name": "Booking Confirmation",
+        "trigger": "On Booking Created",
+        "channel": "Email & SMS",
+        "templateText": "Your booking {{bookingId}} with {{partnerName}} for {{serviceName}} is confirmed for {{date}} at {{time}}."
+      },
+      {
+        "id": "TMPL-2",
+        "name": "Session Start OTP",
+        "trigger": "15 mins before meetup",
+        "channel": "SMS & WhatsApp",
+        "templateText": "Your secure session start OTP is {{otp}}. Share this only with {{partnerName}} when you meet in person."
+      },
+      {
+        "id": "TMPL-3",
+        "name": "Payout Credited",
+        "trigger": "On Admin Payout Settlement",
+        "channel": "Email & SMS",
+        "templateText": "Payout of ₹{{amount}} has been transferred to your registered account with Ref {{ref}}."
+      },
+      {
+        "id": "TMPL-4",
+        "name": "KYC Approved",
+        "trigger": "On KYC Verification",
+        "channel": "Email & Push",
+        "templateText": "Congratulations! Your partner profile has been verified and is now live across {{city}}."
+      }
+    ]
+  }
 }

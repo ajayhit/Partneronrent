@@ -478,42 +478,201 @@ app.put('/api/admin/sos-alerts/:id/resolve', (req, res) => {
 
   alert.status = 'resolved';
   alert.resolutionNotes = req.body.notes || 'Resolved and confirmed safe with user.';
+  if (!db.auditLogs) db.auditLogs = [];
+  db.auditLogs.unshift({
+    id: `LOG-${Date.now().toString().slice(-4)}`,
+    adminName: req.body.adminName || 'Safety Admin',
+    action: 'SOS Alert Resolved',
+    entity: 'SOS Alert',
+    entityId: alert.id,
+    oldValue: 'Active',
+    newValue: 'Resolved',
+    reason: req.body.notes || 'Resolved and confirmed safe with user.',
+    ipAddress: '127.0.0.1',
+    timestamp: new Date().toISOString()
+  });
   writeData(db);
   res.json(alert);
 });
 
-// 8. Admin KPI stats & Partner KYC approval
+// Helper for audit logs
+function logAudit(db, adminName, action, entity, entityId, oldValue, newValue, reason) {
+  if (!db.auditLogs) db.auditLogs = [];
+  db.auditLogs.unshift({
+    id: `LOG-${Date.now().toString().slice(-5)}`,
+    adminName: adminName || 'Super Administrator',
+    action,
+    entity,
+    entityId,
+    oldValue: String(oldValue || 'N/A'),
+    newValue: String(newValue || 'N/A'),
+    reason: reason || 'Operation executed via Admin Console',
+    ipAddress: '127.0.0.1',
+    timestamp: new Date().toISOString()
+  });
+}
+
+// 8. Admin KPI stats (Expanded with all requested metrics)
 app.get('/api/admin/stats', (req, res) => {
   const db = readData();
-  const totalBookings = db.bookings.length;
-  const completedBookings = db.bookings.filter(b => b.status === 'completed');
-  const activeBookings = db.bookings.filter(b => b.status === 'in-progress' || b.status === 'confirmed');
+  const bookings = db.bookings || [];
+  const partners = db.partners || [];
+  const users = db.users || [];
+  const clients = users.filter(u => u.role === 'client');
+  const complaints = db.complaints || [];
+  const safetyIncidents = db.safetyIncidents || [];
+  const transactions = db.transactions || [];
 
-  const gmv = db.bookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
-  const platformRevenue = db.bookings.reduce((sum, b) => sum + (b.platformRevenue || 0), 0);
-  const partnerPayoutsDisbursed = db.payouts
+  const totalBookings = bookings.length;
+  const completedBookings = bookings.filter(b => b.status === 'completed');
+  const activeBookings = bookings.filter(b => b.status === 'in-progress' || b.status === 'confirmed');
+  const upcomingBookings = bookings.filter(b => b.status === 'confirmed' || b.status === 'pending');
+  const cancelledBookings = bookings.filter(b => b.status === 'cancelled' || b.status === 'rejected');
+
+  const gmv = bookings.reduce((sum, b) => sum + (b.totalAmount || 0), 0);
+  const platformRevenue = bookings.reduce((sum, b) => sum + (b.platformRevenue || 0), 0);
+  const partnerEarnings = bookings
+    .filter(b => b.status === 'completed' || b.status === 'in-progress')
+    .reduce((sum, b) => sum + (b.partnerShare || 0), 0);
+  
+  const partnerPayoutsDisbursed = (db.payouts || [])
     .filter(p => p.status === 'completed')
     .reduce((sum, p) => sum + p.amount, 0);
 
-  const pendingKYC = db.partners.filter(p => p.kycStatus === 'pending').length;
-  const verifiedPartners = db.partners.filter(p => p.kycStatus === 'verified').length;
-  const pendingPayouts = db.payouts.filter(p => p.status === 'pending').length;
-  const activeSOS = db.sosAlerts.filter(a => a.status === 'active').length;
+  const totalRefunds = transactions
+    .filter(t => t.status === 'refunded' || t.status === 'partial_refund')
+    .reduce((sum, t) => sum + (t.refundAmount || 0), 0);
+
+  const pendingKYC = partners.filter(p => p.kycStatus === 'pending' || p.kycStatus === 'under_review').length;
+  const verifiedPartners = partners.filter(p => p.kycStatus === 'verified').length;
+  const activePartners = partners.filter(p => p.isOnline || p.status === 'active' || p.status === 'verified').length;
+  const pendingPayouts = (db.payouts || []).filter(p => p.status === 'pending').length;
+  const activeSOS = (db.sosAlerts || []).filter(a => a.status === 'active').length;
+  const openDisputes = complaints.filter(c => c.status !== 'resolved' && c.status !== 'rejected').length;
+  const safetyAlertsCount = activeSOS + safetyIncidents.filter(s => s.status === 'active' || s.status === 'investigating').length;
+
+  // City-wise statistics
+  const cityStats = {};
+  bookings.forEach(b => {
+    const loc = b.meetingLocation || '';
+    let cityName = 'Delhi NCR';
+    if (loc.toLowerCase().includes('mumbai')) cityName = 'Mumbai';
+    else if (loc.toLowerCase().includes('bangalore') || loc.toLowerCase().includes('bengaluru')) cityName = 'Bangalore';
+    else if (loc.toLowerCase().includes('jaipur')) cityName = 'Jaipur';
+    else if (loc.toLowerCase().includes('pune')) cityName = 'Pune';
+    else if (loc.toLowerCase().includes('hyderabad')) cityName = 'Hyderabad';
+    
+    if (!cityStats[cityName]) {
+      cityStats[cityName] = { city: cityName, bookings: 0, revenue: 0 };
+    }
+    cityStats[cityName].bookings += 1;
+    cityStats[cityName].revenue += (b.totalAmount || 0);
+  });
 
   res.json({
     gmv,
+    todayRevenue: Math.round(gmv * 0.18),
     platformRevenue,
+    partnerEarnings,
     partnerPayoutsDisbursed,
+    totalRefunds,
     totalBookings,
+    todayBookings: Math.min(totalBookings, 3),
+    upcomingBookingsCount: upcomingBookings.length,
     completedBookingsCount: completedBookings.length,
+    cancelledBookingsCount: cancelledBookings.length,
     activeBookingsCount: activeBookings.length,
+    totalPartners: partners.length,
+    activePartners,
     pendingKYC,
     verifiedPartners,
+    totalCustomers: clients.length,
     pendingPayouts,
     activeSOS,
-    totalPartners: db.partners.length,
-    totalClients: db.users.filter(u => u.role === 'client').length
+    openDisputes,
+    safetyAlertsCount,
+    cityStats: Object.values(cityStats),
+    charts: {
+      dailyRevenue: [
+        { day: 'Mon', revenue: 14500, bookings: 4 },
+        { day: 'Tue', revenue: 18200, bookings: 6 },
+        { day: 'Wed', revenue: 22400, bookings: 7 },
+        { day: 'Thu', revenue: 19800, bookings: 5 },
+        { day: 'Fri', revenue: 34500, bookings: 11 },
+        { day: 'Sat', revenue: 48900, bookings: 16 },
+        { day: 'Sun', revenue: 52100, bookings: 18 }
+      ],
+      monthlyRevenue: [
+        { month: 'Apr', revenue: 180000 },
+        { month: 'May', revenue: 240000 },
+        { month: 'Jun', revenue: 310000 },
+        { month: 'Jul', revenue: 395000 },
+        { month: 'Aug', revenue: 470000 },
+        { month: 'Sep', revenue: 585000 }
+      ]
+    }
   });
+});
+
+// Customer Management Endpoints
+app.get('/api/admin/customers', (req, res) => {
+  const db = readData();
+  const clients = (db.users || []).filter(u => u.role === 'client');
+  res.json(clients);
+});
+
+app.put('/api/admin/customers/:id/status', (req, res) => {
+  const db = readData();
+  const user = db.users.find(u => u.id === req.params.id);
+  if (!user) return res.status(404).json({ error: 'Customer not found' });
+
+  const oldStatus = user.status || 'active';
+  const newStatus = req.body.status;
+  const reason = req.body.reason || 'Status changed by Admin';
+  user.status = newStatus;
+  if (!user.adminNotes) user.adminNotes = [];
+  user.adminNotes.unshift(`Status changed from ${oldStatus} to ${newStatus}: ${reason}`);
+
+  logAudit(db, req.body.adminName, 'Customer Status Update', 'Customer', user.id, oldStatus, newStatus, reason);
+  writeData(db);
+  res.json({ message: 'Customer status updated', user });
+});
+
+app.post('/api/admin/customers/:id/notes', (req, res) => {
+  const db = readData();
+  const user = db.users.find(u => u.id === req.params.id);
+  if (!user) return res.status(404).json({ error: 'Customer not found' });
+
+  if (!user.adminNotes) user.adminNotes = [];
+  user.adminNotes.unshift(req.body.note);
+  writeData(db);
+  res.json({ notes: user.adminNotes });
+});
+
+// Partner Management Endpoints
+app.get('/api/admin/partners', (req, res) => {
+  const db = readData();
+  res.json(db.partners || []);
+});
+
+app.put('/api/admin/partners/:id/status', (req, res) => {
+  const db = readData();
+  const partner = db.partners.find(p => p.id === req.params.id);
+  if (!partner) return res.status(404).json({ error: 'Partner not found' });
+
+  const oldStatus = partner.status || 'active';
+  const newStatus = req.body.status;
+  const reason = req.body.reason || 'Partner status updated';
+  partner.status = newStatus;
+  if (newStatus === 'verified') partner.kycStatus = 'verified';
+  if (newStatus === 'suspended' || newStatus === 'blocked') partner.isOnline = false;
+
+  if (!partner.adminNotes) partner.adminNotes = [];
+  partner.adminNotes.unshift(`Status changed from ${oldStatus} to ${newStatus}: ${reason}`);
+
+  logAudit(db, req.body.adminName, 'Partner Status Update', 'Partner', partner.id, oldStatus, newStatus, reason);
+  writeData(db);
+  res.json({ message: 'Partner status updated', partner });
 });
 
 app.put('/api/admin/partners/:id/kyc', (req, res) => {
@@ -521,17 +680,429 @@ app.put('/api/admin/partners/:id/kyc', (req, res) => {
   const partner = db.partners.find(p => p.id === req.params.id);
   if (!partner) return res.status(404).json({ error: 'Partner not found' });
 
-  const { status, notes } = req.body; // 'verified' or 'rejected'
+  const { status, notes, adminName } = req.body; // 'verified', 'rejected', 'under_review', 'suspended'
+  const oldKyc = partner.kycStatus;
   partner.kycStatus = status;
+  if (status === 'verified') {
+    partner.status = 'verified';
+    partner.badge = 'Verified Partner';
+  } else if (status === 'rejected') {
+    partner.status = 'rejected';
+  }
+
   if (!partner.kycDocuments) partner.kycDocuments = {};
   partner.kycDocuments.reviewedAt = new Date().toISOString();
   partner.kycDocuments.reviewNotes = notes || '';
-  if (status === 'verified') {
-    partner.badge = 'Verified Partner';
-  }
+  if (!partner.kycDocuments.verificationHistory) partner.kycDocuments.verificationHistory = [];
+  partner.kycDocuments.verificationHistory.unshift({
+    date: new Date().toISOString().split('T')[0],
+    status: status.toUpperCase(),
+    note: notes || 'Reviewed by KYC verification desk'
+  });
 
+  logAudit(db, adminName, 'KYC Verification', 'Partner', partner.id, oldKyc, status, notes);
   writeData(db);
   res.json({ message: `Partner KYC ${status}`, partner });
+});
+
+app.post('/api/admin/partners/:id/notes', (req, res) => {
+  const db = readData();
+  const partner = db.partners.find(p => p.id === req.params.id);
+  if (!partner) return res.status(404).json({ error: 'Partner not found' });
+
+  if (!partner.adminNotes) partner.adminNotes = [];
+  partner.adminNotes.unshift(req.body.note);
+  writeData(db);
+  res.json({ notes: partner.adminNotes });
+});
+
+// Booking Management Endpoints
+app.get('/api/admin/bookings', (req, res) => {
+  const db = readData();
+  res.json(db.bookings || []);
+});
+
+app.put('/api/admin/bookings/:id/status', (req, res) => {
+  const db = readData();
+  const booking = db.bookings.find(b => b.id === req.params.id);
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+  const oldStatus = booking.status;
+  const newStatus = req.body.status;
+  const reason = req.body.reason || 'Admin status override';
+  booking.status = newStatus;
+
+  logAudit(db, req.body.adminName, 'Booking Status Override', 'Booking', booking.id, oldStatus, newStatus, reason);
+  writeData(db);
+  res.json({ message: 'Booking status updated', booking });
+});
+
+app.post('/api/admin/bookings/:id/refund', (req, res) => {
+  const db = readData();
+  const booking = db.bookings.find(b => b.id === req.params.id);
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+  const refundAmount = Number(req.body.amount) || booking.totalAmount;
+  booking.status = 'cancelled';
+  booking.refundAmount = refundAmount;
+  booking.refundStatus = 'processed';
+
+  // Refund client wallet if exists
+  const client = db.users.find(u => u.id === booking.clientId);
+  if (client) {
+    client.walletBalance = (client.walletBalance || 0) + refundAmount;
+  }
+
+  // Record transaction
+  if (!db.transactions) db.transactions = [];
+  db.transactions.unshift({
+    id: `TXN-${Date.now().toString().slice(-4)}`,
+    bookingId: booking.id,
+    customerName: booking.clientName,
+    partnerName: booking.partnerName,
+    amount: booking.totalAmount,
+    gatewayFee: 0,
+    platformCommission: 0,
+    partnerAmount: 0,
+    refundAmount: refundAmount,
+    netPlatformEarnings: -refundAmount,
+    paymentMethod: 'Refund Credit to Wallet',
+    status: 'refunded',
+    date: new Date().toISOString()
+  });
+
+  logAudit(db, req.body.adminName, 'Booking Refund Processed', 'Booking', booking.id, 'Paid', `Refunded ₹${refundAmount}`, req.body.reason);
+  writeData(db);
+  res.json({ message: `Refund of ₹${refundAmount} processed successfully`, booking });
+});
+
+// Locations & Cities Endpoints
+app.get('/api/admin/locations', (req, res) => {
+  const db = readData();
+  res.json(db.locations || []);
+});
+
+app.post('/api/admin/locations/city', (req, res) => {
+  const db = readData();
+  const { stateName, cityName, areas } = req.body;
+  if (!db.locations) db.locations = [];
+
+  let stateObj = db.locations.find(s => s.state.toLowerCase() === stateName.toLowerCase());
+  if (!stateObj) {
+    stateObj = { state: stateName, cities: [] };
+    db.locations.push(stateObj);
+  }
+
+  stateObj.cities.push({
+    name: cityName,
+    areas: areas || [],
+    partnerCount: 0,
+    customerCount: 0,
+    bookingCount: 0,
+    totalRevenue: 0,
+    isActive: true,
+    popular: false
+  });
+
+  logAudit(db, req.body.adminName, 'City Added', 'Location', cityName, 'None', cityName, `Added under ${stateName}`);
+  writeData(db);
+  res.json({ message: 'City added successfully', locations: db.locations });
+});
+
+app.put('/api/admin/locations/city/toggle', (req, res) => {
+  const db = readData();
+  const { cityName } = req.body;
+  let targetCity = null;
+
+  (db.locations || []).forEach(st => {
+    st.cities.forEach(c => {
+      if (c.name.toLowerCase() === cityName.toLowerCase()) {
+        c.isActive = !c.isActive;
+        targetCity = c;
+      }
+    });
+  });
+
+  if (!targetCity) return res.status(404).json({ error: 'City not found' });
+  writeData(db);
+  res.json({ message: `City ${cityName} active state toggled`, city: targetCity });
+});
+
+// Services Endpoints
+app.get('/api/admin/services', (req, res) => {
+  const db = readData();
+  res.json(db.services || []);
+});
+
+app.post('/api/admin/services', (req, res) => {
+  const db = readData();
+  const { id, name, tagline, basePrice, category, description, commissionPct, minHours } = req.body;
+  if (!db.services) db.services = [];
+
+  const newService = {
+    id: id || name.toLowerCase().replace(/\s+/g, '-'),
+    name,
+    tagline,
+    basePrice: Number(basePrice),
+    icon: 'Sparkles',
+    category: category || 'Social',
+    description,
+    commissionPct: Number(commissionPct) || 15,
+    minHours: Number(minHours) || 2,
+    active: true
+  };
+
+  db.services.push(newService);
+  logAudit(db, req.body.adminName, 'Service Created', 'Service', newService.id, 'None', newService.name, 'New companion service catalog item');
+  writeData(db);
+  res.json({ message: 'Service added successfully', service: newService });
+});
+
+app.put('/api/admin/services/:id', (req, res) => {
+  const db = readData();
+  const service = db.services.find(s => s.id === req.params.id);
+  if (!service) return res.status(404).json({ error: 'Service not found' });
+
+  Object.assign(service, req.body);
+  logAudit(db, req.body.adminName, 'Service Updated', 'Service', service.id, 'Previous Values', 'Updated', 'Service pricing or details edited');
+  writeData(db);
+  res.json({ message: 'Service updated', service });
+});
+
+// Commission & Cancellation Policy Endpoints
+app.get('/api/admin/commissions', (req, res) => {
+  const db = readData();
+  res.json(db.commissionRules || {});
+});
+
+app.put('/api/admin/commissions', (req, res) => {
+  const db = readData();
+  db.commissionRules = { ...db.commissionRules, ...req.body };
+  logAudit(db, req.body.adminName, 'Commission Rules Updated', 'Commission', 'Global', 'Old Rates', 'New Rates', req.body.reason || 'Commission adjustment');
+  writeData(db);
+  res.json(db.commissionRules);
+});
+
+app.get('/api/admin/cancellation-policy', (req, res) => {
+  const db = readData();
+  res.json(db.cancellationPolicy || {});
+});
+
+app.put('/api/admin/cancellation-policy', (req, res) => {
+  const db = readData();
+  db.cancellationPolicy = { ...db.cancellationPolicy, ...req.body };
+  logAudit(db, req.body.adminName, 'Cancellation Policy Updated', 'Cancellation', 'Global', 'Old Policy', 'New Policy', 'Policy window or penalties changed');
+  writeData(db);
+  res.json(db.cancellationPolicy);
+});
+
+// Payments & Payouts Endpoints
+app.get('/api/admin/transactions', (req, res) => {
+  const db = readData();
+  res.json(db.transactions || []);
+});
+
+app.put('/api/admin/payouts/:id', (req, res) => {
+  const db = readData();
+  const payout = (db.payouts || []).find(p => p.id === req.params.id);
+  if (!payout) return res.status(404).json({ error: 'Payout not found' });
+
+  const oldStatus = payout.status;
+  payout.status = req.body.status || 'completed';
+  payout.transactionRef = req.body.transactionRef || `CMS${Date.now().toString().slice(-8)}`;
+  payout.processedAt = new Date().toISOString();
+
+  // Deduct from partner wallet balance if completed
+  if (payout.status === 'completed') {
+    const partner = db.partners.find(p => p.id === payout.partnerId);
+    if (partner) {
+      partner.walletBalance = Math.max(0, (partner.walletBalance || 0) - payout.amount);
+    }
+  }
+
+  logAudit(db, req.body.adminName, 'Payout Status Updated', 'Payout', payout.id, oldStatus, payout.status, `UTR Ref: ${payout.transactionRef}`);
+  writeData(db);
+  res.json({ message: 'Payout updated successfully', payout });
+});
+
+// Reviews Management Endpoints
+app.get('/api/admin/reviews', (req, res) => {
+  const db = readData();
+  res.json(db.reviews || []);
+});
+
+app.put('/api/admin/reviews/:id', (req, res) => {
+  const db = readData();
+  const review = (db.reviews || []).find(r => r.id === req.params.id);
+  if (!review) return res.status(404).json({ error: 'Review not found' });
+
+  const { status, action } = req.body;
+  review.status = status || action;
+  logAudit(db, req.body.adminName, 'Review Moderated', 'Review', review.id, 'Active', review.status, req.body.reason || 'Content moderation action');
+  writeData(db);
+  res.json({ message: 'Review updated', review });
+});
+
+// Complaints & Disputes Endpoints
+app.get('/api/admin/complaints', (req, res) => {
+  const db = readData();
+  res.json(db.complaints || []);
+});
+
+app.put('/api/admin/complaints/:id', (req, res) => {
+  const db = readData();
+  const complaint = (db.complaints || []).find(c => c.id === req.params.id);
+  if (!complaint) return res.status(404).json({ error: 'Complaint not found' });
+
+  complaint.status = req.body.status || complaint.status;
+  complaint.resolution = req.body.resolution || complaint.resolution;
+  complaint.assignedAdmin = req.body.assignedAdmin || complaint.assignedAdmin;
+  complaint.adminNotes = req.body.adminNotes || complaint.adminNotes;
+
+  logAudit(db, req.body.adminName, 'Dispute Resolution', 'Complaint', complaint.id, complaint.status, req.body.status, complaint.resolution);
+  writeData(db);
+  res.json({ message: 'Dispute status updated', complaint });
+});
+
+// Safety Center Incidents Endpoints
+app.get('/api/admin/safety-incidents', (req, res) => {
+  const db = readData();
+  res.json(db.safetyIncidents || []);
+});
+
+app.put('/api/admin/safety-incidents/:id', (req, res) => {
+  const db = readData();
+  const incident = (db.safetyIncidents || []).find(s => s.id === req.params.id);
+  if (!incident) return res.status(404).json({ error: 'Incident not found' });
+
+  incident.status = req.body.status || incident.status;
+  incident.resolution = req.body.resolution || incident.resolution;
+  incident.assignedAdmin = req.body.assignedAdmin || incident.assignedAdmin;
+
+  logAudit(db, req.body.adminName, 'Safety Incident Updated', 'Safety', incident.id, incident.status, req.body.status, incident.resolution);
+  writeData(db);
+  res.json({ message: 'Safety incident updated', incident });
+});
+
+// Coupons Endpoints
+app.get('/api/admin/coupons', (req, res) => {
+  const db = readData();
+  res.json(db.coupons || []);
+});
+
+app.post('/api/admin/coupons', (req, res) => {
+  const db = readData();
+  if (!db.coupons) db.coupons = [];
+
+  const newCoupon = {
+    id: `CPN-${Date.now().toString().slice(-4)}`,
+    code: req.body.code.toUpperCase(),
+    discountType: req.body.discountType || 'flat',
+    discountValue: Number(req.body.discountValue) || 100,
+    maxDiscount: Number(req.body.maxDiscount) || null,
+    minBookingAmount: Number(req.body.minBookingAmount) || 500,
+    targetCity: req.body.targetCity || 'All',
+    maxUses: Number(req.body.maxUses) || 500,
+    usedCount: 0,
+    validUntil: req.body.validUntil || '2026-12-31',
+    status: 'active',
+    description: req.body.description || ''
+  };
+
+  db.coupons.unshift(newCoupon);
+  logAudit(db, req.body.adminName, 'Coupon Created', 'Coupon', newCoupon.code, 'None', `${newCoupon.discountValue}`, 'Promo campaign generated');
+  writeData(db);
+  res.status(201).json({ message: 'Coupon created', coupon: newCoupon });
+});
+
+app.put('/api/admin/coupons/:id/toggle', (req, res) => {
+  const db = readData();
+  const coupon = (db.coupons || []).find(c => c.id === req.params.id);
+  if (!coupon) return res.status(404).json({ error: 'Coupon not found' });
+
+  coupon.status = coupon.status === 'active' ? 'expired' : 'active';
+  writeData(db);
+  res.json({ message: `Coupon is now ${coupon.status}`, coupon });
+});
+
+// Notifications Endpoints
+app.get('/api/admin/notifications', (req, res) => {
+  const db = readData();
+  res.json(db.notifications || { broadcasts: [], templates: [] });
+});
+
+app.post('/api/admin/notifications/broadcast', (req, res) => {
+  const db = readData();
+  if (!db.notifications) db.notifications = { broadcasts: [], templates: [] };
+  if (!db.notifications.broadcasts) db.notifications.broadcasts = [];
+
+  const newBroadcast = {
+    id: `NOTIF-${Date.now().toString().slice(-4)}`,
+    title: req.body.title,
+    target: req.body.target || 'All Users',
+    channel: req.body.channel || 'Push & Email',
+    message: req.body.message,
+    sentAt: new Date().toISOString(),
+    deliveredCount: req.body.target === 'All Partners' ? 42 : 350
+  };
+
+  db.notifications.broadcasts.unshift(newBroadcast);
+  logAudit(db, req.body.adminName, 'Broadcast Dispatched', 'Notification', newBroadcast.id, 'Draft', 'Sent', newBroadcast.title);
+  writeData(db);
+  res.status(201).json({ message: 'Notification broadcast dispatched successfully', broadcast: newBroadcast });
+});
+
+// CMS Content Endpoints
+app.get('/api/admin/cms', (req, res) => {
+  const db = readData();
+  res.json(db.cms || { pages: [], banners: [] });
+});
+
+app.put('/api/admin/cms/pages/:slug', (req, res) => {
+  const db = readData();
+  if (!db.cms || !db.cms.pages) return res.status(404).json({ error: 'CMS pages not initialized' });
+
+  const page = db.cms.pages.find(p => p.slug === req.params.slug);
+  if (!page) return res.status(404).json({ error: 'Page not found' });
+
+  Object.assign(page, req.body, { updatedAt: new Date().toISOString().split('T')[0] });
+  logAudit(db, req.body.adminName, 'CMS Page Updated', 'CMS', page.slug, 'Draft', 'Published', `Updated ${page.title}`);
+  writeData(db);
+  res.json({ message: 'Page updated successfully', page });
+});
+
+// Admin Users & Team Roles Endpoints
+app.get('/api/admin/admin-users', (req, res) => {
+  const db = readData();
+  res.json(db.adminUsers || []);
+});
+
+app.post('/api/admin/admin-users', (req, res) => {
+  const db = readData();
+  if (!db.adminUsers) db.adminUsers = [];
+
+  const newUser = {
+    id: `ADM-${Date.now().toString().slice(-4)}`,
+    name: req.body.name,
+    email: req.body.email,
+    role: req.body.role || 'Operations Admin',
+    department: req.body.department || 'Operations',
+    status: 'active',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=250&q=80',
+    permissions: req.body.permissions || ['partners', 'bookings'],
+    lastLogin: 'Never'
+  };
+
+  db.adminUsers.push(newUser);
+  logAudit(db, req.body.adminName, 'Admin Staff Created', 'AdminUser', newUser.email, 'None', newUser.role, 'New operator account invited');
+  writeData(db);
+  res.status(201).json({ message: 'Admin user added', adminUser: newUser });
+});
+
+// Audit Logs Endpoints
+app.get('/api/admin/audit-logs', (req, res) => {
+  const db = readData();
+  res.json(db.auditLogs || []);
 });
 
 // 9. Current User & Switch Role

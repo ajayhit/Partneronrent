@@ -23,7 +23,7 @@ export function AppProvider({ children }) {
   });
 
   // Admin active tab
-  const [adminActiveTab, setAdminActiveTab] = useState('overview');
+  const [adminActiveTab, setAdminActiveTab] = useState('dashboard');
 
   // Global modals
   const [bookingModal, setBookingModal] = useState({ isOpen: false, partner: null, preselectedService: null });
