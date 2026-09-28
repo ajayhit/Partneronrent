@@ -21,7 +21,7 @@ const EMERGENCY_SERVICES = [
   { name: 'Medical Emergency Ambulance', number: '108', desc: 'Ambulance service across all Indian states' }
 ];
 
-export default function SafetyCenterTab({ activeBooking, onBlockPartner, showToast }) {
+export default function SafetyCenterTab({ activeBooking, onBlockPartner, showToast, setActivePage }) {
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportCategory, setReportCategory] = useState('Inappropriate Behavior');
   const [partnerTarget, setPartnerTarget] = useState(activeBooking?.partnerName || '');
@@ -245,9 +245,27 @@ export default function SafetyCenterTab({ activeBooking, onBlockPartner, showToa
 
       {/* Safety Tips & Platonic Guidelines */}
       <div className="client-panel">
-        <div className="client-panel-title" style={{ marginBottom: '16px' }}>
-          <ShieldCheck size={18} color="#10b981" />
-          <span>Hirer Platonic Safety Rules & Best Practices</span>
+        <div className="client-panel-title" style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <ShieldCheck size={18} color="#10b981" />
+            <span>Hirer Platonic Safety Rules & Best Practices</span>
+          </div>
+          {setActivePage && (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => setActivePage('safety')}
+                style={{ fontSize: '0.78rem', color: '#38bdf8', cursor: 'pointer', background: 'rgba(56, 189, 248, 0.1)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.3)' }}
+              >
+                Safety Guidelines &rarr;
+              </button>
+              <button
+                onClick={() => setActivePage('terms')}
+                style={{ fontSize: '0.78rem', color: '#c084fc', cursor: 'pointer', background: 'rgba(192, 132, 252, 0.1)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(192, 132, 252, 0.3)' }}
+              >
+                Terms of Service &rarr;
+              </button>
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', fontSize: '0.84rem', color: '#cbd5e1' }}>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { ShieldCheck, MapPin, KeyRound, AlertTriangle } from 'lucide-react';
 
-export default function SafetyBanner() {
+export default function SafetyBanner({ setActivePage }) {
   return (
     <div style={{
       background: 'linear-gradient(90deg, rgba(124, 58, 237, 0.15) 0%, rgba(236, 72, 153, 0.15) 100%)',
@@ -38,7 +38,7 @@ export default function SafetyBanner() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: '#c084fc' }}>
           <KeyRound size={15} />
           <span>Session Start OTP</span>
@@ -51,6 +51,26 @@ export default function SafetyBanner() {
           <AlertTriangle size={15} />
           <span>1-Tap SOS Dispatch</span>
         </div>
+        {setActivePage && (
+          <button
+            onClick={() => setActivePage('safety')}
+            style={{
+              fontSize: '0.78rem',
+              color: '#38bdf8',
+              fontWeight: 700,
+              cursor: 'pointer',
+              background: 'rgba(56, 189, 248, 0.12)',
+              padding: '5px 12px',
+              borderRadius: '6px',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(56, 189, 248, 0.25)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(56, 189, 248, 0.12)'; }}
+          >
+            Guidelines &rarr;
+          </button>
+        )}
       </div>
     </div>
   );

@@ -91,8 +91,8 @@ export function AuthProvider({ children }) {
   // Derived state
   const isAuthenticated = !!session;
   const currentRole = session?.role || 'guest';
-  const activeUser = session?.role === 'client' || session?.role === 'admin' ? session : null;
-  const activePartner = session?.role === 'partner' ? session : null;
+  const activeUser = session?.role === 'client' || session?.role === 'both' || session?.role === 'admin' ? session : null;
+  const activePartner = session?.role === 'partner' || session?.role === 'both' ? session : null;
 
   // Persist session changes
   useEffect(() => {
@@ -130,10 +130,14 @@ export function AuthProvider({ children }) {
     // 2. Local fallback verification
     const users = getMockUsers();
     const user = users.find(u => {
-      const uEmail = (u.email || '').toLowerCase();
+      const uEmail = (u.email || '').toLowerCase().trim();
+      const uPhone = (u.phone || '').replace(/[\s\-\+\(\)]/g, '');
+      const cleanInput = normEmail.replace(/[\s\-\+\(\)]/g, '');
+      // role=null means auto-detect (single login screen — match any role)
       const roleMatches = !role || u.role === role;
       const emailMatches =
         uEmail === normEmail ||
+        (cleanInput && uPhone.length >= 6 && uPhone.includes(cleanInput)) ||
         (u.role === 'admin' && (normEmail === 'admin@partneronrent.in' || normEmail === 'admin@partneronrent.com'));
 
       return roleMatches && emailMatches && u.password === password;

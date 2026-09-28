@@ -21,7 +21,7 @@ const EMERGENCY_CONTACTS = [
   { name: 'Ambulance & Medical Emergency', number: '108', desc: 'Immediate medical ambulance assistance' }
 ];
 
-export default function SafetyCenterTab({ partner, showToast }) {
+export default function SafetyCenterTab({ partner, showToast, setActivePage }) {
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportType, setReportType] = useState('Inappropriate Behavior');
   const [clientNameInput, setClientNameInput] = useState('');
@@ -250,9 +250,27 @@ export default function SafetyCenterTab({ partner, showToast }) {
 
       {/* Platonic Safety Rules & Code of Conduct */}
       <div className="partner-panel">
-        <div className="partner-panel-title" style={{ marginBottom: '14px' }}>
-          <ShieldCheck size={18} color="#10b981" />
-          <span>Core Platonic Safety Principles</span>
+        <div className="partner-panel-title" style={{ marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <ShieldCheck size={18} color="#10b981" />
+            <span>Core Platonic Safety Principles</span>
+          </div>
+          {setActivePage && (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => setActivePage('safety')}
+                style={{ fontSize: '0.78rem', color: '#f43f5e', cursor: 'pointer', background: 'rgba(244, 63, 94, 0.1)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(244, 63, 94, 0.3)' }}
+              >
+                Safety Guidelines &rarr;
+              </button>
+              <button
+                onClick={() => setActivePage('conduct')}
+                style={{ fontSize: '0.78rem', color: '#10b981', cursor: 'pointer', background: 'rgba(16, 185, 129, 0.1)', padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.3)' }}
+              >
+                Partner Code of Conduct &rarr;
+              </button>
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', fontSize: '0.84rem', color: '#cbd5e1' }}>

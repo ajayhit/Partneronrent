@@ -21,9 +21,19 @@ import PartnerDashboard from './pages/partner/PartnerDashboard';
 import PartnerEarnings from './pages/partner/PartnerEarnings';
 import PartnerKYC from './pages/partner/PartnerKYC';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import SafetyGuidelines from './pages/SafetyGuidelines';
+import PartnerCodeOfConduct from './pages/PartnerCodeOfConduct';
+import Feedback from './pages/Feedback';
+import AboutUs from './pages/AboutUs';
+import FAQ from './pages/FAQ';
+import ContactUs from './pages/ContactUs';
 
-// Pages that require the user to be logged in
+// Pages that require the user to be logged in (Directory is strictly protected behind login)
 const PROTECTED_PAGES = new Set([
+  'directory',
+  'partner-detail',
   'client-dashboard',
   'client-wallet',
   'client-bookings',
@@ -38,7 +48,7 @@ const PROTECTED_PAGES = new Set([
 
 // Map: which role can access which pages
 const ROLE_PAGES = {
-  client: new Set(['client-dashboard', 'client-wallet', 'client-bookings', 'client-messages', 'client-profile', 'client-settings']),
+  client: new Set(['directory', 'partner-detail', 'client-dashboard', 'client-wallet', 'client-bookings', 'client-messages', 'client-profile', 'client-settings']),
   partner: new Set(['partner-dashboard', 'partner-earnings', 'partner-kyc']),
   admin: new Set(['admin-dashboard'])
 };
@@ -51,6 +61,7 @@ function MainLayout() {
 
   // ── Route guard: redirect to auth when accessing protected pages ──────────
   const safeguardedSetPage = (page) => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     if (PROTECTED_PAGES.has(page)) {
       if (!isAuthenticated) {
         setActivePage('auth');
@@ -137,6 +148,40 @@ function MainLayout() {
             onBack={() => safeguardedSetPage('directory')}
             setActivePage={safeguardedSetPage}
           />
+        )}
+
+        {/* ── Policy & Legal Governance Pages ───────────────────── */}
+        {(activePage === 'terms' || activePage === 'terms-of-service') && (
+          <TermsOfService setActivePage={safeguardedSetPage} />
+        )}
+
+        {(activePage === 'privacy' || activePage === 'privacy-policy') && (
+          <PrivacyPolicy setActivePage={safeguardedSetPage} />
+        )}
+
+        {(activePage === 'safety' || activePage === 'safety-guidelines') && (
+          <SafetyGuidelines setActivePage={safeguardedSetPage} />
+        )}
+
+        {(activePage === 'conduct' || activePage === 'partner-code-of-conduct') && (
+          <PartnerCodeOfConduct setActivePage={safeguardedSetPage} />
+        )}
+
+        {/* ── Community, Company & Help Pages ────────────────────── */}
+        {activePage === 'feedback' && (
+          <Feedback setActivePage={safeguardedSetPage} />
+        )}
+
+        {activePage === 'about' && (
+          <AboutUs setActivePage={safeguardedSetPage} />
+        )}
+
+        {activePage === 'faq' && (
+          <FAQ setActivePage={safeguardedSetPage} />
+        )}
+
+        {activePage === 'contact' && (
+          <ContactUs setActivePage={safeguardedSetPage} />
         )}
 
         {/* ── Client Portal Pages ────────────────────────────────── */}

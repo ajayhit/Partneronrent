@@ -145,7 +145,7 @@ export default function PartnerProfile({ partnerId, partnerObj, onBack, setActiv
         </div>
       </div>
 
-      <SafetyBanner />
+      <SafetyBanner setActivePage={setActivePage} />
 
       {/* Main Details Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '30px' }} className="profile-grid">

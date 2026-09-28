@@ -20,7 +20,9 @@ import {
   Calendar,
   Lock,
   Sliders,
-  Users
+  Users,
+  MessageSquare,
+  HelpCircle
 } from 'lucide-react';
 
 export default function Navbar({ activePage, setActivePage }) {
@@ -200,7 +202,7 @@ export default function Navbar({ activePage, setActivePage }) {
           </div>
         ) : (
           /* ── PUBLIC & HIRER/PARTNER NAV LINKS ── */
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }} className="desktop-links">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }} className="desktop-links">
             <button
               onClick={() => setActivePage('home')}
               style={{
@@ -211,17 +213,59 @@ export default function Navbar({ activePage, setActivePage }) {
               Home
             </button>
 
+            {/* ONLY SHOW "Find Partner" IF LOGGED IN */}
+            {isAuthenticated && currentRole === 'client' && (
+              <button
+                onClick={() => setActivePage('directory')}
+                style={{
+                  color: activePage === 'directory' ? '#c084fc' : '#94a3b8',
+                  fontWeight: 600, fontSize: '0.92rem',
+                  display: 'flex', alignItems: 'center', gap: '6px'
+                }}
+              >
+                <Search size={16} /> Find Partner
+              </button>
+            )}
+
+            {/* When NOT logged in, show About Us & Safety */}
+            {!isAuthenticated && (
+              <>
+                <button
+                  onClick={() => setActivePage('about')}
+                  style={{
+                    color: activePage === 'about' ? '#c084fc' : '#94a3b8',
+                    fontWeight: 600, fontSize: '0.92rem'
+                  }}
+                >
+                  About Us
+                </button>
+
+                <button
+                  onClick={() => setActivePage('safety')}
+                  style={{
+                    color: activePage === 'safety' ? '#f43f5e' : '#94a3b8',
+                    fontWeight: 600, fontSize: '0.92rem',
+                    display: 'flex', alignItems: 'center', gap: '5px'
+                  }}
+                >
+                  <ShieldCheck size={16} color={activePage === 'safety' ? '#f43f5e' : '#94a3b8'} /> Safety
+                </button>
+              </>
+            )}
+
+            {/* Community Feedback link */}
             <button
-              onClick={() => setActivePage('directory')}
+              onClick={() => setActivePage('feedback')}
               style={{
-                color: activePage === 'directory' ? '#c084fc' : '#94a3b8',
+                color: activePage === 'feedback' ? '#f472b6' : '#94a3b8',
                 fontWeight: 600, fontSize: '0.92rem',
                 display: 'flex', alignItems: 'center', gap: '6px'
               }}
             >
-              <Search size={16} /> Find Partner
+              <MessageSquare size={16} /> Feedback
             </button>
 
+            {/* Client Portal Link */}
             {isAuthenticated && currentRole === 'client' && (
               <button
                 onClick={() => setActivePage('client-dashboard')}
@@ -235,6 +279,7 @@ export default function Navbar({ activePage, setActivePage }) {
               </button>
             )}
 
+            {/* Partner Portal Link */}
             {isAuthenticated && currentRole === 'partner' && (
               <button
                 onClick={() => setActivePage('partner-dashboard')}
@@ -247,6 +292,18 @@ export default function Navbar({ activePage, setActivePage }) {
                 <Briefcase size={16} /> Partner Portal
               </button>
             )}
+
+            {/* FAQs link */}
+            <button
+              onClick={() => setActivePage('faq')}
+              style={{
+                color: activePage === 'faq' ? '#38bdf8' : '#94a3b8',
+                fontWeight: 600, fontSize: '0.92rem',
+                display: 'flex', alignItems: 'center', gap: '5px'
+              }}
+            >
+              <HelpCircle size={15} /> FAQs
+            </button>
           </div>
         )}
 
@@ -508,17 +565,37 @@ export default function Navbar({ activePage, setActivePage }) {
             /* Non-Admin Mobile Drawer */
             <>
               <button onClick={() => { setActivePage('home'); setMobileMenuOpen(false); }} style={{ color: '#fff', textAlign: 'left', fontWeight: 600 }}>Home</button>
-              <button onClick={() => { setActivePage('directory'); setMobileMenuOpen(false); }} style={{ color: '#fff', textAlign: 'left', fontWeight: 600 }}>Find Partner</button>
+              
+              {/* Only show Find Partner if logged in as client */}
+              {isAuthenticated && currentRole === 'client' && (
+                <button onClick={() => { setActivePage('directory'); setMobileMenuOpen(false); }} style={{ color: '#c084fc', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Search size={16} /> Find Partner
+                </button>
+              )}
+
+              <button onClick={() => { setActivePage('about'); setMobileMenuOpen(false); }} style={{ color: '#cbd5e1', textAlign: 'left', fontWeight: 600 }}>About Us</button>
+              <button onClick={() => { setActivePage('safety'); setMobileMenuOpen(false); }} style={{ color: '#f87171', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShieldCheck size={16} /> Safety Standards
+              </button>
+              <button onClick={() => { setActivePage('feedback'); setMobileMenuOpen(false); }} style={{ color: '#f472b6', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MessageSquare size={16} /> Feedback & Reviews
+              </button>
+              <button onClick={() => { setActivePage('faq'); setMobileMenuOpen(false); }} style={{ color: '#38bdf8', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <HelpCircle size={16} /> FAQs & Help
+              </button>
+
               {isAuthenticated && currentRole === 'client' && (
                 <>
-                  <button onClick={() => { setActivePage('client-dashboard'); setMobileMenuOpen(false); }} style={{ color: '#fff', textAlign: 'left', fontWeight: 600 }}>Hirer Portal</button>
-                  <button onClick={() => { setActivePage('client-wallet'); setMobileMenuOpen(false); }} style={{ color: '#fff', textAlign: 'left', fontWeight: 600 }}>Wallet</button>
+                  <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
+                  <button onClick={() => { setActivePage('client-dashboard'); setMobileMenuOpen(false); }} style={{ color: '#ec4899', textAlign: 'left', fontWeight: 600 }}>Hirer Portal</button>
+                  <button onClick={() => { setActivePage('client-wallet'); setMobileMenuOpen(false); }} style={{ color: '#cbd5e1', textAlign: 'left', fontWeight: 600 }}>My Wallet</button>
                 </>
               )}
               {isAuthenticated && currentRole === 'partner' && (
                 <>
-                  <button onClick={() => { setActivePage('partner-dashboard'); setMobileMenuOpen(false); }} style={{ color: '#fff', textAlign: 'left', fontWeight: 600 }}>Partner Portal</button>
-                  <button onClick={() => { setActivePage('partner-earnings'); setMobileMenuOpen(false); }} style={{ color: '#fff', textAlign: 'left', fontWeight: 600 }}>Earnings</button>
+                  <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
+                  <button onClick={() => { setActivePage('partner-dashboard'); setMobileMenuOpen(false); }} style={{ color: '#10b981', textAlign: 'left', fontWeight: 600 }}>Partner Portal</button>
+                  <button onClick={() => { setActivePage('partner-earnings'); setMobileMenuOpen(false); }} style={{ color: '#cbd5e1', textAlign: 'left', fontWeight: 600 }}>Earnings & Payouts</button>
                 </>
               )}
             </>

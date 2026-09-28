@@ -201,6 +201,7 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
           <SafetyCenterTab
             activeBooking={bookings.find(b => b.status === 'in-progress') || null}
             showToast={showToast}
+            setActivePage={setActivePage}
           />
         );
 

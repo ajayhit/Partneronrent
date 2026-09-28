@@ -66,7 +66,7 @@ export default function PartnerDirectory({ onSelectPartner, setActivePage }) {
         </p>
       </div>
 
-      <SafetyBanner />
+      <SafetyBanner setActivePage={setActivePage} />
 
       {/* Filter & Search Bar */}
       <div className="glass-panel" style={{ padding: '20px', marginBottom: '30px' }}>

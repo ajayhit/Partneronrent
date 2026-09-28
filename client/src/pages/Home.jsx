@@ -24,7 +24,8 @@ import {
   Smile,
   ArrowRight,
   Calculator,
-  UserPlus
+  UserPlus,
+  MessageSquare
 } from 'lucide-react';
 
 export default function Home({ setActivePage, onSelectPartner }) {
@@ -68,7 +69,11 @@ export default function Home({ setActivePage, onSelectPartner }) {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    setActivePage('directory');
+    if (!isAuthenticated) {
+      setActivePage('auth');
+    } else {
+      setActivePage('directory');
+    }
   };
 
   return (
@@ -176,7 +181,7 @@ export default function Home({ setActivePage, onSelectPartner }) {
             >
               <option value="all">All Activities & Services</option>
               {services?.map(s => (
-                <option key={s.id} value={s.id}>{s.name} ({formatCurrency(s.basePrice)}/hr)</option>
+                <option key={s.id} value={s.id}>{s.name}</option>
               ))}
             </select>
           </div>
@@ -205,7 +210,7 @@ export default function Home({ setActivePage, onSelectPartner }) {
       </section>
 
       {/* Safety Guarantee Bar */}
-      <SafetyBanner />
+      <SafetyBanner setActivePage={setActivePage} />
 
       {/* Popular Companion Services */}
       <section style={{ margin: '60px 0' }}>
@@ -261,10 +266,9 @@ export default function Home({ setActivePage, onSelectPartner }) {
                 </p>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
-                <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Starting from</span>
-                <span style={{ fontWeight: 800, color: '#ec4899', fontSize: '1.05rem' }}>
-                  {formatCurrency(service.basePrice)}<span style={{ fontSize: '0.75rem', fontWeight: 400 }}>/hr</span>
+              <div style={{ paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
+                <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ color: '#ec4899', fontWeight: 700 }}>✓</span> Login to view rates
                 </span>
               </div>
             </div>
@@ -282,11 +286,17 @@ export default function Home({ setActivePage, onSelectPartner }) {
             <h2 style={{ fontSize: '2rem' }}>Meet Top-Rated Partners</h2>
           </div>
           <button 
-            onClick={() => setActivePage('directory')} 
+            onClick={() => {
+              if (!isAuthenticated) {
+                setActivePage('auth');
+              } else {
+                setActivePage('directory');
+              }
+            }} 
             className="btn-outline"
             style={{ fontSize: '0.9rem' }}
           >
-            View All Verified Profiles ({featuredPartners.length}+)
+            {isAuthenticated ? `View All Verified Profiles (${featuredPartners.length}+)` : 'Sign In to View All Profiles'}
           </button>
         </div>
 
@@ -304,53 +314,48 @@ export default function Home({ setActivePage, onSelectPartner }) {
                 cursor: 'pointer'
               }}
               onClick={() => {
+                if (!isAuthenticated) {
+                  setActivePage('auth');
+                  return;
+                }
                 if (onSelectPartner) onSelectPartner(partner);
                 setActivePage('partner-detail');
               }}
               onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-5px)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
             >
-              {/* Photo & badges */}
-              <div style={{ position: 'relative', height: '220px', width: '100%', overflow: 'hidden' }}>
-                <img 
-                  src={partner.avatar} 
-                  alt={partner.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
+              {/* Avatar & badges (no photo) */}
+              <div style={{
+                padding: '24px 20px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '14px',
+                background: 'linear-gradient(135deg, rgba(124,58,237,0.12) 0%, rgba(236,72,153,0.08) 100%)'
+              }}>
                 <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(15, 23, 42, 0.85) 100%)'
-                }} />
-
-                <div style={{ position: 'absolute', top: '12px', left: '12px' }}>
-                  <span className="badge badge-verified">
-                    <ShieldCheck size={13} /> Verified
-                  </span>
+                  width: '64px', height: '64px', borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #7c3aed, #ec4899)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '1.6rem', fontWeight: 800, color: '#fff',
+                  flexShrink: 0,
+                  boxShadow: '0 0 18px rgba(124,58,237,0.4)'
+                }}>
+                  {partner.name?.charAt(0)}
                 </div>
-
-                <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
-                  {partner.isOnline ? (
-                    <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.9)', color: '#fff' }}>
-                      <span className="badge-online" style={{ background: '#fff' }}></span> Online
-                    </span>
-                  ) : null}
-                </div>
-
-                <div style={{ position: 'absolute', bottom: '12px', left: '14px', right: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.2rem', color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,0.6)' }}>
-                      {partner.name}, {partner.age}
-                    </h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#cbd5e1', fontSize: '0.8rem' }}>
-                      <MapPin size={13} /> {partner.city}
-                    </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 style={{ fontSize: '1.1rem', color: '#fff', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {partner.name}, {partner.age}
+                  </h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#94a3b8', fontSize: '0.78rem', marginBottom: '8px' }}>
+                    <MapPin size={12} /> {partner.city}
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Hourly</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#ec4899' }}>
-                      {formatCurrency(partner.hourlyRate)}/hr
-                    </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    <span className="badge badge-verified" style={{ fontSize: '0.7rem' }}><ShieldCheck size={11} /> Verified</span>
+                    {partner.isOnline && (
+                      <span className="badge" style={{ background: 'rgba(16,185,129,0.9)', color: '#fff', fontSize: '0.7rem' }}>
+                        <span className="badge-online" style={{ background: '#fff', width: '6px', height: '6px', display: 'inline-block', borderRadius: '50%', marginRight: '4px' }}></span>Online
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -384,6 +389,10 @@ export default function Home({ setActivePage, onSelectPartner }) {
                     className="btn-primary"
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (!isAuthenticated) {
+                        setActivePage('auth');
+                        return;
+                      }
                       openBookingModal(partner);
                     }}
                     style={{ width: '100%', padding: '10px', fontSize: '0.88rem' }}
@@ -611,6 +620,113 @@ export default function Home({ setActivePage, onSelectPartner }) {
             </p>
           </div>
 
+        </div>
+      </section>
+
+      {/* Community Stories & Client Feedback Section */}
+      <section style={{ margin: '80px 0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <div style={{ fontSize: '0.85rem', color: '#f472b6', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <MessageSquare size={16} /> Verified Experiences
+            </div>
+            <h2 style={{ fontSize: '2.2rem', margin: 0 }}>Community Stories & Feedback</h2>
+            <p style={{ color: '#94a3b8', fontSize: '0.92rem', margin: '6px 0 0' }}>
+              4.9/5 Average Rating across 1,480+ Platonic Companion Sessions in 20+ Cities
+            </p>
+          </div>
+
+          <button
+            onClick={() => setActivePage('feedback')}
+            className="btn-outline"
+            style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <span>View All Reviews & Leave Feedback</span>
+            <ArrowRight size={16} />
+          </button>
+        </div>
+
+        <div className="grid-3">
+          <div className="glass-panel" style={{ padding: '26px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', gap: '2px' }}>
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star key={s} size={15} fill="#f59e0b" color="#f59e0b" />
+                  ))}
+                </div>
+                <span style={{ fontSize: '0.74rem', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '3px 8px', borderRadius: '12px', fontWeight: 600 }}>
+                  Cafe & Conversation
+                </span>
+              </div>
+              <p style={{ color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.6', marginBottom: '16px' }}>
+                "Booked Priya for a 2-hour coffee conversation after moving to Delhi for my new job. She was incredibly polite, well-read, and respectful of boundaries. The OTP verification at Starbucks made me feel completely secure."
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '14px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#7c3aed', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
+                A
+              </div>
+              <div>
+                <div style={{ color: '#fff', fontWeight: 600, fontSize: '0.88rem' }}>Aarav M. (Hirer)</div>
+                <div style={{ color: '#64748b', fontSize: '0.76rem' }}>Connaught Place, New Delhi</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-panel" style={{ padding: '26px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', gap: '2px' }}>
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star key={s} size={15} fill="#f59e0b" color="#f59e0b" />
+                  ))}
+                </div>
+                <span style={{ fontSize: '0.74rem', background: 'rgba(236, 72, 153, 0.15)', color: '#f472b6', padding: '3px 8px', borderRadius: '12px', fontWeight: 600 }}>
+                  Movie Companion
+                </span>
+              </div>
+              <p style={{ color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.6', marginBottom: '16px' }}>
+                "I really wanted to watch the late evening IMAX screening but didn't want to go alone. Booked Rohan — he arrived 10 mins early, entered the OTP, and was great company during intermission. Completely platonic and zero awkwardness."
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '14px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#ec4899', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
+                M
+              </div>
+              <div>
+                <div style={{ color: '#fff', fontWeight: 600, fontSize: '0.88rem' }}>Meera S. (Hirer)</div>
+                <div style={{ color: '#64748b', fontSize: '0.76rem' }}>Bandra West, Mumbai</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="glass-panel" style={{ padding: '26px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', gap: '2px' }}>
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star key={s} size={15} fill="#f59e0b" color="#f59e0b" />
+                  ))}
+                </div>
+                <span style={{ fontSize: '0.74rem', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '3px 8px', borderRadius: '12px', fontWeight: 600 }}>
+                  Elder Care Support
+                </span>
+              </div>
+              <p style={{ color: '#cbd5e1', fontSize: '0.9rem', lineHeight: '1.6', marginBottom: '16px' }}>
+                "Needed a companion to accompany my 72-year-old mother for her routine cardiology checkup while I was traveling on work. Sunita was an angel — patient, attentive, and sent updates throughout. Truly an emotional relief."
+              </p>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '14px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>
+                S
+              </div>
+              <div>
+                <div style={{ color: '#fff', fontWeight: 600, fontSize: '0.88rem' }}>Siddharth V. (Hirer)</div>
+                <div style={{ color: '#64748b', fontSize: '0.76rem' }}>Koramangala, Bengaluru</div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

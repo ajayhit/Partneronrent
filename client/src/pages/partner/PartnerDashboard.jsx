@@ -467,6 +467,7 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
           <SafetyCenterTab
             partner={partner}
             showToast={showToast}
+            setActivePage={setActivePage}
           />
         )}
 
