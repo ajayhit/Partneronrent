@@ -50,6 +50,10 @@ export default function Navbar({ activePage, setActivePage }) {
             if (currentRole === 'admin') {
               setActivePage('admin-dashboard');
               setAdminActiveTab('overview');
+            } else if (currentRole === 'partner' || activePage.startsWith('partner-')) {
+              setActivePage('partner-dashboard');
+            } else if (currentRole === 'client' || activePage.startsWith('client-')) {
+              setActivePage('client-dashboard');
             } else {
               setActivePage('home');
             }
@@ -60,17 +64,27 @@ export default function Navbar({ activePage, setActivePage }) {
             width: '42px', height: '42px', borderRadius: '12px',
             background: currentRole === 'admin'
               ? 'linear-gradient(135deg, #0284c7, #0369a1)'
+              : (currentRole === 'partner' || activePage.startsWith('partner-'))
+              ? 'linear-gradient(135deg, #059669, #10b981)'
               : 'linear-gradient(135deg, #7c3aed, #ec4899)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: currentRole === 'admin'
               ? '0 0 16px rgba(2, 132, 199, 0.5)'
+              : (currentRole === 'partner' || activePage.startsWith('partner-'))
+              ? '0 0 16px rgba(16, 185, 129, 0.4)'
               : '0 0 16px rgba(124, 58, 237, 0.5)'
           }}>
-            {currentRole === 'admin' ? <LayoutDashboard size={24} color="#fff" /> : <HeartHandshake size={24} color="#fff" />}
+            {currentRole === 'admin' ? (
+              <LayoutDashboard size={24} color="#fff" />
+            ) : (currentRole === 'partner' || activePage.startsWith('partner-')) ? (
+              <Briefcase size={22} color="#fff" />
+            ) : (
+              <HeartHandshake size={24} color="#fff" />
+            )}
           </div>
           <div>
             <div style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.03em', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              Partner<span style={{ color: currentRole === 'admin' ? '#38bdf8' : '#ec4899' }}>OnRent</span>
+              Partner<span style={{ color: currentRole === 'admin' ? '#38bdf8' : (currentRole === 'partner' || activePage.startsWith('partner-')) ? '#34d399' : '#ec4899' }}>OnRent</span>
               {currentRole === 'admin' && (
                 <span style={{
                   fontSize: '0.62rem',
@@ -85,9 +99,23 @@ export default function Navbar({ activePage, setActivePage }) {
                   ADMIN PANEL
                 </span>
               )}
+              {(currentRole === 'partner' || activePage.startsWith('partner-')) && (
+                <span style={{
+                  fontSize: '0.62rem',
+                  background: 'rgba(16, 185, 129, 0.2)',
+                  color: '#34d399',
+                  border: '1px solid rgba(16, 185, 129, 0.4)',
+                  padding: '2px 7px',
+                  borderRadius: '6px',
+                  fontWeight: 800,
+                  letterSpacing: '0.05em'
+                }}>
+                  PARTNER PANEL
+                </span>
+              )}
             </div>
             <div style={{ fontSize: '0.68rem', color: '#94a3b8', letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 600 }}>
-              {currentRole === 'admin' ? 'Operations & Governance Console' : 'Emotional Wellness & Companionship'}
+              {currentRole === 'admin' ? 'Operations & Governance Console' : (currentRole === 'partner' || activePage.startsWith('partner-')) ? 'Companion Partner Console' : 'Emotional Wellness & Companionship'}
             </div>
           </div>
         </div>
@@ -200,8 +228,50 @@ export default function Navbar({ activePage, setActivePage }) {
               <Sliders size={14} /> Settings
             </button>
           </div>
+        ) : (currentRole === 'partner' || activePage.startsWith('partner-')) && isAuthenticated ? (
+          /* ── PARTNER PANEL NAV LINKS: DEDICATED (NO HOME, NO FEEDBACK, NO FAQ) ── */
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} className="desktop-links">
+            <button
+              onClick={() => setActivePage('partner-dashboard')}
+              style={{
+                color: activePage === 'partner-dashboard' ? '#34d399' : '#94a3b8',
+                fontWeight: 600, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '6px 12px', borderRadius: '8px',
+                background: activePage === 'partner-dashboard' ? 'rgba(16, 185, 129, 0.12)' : 'transparent',
+                border: activePage === 'partner-dashboard' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid transparent'
+              }}
+            >
+              <LayoutDashboard size={15} /> Dashboard
+            </button>
+
+            <button
+              onClick={() => setActivePage('partner-earnings')}
+              style={{
+                color: activePage === 'partner-earnings' ? '#34d399' : '#94a3b8',
+                fontWeight: 600, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '6px 12px', borderRadius: '8px',
+                background: activePage === 'partner-earnings' ? 'rgba(16, 185, 129, 0.12)' : 'transparent',
+                border: activePage === 'partner-earnings' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid transparent'
+              }}
+            >
+              <Wallet size={15} /> Earnings & Payouts
+            </button>
+
+            <button
+              onClick={() => setActivePage('partner-kyc')}
+              style={{
+                color: activePage === 'partner-kyc' ? '#34d399' : '#94a3b8',
+                fontWeight: 600, fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '6px 12px', borderRadius: '8px',
+                background: activePage === 'partner-kyc' ? 'rgba(16, 185, 129, 0.12)' : 'transparent',
+                border: activePage === 'partner-kyc' ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid transparent'
+              }}
+            >
+              <ShieldCheck size={15} /> KYC Verification
+            </button>
+          </div>
         ) : (
-          /* ── PUBLIC & HIRER/PARTNER NAV LINKS ── */
+          /* ── PUBLIC & HIRER NAV LINKS ── */
           <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }} className="desktop-links">
             <button
               onClick={() => setActivePage('home')}
@@ -213,7 +283,7 @@ export default function Navbar({ activePage, setActivePage }) {
               Home
             </button>
 
-            {/* ONLY SHOW "Find Partner" IF LOGGED IN */}
+            {/* ONLY SHOW "Find Partner" IF LOGGED IN AS CLIENT */}
             {isAuthenticated && currentRole === 'client' && (
               <button
                 onClick={() => setActivePage('directory')}
@@ -276,20 +346,6 @@ export default function Navbar({ activePage, setActivePage }) {
                 }}
               >
                 <User size={16} /> Hirer Portal
-              </button>
-            )}
-
-            {/* Partner Portal Link */}
-            {isAuthenticated && currentRole === 'partner' && (
-              <button
-                onClick={() => setActivePage('partner-dashboard')}
-                style={{
-                  color: activePage.startsWith('partner-') ? '#10b981' : '#94a3b8',
-                  fontWeight: 600, fontSize: '0.92rem',
-                  display: 'flex', alignItems: 'center', gap: '6px'
-                }}
-              >
-                <Briefcase size={16} /> Partner Portal
               </button>
             )}
 
@@ -561,6 +617,19 @@ export default function Navbar({ activePage, setActivePage }) {
                 <Lock size={16} color="#38bdf8" /> Security & Password
               </button>
             </>
+          ) : (currentRole === 'partner' || activePage.startsWith('partner-')) && isAuthenticated ? (
+            /* Partner Mobile Drawer - No Home, No Feedback, No FAQ */
+            <>
+              <button onClick={() => { setActivePage('partner-dashboard'); setMobileMenuOpen(false); }} style={{ color: '#34d399', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <LayoutDashboard size={16} color="#34d399" /> Partner Dashboard
+              </button>
+              <button onClick={() => { setActivePage('partner-earnings'); setMobileMenuOpen(false); }} style={{ color: '#fff', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Wallet size={16} color="#34d399" /> Earnings & Payouts
+              </button>
+              <button onClick={() => { setActivePage('partner-kyc'); setMobileMenuOpen(false); }} style={{ color: '#fff', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShieldCheck size={16} color="#34d399" /> KYC Verification
+              </button>
+            </>
           ) : (
             /* Non-Admin Mobile Drawer */
             <>
@@ -589,13 +658,6 @@ export default function Navbar({ activePage, setActivePage }) {
                   <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
                   <button onClick={() => { setActivePage('client-dashboard'); setMobileMenuOpen(false); }} style={{ color: '#ec4899', textAlign: 'left', fontWeight: 600 }}>Hirer Portal</button>
                   <button onClick={() => { setActivePage('client-wallet'); setMobileMenuOpen(false); }} style={{ color: '#cbd5e1', textAlign: 'left', fontWeight: 600 }}>My Wallet</button>
-                </>
-              )}
-              {isAuthenticated && currentRole === 'partner' && (
-                <>
-                  <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
-                  <button onClick={() => { setActivePage('partner-dashboard'); setMobileMenuOpen(false); }} style={{ color: '#10b981', textAlign: 'left', fontWeight: 600 }}>Partner Portal</button>
-                  <button onClick={() => { setActivePage('partner-earnings'); setMobileMenuOpen(false); }} style={{ color: '#cbd5e1', textAlign: 'left', fontWeight: 600 }}>Earnings & Payouts</button>
                 </>
               )}
             </>

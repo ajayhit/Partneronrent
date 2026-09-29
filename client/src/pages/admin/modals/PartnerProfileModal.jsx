@@ -19,7 +19,9 @@ import {
   Briefcase,
   DollarSign,
   Award,
-  Globe
+  Globe,
+  Eye,
+  Download
 } from 'lucide-react';
 import { formatCurrency, formatDateTime } from '../../../utils/helpers';
 
@@ -37,6 +39,7 @@ export default function PartnerProfileModal({
   const [activeTab, setActiveTab] = useState('overview');
   const [newNote, setNewNote] = useState('');
   const [loading, setLoading] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState(null);
 
   const partnerBookings = bookings.filter(b => b.partnerId === partner.id);
   const partnerReviews = reviews.filter(r => r.partnerId === partner.id);
@@ -323,6 +326,46 @@ export default function PartnerProfileModal({
                   {partner.kycDocuments?.backgroundCheck || 'Automated criminal record & court database scan clear.'}
                 </div>
               </div>
+
+              {/* Uploaded Documents List with View button */}
+              <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '14px' }}>
+                <span style={{ color: '#94a3b8', fontSize: '0.78rem', fontWeight: 600, display: 'block', marginBottom: '10px' }}>
+                  Uploaded Documents & Proofs:
+                </span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                  {[
+                    { label: 'Aadhaar Card (Front)', url: partner.kycDocuments?.idFrontDoc, name: partner.kycDocuments?.idFrontName || 'aadhaar_front.jpg', type: 'aadhaar' },
+                    { label: 'Aadhaar Card (Back)', url: partner.kycDocuments?.idBackDoc, name: partner.kycDocuments?.idBackName || 'aadhaar_back.jpg', type: 'aadhaar' },
+                    { label: 'PAN Card Photo', url: partner.kycDocuments?.panDoc, name: partner.kycDocuments?.panFileName || 'pan_card.jpg', type: 'pan' },
+                    { label: 'Selfie with Aadhaar', url: partner.kycDocuments?.selfieDoc, name: partner.kycDocuments?.selfieFileName || 'selfie.jpg', type: 'selfie' },
+                  ].map((doc, idx) => (
+                    <div key={idx} style={{
+                      padding: '10px 12px', borderRadius: '8px', background: 'rgba(255, 255, 255, 0.02)',
+                      border: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex',
+                      alignItems: 'center', justifyContent: 'space-between', gap: '8px'
+                    }}>
+                      <div style={{ overflow: 'hidden' }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#e2e8f0', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                          {doc.label}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: doc.url ? '#34d399' : '#64748b' }}>
+                          {doc.url ? `✓ ${doc.name}` : 'Not uploaded'}
+                        </div>
+                      </div>
+                      {doc.url && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDoc(doc)}
+                          className="btn-admin-action btn-admin-secondary"
+                          style={{ padding: '4px 10px', fontSize: '0.75rem', gap: '4px', display: 'inline-flex', alignItems: 'center' }}
+                        >
+                          <Eye size={12} /> View
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Verification History Log */}
@@ -477,6 +520,108 @@ export default function PartnerProfileModal({
           </div>
         )}
       </div>
+
+      {/* Admin Document Lightbox Preview Modal */}
+      {previewDoc && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 10000,
+            background: 'rgba(0, 0, 0, 0.88)', backdropFilter: 'blur(8px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+          }}
+          onClick={() => setPreviewDoc(null)}
+        >
+          <div
+            style={{
+              background: '#0b1329', border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '16px', maxWidth: '750px', width: '100%',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.95)',
+              overflow: 'hidden', maxHeight: '90vh', display: 'flex', flexDirection: 'column'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{
+              padding: '16px 20px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+            }}>
+              <div>
+                <div style={{ fontSize: '1rem', fontWeight: 700, color: '#fff' }}>{previewDoc.label}</div>
+                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Partner: {partner.name} • {previewDoc.name}</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewDoc(null)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ padding: '20px', overflowY: 'auto', flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px', background: '#020617' }}>
+              {previewDoc.url?.startsWith('data:application/pdf') || previewDoc.name?.toLowerCase().endsWith('.pdf') ? (
+                <object
+                  data={previewDoc.url}
+                  type="application/pdf"
+                  style={{ width: '100%', height: '58vh', borderRadius: '8px' }}
+                >
+                  <div style={{ textAlign: 'center', color: '#94a3b8', padding: '30px' }}>
+                    <FileText size={48} color="#38bdf8" style={{ margin: '0 auto 12px' }} />
+                    <p style={{ color: '#fff', fontWeight: 600 }}>{previewDoc.name}</p>
+                    <a
+                      href={previewDoc.url}
+                      download={previewDoc.name || 'document.pdf'}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '6px',
+                        marginTop: '10px', padding: '8px 16px', borderRadius: '6px',
+                        background: '#38bdf8', color: '#0f172a', fontWeight: 700, textDecoration: 'none'
+                      }}
+                    >
+                      <Download size={14} /> Download PDF
+                    </a>
+                  </div>
+                </object>
+              ) : (
+                <img
+                  src={previewDoc.url}
+                  alt={previewDoc.label}
+                  style={{ maxWidth: '100%', maxHeight: '65vh', objectFit: 'contain', borderRadius: '8px' }}
+                />
+              )}
+            </div>
+
+            <div style={{
+              padding: '14px 20px', borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+              display: 'flex', justifyContent: 'flex-end', gap: '10px'
+            }}>
+              {previewDoc.url && (
+                <a
+                  href={previewDoc.url}
+                  download={previewDoc.name || 'document.jpg'}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    padding: '8px 18px', borderRadius: '8px',
+                    background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.4)',
+                    color: '#38bdf8', fontSize: '0.84rem', fontWeight: 700, textDecoration: 'none'
+                  }}
+                >
+                  <Download size={14} /> Download File
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={() => setPreviewDoc(null)}
+                style={{
+                  padding: '8px 22px', borderRadius: '8px',
+                  background: '#38bdf8', border: 'none', color: '#0f172a',
+                  fontSize: '0.84rem', fontWeight: 700, cursor: 'pointer'
+                }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

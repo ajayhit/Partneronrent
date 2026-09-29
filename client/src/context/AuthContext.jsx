@@ -102,6 +102,7 @@ export function AuthProvider({ children }) {
     } else {
       localStorage.removeItem(SESSION_KEY);
       localStorage.removeItem('por_role');
+      localStorage.removeItem('por_active_page');
     }
   }, [session]);
 
@@ -137,6 +138,8 @@ export function AuthProvider({ children }) {
       const roleMatches = !role || u.role === role;
       const emailMatches =
         uEmail === normEmail ||
+        (normEmail === 'aanya.sharma@example.com' && uEmail === 'aanya@example.com') ||
+        (normEmail === 'rahul.verma@example.com' && uEmail === 'rahul@example.com') ||
         (cleanInput && uPhone.length >= 6 && uPhone.includes(cleanInput)) ||
         (u.role === 'admin' && (normEmail === 'admin@partneronrent.in' || normEmail === 'admin@partneronrent.com'));
 

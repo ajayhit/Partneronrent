@@ -8,7 +8,8 @@ const PORT = process.env.PORT || 5000;
 const DB_PATH = path.join(__dirname, 'data', 'db.json');
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Helper functions for reading and writing data
 function readData() {
@@ -55,36 +56,35 @@ app.get('/api/partners', (req, res) => {
   const db = readData();
   let partners = db.partners;
 
-  const { city, service, gender, search, maxRate, onlyOnline } = req.query;
+  // Strict Hirer visibility: only show partners who are ONLINE and KYC VERIFIED
+  partners = partners.filter(p => p.isOnline === true && p.kycStatus === 'verified');
+
+  const { city, service, gender, search, maxRate } = req.query;
 
   if (city && city !== 'All Cities') {
-    partners = partners.filter(p => p.city.toLowerCase() === city.toLowerCase());
+    partners = partners.filter(p => p.city && p.city.toLowerCase() === city.toLowerCase());
   }
 
   if (service && service !== 'all') {
-    partners = partners.filter(p => p.services.some(s => s.serviceId === service));
+    partners = partners.filter(p => p.services && p.services.some(s => s.serviceId === service));
   }
 
   if (gender && gender !== 'all') {
-    partners = partners.filter(p => p.gender.toLowerCase() === gender.toLowerCase());
+    partners = partners.filter(p => p.gender && p.gender.toLowerCase() === gender.toLowerCase());
   }
 
   if (maxRate) {
     partners = partners.filter(p => p.hourlyRate <= Number(maxRate));
   }
 
-  if (onlyOnline === 'true') {
-    partners = partners.filter(p => p.isOnline);
-  }
-
   if (search) {
     const q = search.toLowerCase();
     partners = partners.filter(p =>
-      p.name.toLowerCase().includes(q) ||
-      p.city.toLowerCase().includes(q) ||
-      p.tagline.toLowerCase().includes(q) ||
-      p.bio.toLowerCase().includes(q) ||
-      p.areas.some(a => a.toLowerCase().includes(q))
+      (p.name && p.name.toLowerCase().includes(q)) ||
+      (p.city && p.city.toLowerCase().includes(q)) ||
+      (p.tagline && p.tagline.toLowerCase().includes(q)) ||
+      (p.bio && p.bio.toLowerCase().includes(q)) ||
+      (p.areas && p.areas.some(a => a.toLowerCase().includes(q)))
     );
   }
 
@@ -111,11 +111,21 @@ app.put('/api/partners/:id', (req, res) => {
   res.json(db.partners[index]);
 });
 
-// Toggle Online Status
+// Toggle Online Status - ONLY ALLOW IF KYC IS VERIFIED
 app.post('/api/partners/:id/toggle-online', (req, res) => {
   const db = readData();
   const index = db.partners.findIndex(p => p.id === req.params.id);
   if (index === -1) return res.status(404).json({ error: 'Partner not found' });
+
+  // If KYC is not verified, they cannot go online!
+  if (db.partners[index].kycStatus !== 'verified') {
+    db.partners[index].isOnline = false;
+    writeData(db);
+    return res.status(400).json({
+      error: 'KYC verification is pending. You can only go online after your KYC is verified.',
+      isOnline: false
+    });
+  }
 
   db.partners[index].isOnline = !db.partners[index].isOnline;
   writeData(db);
@@ -125,18 +135,86 @@ app.post('/api/partners/:id/toggle-online', (req, res) => {
 // Partner KYC submission
 app.post('/api/partners/:id/kyc', (req, res) => {
   const db = readData();
-  const index = db.partners.findIndex(p => p.id === req.params.id);
-  if (index === -1) return res.status(404).json({ error: 'Partner not found' });
+  let index = db.partners.findIndex(p => p.id === req.params.id);
 
-  const { idType, idNumber, holderName } = req.body;
-  db.partners[index].kycStatus = 'pending';
-  db.partners[index].kycDocuments = {
+  const {
     idType,
     idNumber,
     holderName,
+    panNumber,
+    addressDocType,
+    addressLine,
+    idFrontDoc,
+    idBackDoc,
+    panDoc,
+    selfieDoc,
+    addressDoc,
+    idFrontName,
+    idBackName,
+    panFileName,
+    selfieFileName
+  } = req.body;
+
+  const kycDocs = {
+    idType: idType || 'Aadhaar Card',
+    idNumber: idNumber || '',
+    holderName: holderName || '',
+    panNumber: panNumber || '',
+    addressDocType: addressDocType || '',
+    addressLine: addressLine || '',
+    idFrontDoc: idFrontDoc || null,
+    idBackDoc: idBackDoc || null,
+    panDoc: panDoc || null,
+    selfieDoc: selfieDoc || null,
+    addressDoc: addressDoc || null,
+    idFrontName: idFrontName || (idFrontDoc ? 'aadhaar_front.jpg' : null),
+    idBackName: idBackName || (idBackDoc ? 'aadhaar_back.jpg' : null),
+    panFileName: panFileName || (panDoc ? 'pan_card.jpg' : null),
+    selfieFileName: selfieFileName || (selfieDoc ? 'selfie.jpg' : null),
     submittedAt: new Date().toISOString(),
-    backgroundCheck: 'Under automated Aadhaar/Govt ID verification review'
+    backgroundCheck: 'Under automated Aadhaar/Govt ID verification review',
+    verificationHistory: [
+      {
+        date: new Date().toISOString().replace('T', ' ').slice(0, 16),
+        status: 'Submitted',
+        note: 'Govt ID proofs and selfie submitted for compliance verification.'
+      }
+    ]
   };
+
+  if (index === -1) {
+    const newPartner = {
+      id: req.params.id,
+      name: holderName || 'Partner Applicant',
+      city: 'Delhi NCR',
+      kycStatus: 'pending',
+      isOnline: false,
+      hourlyRate: 1500,
+      avatar: selfieDoc || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      walletBalance: 0,
+      totalEarnings: 0,
+      rating: 5.0,
+      reviewCount: 0,
+      completedHours: 0,
+      services: [],
+      kycDocuments: kycDocs
+    };
+    db.partners.push(newPartner);
+    index = db.partners.length - 1;
+  } else {
+    db.partners[index].kycStatus = 'pending';
+    db.partners[index].isOnline = false;
+    db.partners[index].kycDocuments = {
+      ...(db.partners[index].kycDocuments || {}),
+      ...kycDocs
+    };
+  }
+
+  // Update corresponding user in db.users if present
+  const userIdx = db.users.findIndex(u => u.id === req.params.id || u.partnerProfileId === req.params.id);
+  if (userIdx !== -1) {
+    db.users[userIdx].kycStatus = 'pending';
+  }
 
   writeData(db);
   res.json({ message: 'KYC submitted successfully', partner: db.partners[index] });

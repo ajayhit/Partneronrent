@@ -81,7 +81,7 @@ export default function PartnerSidebar({
       title: 'Resources & System',
       items: [
         { id: 'notifications', label: 'Notifications', icon: Bell, badge: unreadNotificationsCount > 0 ? String(unreadNotificationsCount) : null, badgeClass: 'partner-badge-cyan' },
-        { id: 'guidelines', label: 'Guidelines & FAQ', icon: FileText },
+        { id: 'guidelines', label: 'Partner Guidelines', icon: FileText },
         { id: 'settings', label: 'Settings', icon: Settings }
       ]
     }

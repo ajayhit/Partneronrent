@@ -5,7 +5,6 @@ import { fetchPartners } from '../utils/api';
 import { formatCurrency } from '../utils/helpers';
 import SafetyBanner from '../components/SafetyBanner';
 import { 
-  Search, 
   MapPin, 
   ShieldCheck, 
   Sparkles, 
@@ -32,8 +31,6 @@ export default function Home({ setActivePage, onSelectPartner }) {
   const { isAuthenticated } = useAuth();
   const { services, settings, openBookingModal } = useApp();
   const [featuredPartners, setFeaturedPartners] = useState([]);
-  const [selectedCity, setSelectedCity] = useState('All Cities');
-  const [selectedService, setSelectedService] = useState('all');
 
   // Interactive Earnings Calculator states
   const [calcHours, setCalcHours] = useState(12);
@@ -67,14 +64,6 @@ export default function Home({ setActivePage, onSelectPartner }) {
     }
   };
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    if (!isAuthenticated) {
-      setActivePage('auth');
-    } else {
-      setActivePage('directory');
-    }
-  };
 
   return (
     <div className="container" style={{ paddingBottom: '60px' }}>
@@ -135,64 +124,6 @@ export default function Home({ setActivePage, onSelectPartner }) {
           Need someone to watch the latest film with, explore specialty coffee, or accompany your parents to a clinic? Safe, strictly platonic, consent-first companionship across 20+ Indian cities.
         </p>
 
-        {/* Hero Search Bar */}
-        <form 
-          onSubmit={handleSearchSubmit}
-          style={{
-            background: 'rgba(30, 41, 59, 0.85)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid var(--border-active)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '16px',
-            maxWidth: '860px',
-            margin: '0 auto 30px',
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '14px',
-            boxShadow: 'var(--shadow-lg)'
-          }}
-        >
-          {/* City select */}
-          <div style={{ flex: '1 1 200px', display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-            <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', fontWeight: 700, marginBottom: '4px' }}>
-              City / Location
-            </label>
-            <select 
-              value={selectedCity} 
-              onChange={e => setSelectedCity(e.target.value)}
-              style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid var(--border-subtle)', color: '#fff' }}
-            >
-              <option>All Cities</option>
-              {settings.cities?.map(city => (
-                <option key={city} value={city}>{city}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Service select */}
-          <div style={{ flex: '1 1 240px', display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-            <label style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', fontWeight: 700, marginBottom: '4px' }}>
-              Companion Activity
-            </label>
-            <select 
-              value={selectedService} 
-              onChange={e => setSelectedService(e.target.value)}
-              style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid var(--border-subtle)', color: '#fff' }}
-            >
-              <option value="all">All Activities & Services</option>
-              {services?.map(s => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Search CTA */}
-          <div style={{ flex: '1 1 180px', display: 'flex', alignItems: 'flex-end' }}>
-            <button type="submit" className="btn-primary" style={{ width: '100%', height: '46px', fontSize: '0.95rem' }}>
-              <Search size={18} /> Find Companion
-            </button>
-          </div>
-        </form>
 
         {/* Quick Trust Pills */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap', color: '#cbd5e1', fontSize: '0.85rem' }}>

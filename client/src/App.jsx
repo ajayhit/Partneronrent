@@ -50,29 +50,85 @@ const PROTECTED_PAGES = new Set([
 const ROLE_PAGES = {
   client: new Set(['directory', 'partner-detail', 'client-dashboard', 'client-wallet', 'client-bookings', 'client-messages', 'client-profile', 'client-settings']),
   partner: new Set(['partner-dashboard', 'partner-earnings', 'partner-kyc']),
-  admin: new Set(['admin-dashboard'])
+  admin: new Set(['admin-dashboard']),
+  both: new Set(['directory', 'partner-detail', 'client-dashboard', 'client-wallet', 'client-bookings', 'client-messages', 'client-profile', 'client-settings', 'partner-dashboard', 'partner-earnings', 'partner-kyc'])
 };
 
+const POR_PAGE_KEY = 'por_active_page';
+
+function getInitialPage() {
+  try {
+    const rawSession = localStorage.getItem('por_session');
+    const session = rawSession ? JSON.parse(rawSession) : null;
+    const savedPage = localStorage.getItem(POR_PAGE_KEY);
+
+    if (session && session.role) {
+      const role = session.role;
+      const defaultDashboard =
+        role === 'client' ? 'client-dashboard' :
+        role === 'admin' ? 'admin-dashboard' :
+        'partner-dashboard';
+
+      if (savedPage && savedPage !== 'home' && savedPage !== 'auth') {
+        const allowed = ROLE_PAGES[role];
+        if (allowed && allowed.has(savedPage)) {
+          return savedPage;
+        }
+      }
+      return defaultDashboard;
+    }
+
+    if (savedPage && !PROTECTED_PAGES.has(savedPage) && savedPage !== 'auth') {
+      return savedPage;
+    }
+  } catch (e) {
+    console.error('Error determining initial page:', e);
+  }
+  return 'home';
+}
+
 function MainLayout() {
-  const [activePage, setActivePage] = useState('home');
+  const [activePage, setActivePage] = useState(getInitialPage);
   const [selectedPartner, setSelectedPartner] = useState(null);
   const { isAuthenticated, currentRole, logout } = useAuth();
   const { toast } = useApp();
 
+  // Keep a ref to the latest auth state so callbacks/timers in children never read stale closures
+  const authRef = React.useRef({ isAuthenticated, currentRole });
+  useEffect(() => {
+    authRef.current = { isAuthenticated, currentRole };
+  }, [isAuthenticated, currentRole]);
+
+  // ── Sync active page to localStorage ───────────────────────────────────────
+  useEffect(() => {
+    if (activePage) {
+      localStorage.setItem(POR_PAGE_KEY, activePage);
+    }
+  }, [activePage]);
+
   // ── Route guard: redirect to auth when accessing protected pages ──────────
   const safeguardedSetPage = (page) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    const { isAuthenticated: isAuth, currentRole: role } = authRef.current;
+
+    // Prevent authenticated user from viewing the public home page — send to dashboard
+    if (isAuth && page === 'home') {
+      if (role === 'client') { setActivePage('client-dashboard'); return; }
+      if (role === 'partner' || role === 'both') { setActivePage('partner-dashboard'); return; }
+      if (role === 'admin') { setActivePage('admin-dashboard'); return; }
+    }
+
     if (PROTECTED_PAGES.has(page)) {
-      if (!isAuthenticated) {
+      if (!isAuth) {
         setActivePage('auth');
         return;
       }
       // Role mismatch: redirect to correct dashboard
-      const allowed = ROLE_PAGES[currentRole];
+      const allowed = ROLE_PAGES[role];
       if (allowed && !allowed.has(page)) {
-        if (currentRole === 'client') { setActivePage('client-dashboard'); return; }
-        if (currentRole === 'partner') { setActivePage('partner-dashboard'); return; }
-        if (currentRole === 'admin') { setActivePage('admin-dashboard'); return; }
+        if (role === 'client') { setActivePage('client-dashboard'); return; }
+        if (role === 'partner' || role === 'both') { setActivePage('partner-dashboard'); return; }
+        if (role === 'admin') { setActivePage('admin-dashboard'); return; }
       }
     }
     setActivePage(page);
@@ -84,6 +140,19 @@ function MainLayout() {
       setActivePage('auth');
     }
   }, [isAuthenticated]);
+
+  // ── If authenticated user lands on 'home' or 'auth', redirect to their dashboard ─
+  useEffect(() => {
+    if (isAuthenticated && (activePage === 'home' || activePage === 'auth')) {
+      if (currentRole === 'client') {
+        setActivePage('client-dashboard');
+      } else if (currentRole === 'partner' || currentRole === 'both') {
+        setActivePage('partner-dashboard');
+      } else if (currentRole === 'admin') {
+        setActivePage('admin-dashboard');
+      }
+    }
+  }, [isAuthenticated, currentRole, activePage]);
 
   return (
     <div className="app-container">
@@ -228,15 +297,15 @@ function MainLayout() {
         )}
 
         {/* ── Partner Portal Pages ───────────────────────────────── */}
-        {activePage === 'partner-dashboard' && isAuthenticated && currentRole === 'partner' && (
+        {activePage === 'partner-dashboard' && isAuthenticated && (currentRole === 'partner' || currentRole === 'both') && (
           <PartnerDashboard setActivePage={safeguardedSetPage} />
         )}
 
-        {activePage === 'partner-earnings' && isAuthenticated && currentRole === 'partner' && (
+        {activePage === 'partner-earnings' && isAuthenticated && (currentRole === 'partner' || currentRole === 'both') && (
           <PartnerDashboard initialTab="earnings" setActivePage={safeguardedSetPage} />
         )}
 
-        {activePage === 'partner-kyc' && isAuthenticated && currentRole === 'partner' && (
+        {activePage === 'partner-kyc' && isAuthenticated && (currentRole === 'partner' || currentRole === 'both') && (
           <PartnerDashboard initialTab="kyc" setActivePage={safeguardedSetPage} />
         )}
 
@@ -252,8 +321,10 @@ function MainLayout() {
       <SOSModal />
       <ReviewModal onReviewSubmitted={() => {}} />
 
-      {/* Footer */}
-      <Footer setActivePage={safeguardedSetPage} />
+      {/* Footer (hidden in partner panel & admin console) */}
+      {!activePage.startsWith('partner-') && activePage !== 'admin-dashboard' && (
+        <Footer setActivePage={safeguardedSetPage} />
+      )}
     </div>
   );
 }

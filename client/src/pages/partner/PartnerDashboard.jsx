@@ -51,8 +51,11 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
   const { activePartner, logout } = useAuth();
   const { openChat, openSOS, showToast } = useApp();
 
-  // Navigation State
-  const [activeTab, setActiveTab] = useState(initialTab);
+  // Navigation State - if partner KYC is not verified, default to kyc tab
+  const [activeTab, setActiveTab] = useState(() => {
+    if (activePartner?.kycStatus && activePartner.kycStatus !== 'verified') return 'kyc';
+    return initialTab;
+  });
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Partner & Bookings Data State
@@ -79,9 +82,15 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
         fetchBookings({ partnerId }),
         fetchPayouts({ partnerId })
       ]);
-      if (partnerData) setPartner(partnerData);
-      if (bookingList) setBookings(bookingList);
-      if (payoutList) setPayouts(payoutList);
+      if (partnerData && !partnerData.error) {
+        setPartner(prev => ({ ...(prev || {}), ...partnerData }));
+        // If partner's KYC is not active/verified, redirect to kyc tab
+        if (partnerData.kycStatus && partnerData.kycStatus !== 'verified') {
+          setActiveTab('kyc');
+        }
+      }
+      if (bookingList && Array.isArray(bookingList)) setBookings(bookingList);
+      if (payoutList && Array.isArray(payoutList)) setPayouts(payoutList);
     } catch (err) {
       console.error('Error loading partner dashboard data:', err);
     } finally {
@@ -89,8 +98,21 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
     }
   };
 
+  // Guard tab switching: if KYC is not verified, enforce KYC tab
+  const handleTabChange = (tabId) => {
+    if (partner?.kycStatus && partner.kycStatus !== 'verified' && tabId !== 'kyc' && tabId !== 'guidelines' && tabId !== 'settings') {
+      showToast('Please complete KYC verification to unlock all dashboard features.', 'warning');
+      return;
+    }
+    setActiveTab(tabId);
+  };
+
   // 1. Online / Offline toggle
   const handleToggleOnline = async () => {
+    if (partner?.kycStatus !== 'verified') {
+      showToast('KYC verification is required before going online.', 'warning');
+      return;
+    }
     try {
       const res = await togglePartnerOnline(partner?.id || 'partner-p1');
       setPartner(prev => ({ ...prev, isOnline: res.isOnline }));
@@ -214,7 +236,7 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
       {/* Sidebar Navigation */}
       <PartnerSidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         partner={partner}
         isOnline={partner?.isOnline}
         onToggleOnline={handleToggleOnline}
