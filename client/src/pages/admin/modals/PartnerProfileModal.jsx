@@ -236,19 +236,19 @@ export default function PartnerProfileModal({
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '0.85rem' }}>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Gender & Age:</span>
-                  <div style={{ fontWeight: 600 }}>{partner.gender}, {partner.age || 24} yrs</div>
+                  <div style={{ fontWeight: 600 }}>{partner.gender || 'Not specified'}, {partner.age ? `${partner.age} yrs` : 'Age not specified'}</div>
                 </div>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Languages:</span>
-                  <div style={{ fontWeight: 600 }}>{partner.languages?.join(', ') || 'English, Hindi'}</div>
+                  <div style={{ fontWeight: 600 }}>{partner.languages?.length > 0 ? partner.languages.join(', ') : 'Not specified'}</div>
                 </div>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Operating Hours:</span>
-                  <div style={{ fontWeight: 600 }}>{partner.availableHours || '10:00 AM - 08:00 PM'}</div>
+                  <div style={{ fontWeight: 600 }}>{partner.availableHours || 'Not configured'}</div>
                 </div>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Available Days:</span>
-                  <div style={{ fontWeight: 600 }}>{partner.availableDays?.join(', ') || 'All Days'}</div>
+                  <div style={{ fontWeight: 600 }}>{partner.availableDays?.length > 0 ? partner.availableDays.join(', ') : 'Not configured'}</div>
                 </div>
               </div>
 
@@ -278,7 +278,7 @@ export default function PartnerProfileModal({
               </div>
               <div className="admin-card" style={{ padding: '14px', margin: 0, textAlign: 'center' }}>
                 <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>CANCEL RATE</div>
-                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#34d399' }}>{partner.cancellationRate || '2.0%'}</div>
+                <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#34d399' }}>{partner.cancellationRate || '0%'}</div>
               </div>
               <div className="admin-card" style={{ padding: '14px', margin: 0, textAlign: 'center' }}>
                 <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>NO-SHOWS</div>
@@ -300,30 +300,34 @@ export default function PartnerProfileModal({
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '0.85rem' }}>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Aadhaar / Primary ID:</span>
-                  <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{partner.kycDocuments?.idNumber || 'XXXX-XXXX-8912'}</div>
-                  <div style={{ fontSize: '0.72rem', color: '#34d399' }}>✓ Verified via UIDAI / Digilocker</div>
+                  <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{partner.kycDocuments?.idNumber || 'Not submitted'}</div>
+                  <div style={{ fontSize: '0.72rem', color: partner.kycDocuments?.idNumber ? '#34d399' : '#94a3b8' }}>
+                    {partner.kycDocuments?.idNumber ? '✓ Document on file' : 'No ID provided'}
+                  </div>
                 </div>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>PAN Verification:</span>
-                  <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{partner.kycDocuments?.panNumber || 'ABCPS1234F'}</div>
-                  <div style={{ fontSize: '0.72rem', color: '#34d399' }}>✓ Name matches bank account</div>
+                  <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{partner.kycDocuments?.panNumber || 'Not submitted'}</div>
+                  <div style={{ fontSize: '0.72rem', color: partner.kycDocuments?.panNumber ? '#34d399' : '#94a3b8' }}>
+                    {partner.kycDocuments?.panNumber ? '✓ PAN on file' : 'No PAN provided'}
+                  </div>
                 </div>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Selfie Biometric Check:</span>
                   <div style={{ fontWeight: 600, color: partner.kycDocuments?.selfieVerified ? '#34d399' : '#f87171' }}>
-                    {partner.kycDocuments?.selfieVerified ? 'Biometrics Matched (98.4%)' : 'Pending Selfie Liveness'}
+                    {partner.kycDocuments?.selfieVerified ? 'Biometrics Matched' : 'Pending Selfie Liveness'}
                   </div>
                 </div>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Document Expiry:</span>
-                  <div style={{ fontWeight: 600 }}>{partner.kycDocuments?.expiryDate || '2030-12-31'}</div>
+                  <div style={{ fontWeight: 600 }}>{partner.kycDocuments?.expiryDate || '—'}</div>
                 </div>
               </div>
 
               <div style={{ marginTop: '14px', padding: '10px 12px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px' }}>
                 <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Background Investigation:</span>
                 <div style={{ fontSize: '0.84rem', color: '#cbd5e1', marginTop: '2px' }}>
-                  {partner.kycDocuments?.backgroundCheck || 'Automated criminal record & court database scan clear.'}
+                  {partner.kycDocuments?.backgroundCheck || 'Pending background verification.'}
                 </div>
               </div>
 
@@ -372,28 +376,31 @@ export default function PartnerProfileModal({
             <div className="admin-card" style={{ padding: '16px', margin: 0 }}>
               <h4 style={{ fontSize: '0.88rem', color: '#94a3b8', marginBottom: '10px' }}>Verification Audit History</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {(partner.kycDocuments?.verificationHistory || [
-                  { date: '2024-01-18', status: 'SUBMITTED', note: 'Uploaded Aadhaar and PAN documents' },
-                  { date: '2024-01-20', status: 'VERIFIED', note: 'Approved by Operations Admin Team' }
-                ]).map((hist, hIdx) => (
-                  <div key={hIdx} style={{
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    background: 'rgba(255, 255, 255, 0.02)',
-                    fontSize: '0.82rem',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <div>
-                      <span style={{ fontWeight: 700, color: hist.status === 'VERIFIED' ? '#34d399' : '#fbbf24' }}>
-                        {hist.status}
-                      </span>
-                      <span style={{ color: '#94a3b8', marginLeft: '8px' }}>{hist.note}</span>
+                {(partner.kycDocuments?.verificationHistory && partner.kycDocuments.verificationHistory.length > 0) ? (
+                  partner.kycDocuments.verificationHistory.map((hist, hIdx) => (
+                    <div key={hIdx} style={{
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      fontSize: '0.82rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div>
+                        <span style={{ fontWeight: 700, color: hist.status === 'VERIFIED' ? '#34d399' : '#fbbf24' }}>
+                          {hist.status}
+                        </span>
+                        <span style={{ color: '#94a3b8', marginLeft: '8px' }}>{hist.note}</span>
+                      </div>
+                      <span style={{ fontSize: '0.74rem', color: '#64748b' }}>{hist.date}</span>
                     </div>
-                    <span style={{ fontSize: '0.74rem', color: '#64748b' }}>{hist.date}</span>
+                  ))
+                ) : (
+                  <div style={{ color: '#64748b', fontSize: '0.82rem', padding: '6px 0' }}>
+                    No prior verification audit history logged.
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>
@@ -426,11 +433,11 @@ export default function PartnerProfileModal({
                 </div>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Bank Name:</span>
-                  <div style={{ fontWeight: 600 }}>{partner.bankDetails?.bankName || 'HDFC Bank'}</div>
+                  <div style={{ fontWeight: 600 }}>{partner.bankDetails?.bankName || '—'}</div>
                 </div>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Account Number:</span>
-                  <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{partner.bankDetails?.accountNumber || '50100492819283'}</div>
+                  <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{partner.bankDetails?.accountNumber || '—'}</div>
                 </div>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>IFSC Code:</span>

@@ -206,10 +206,10 @@ export default function BookingsTab({
                     Your Earnings (80%)
                   </div>
                   <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#34d399' }}>
-                    {formatCurrency(bk.partnerShare || Math.round((bk.totalAmount || 3000) * 0.8))}
+                    {formatCurrency(bk.partnerShare || Math.round((bk.totalAmount || 0) * 0.8))}
                   </div>
                   <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
-                    Total Client Fare: {formatCurrency(bk.totalAmount || 3000)}
+                    Total Client Fare: {formatCurrency(bk.totalAmount || 0)}
                   </div>
                 </div>
               </div>

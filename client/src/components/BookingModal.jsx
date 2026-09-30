@@ -32,9 +32,9 @@ export default function BookingModal({ onBookingCreated }) {
     return tomorrow.toISOString().split('T')[0];
   });
   const [bookingTime, setBookingTime] = useState('04:00 PM');
-  const [meetingLocation, setMeetingLocation] = useState('Starbucks Cafe, Select Citywalk Mall, Saket, Delhi');
-  const [clientNotes, setClientNotes] = useState('Looking forward to a calm conversation and relaxing coffee.');
-  const [emergencyContact, setEmergencyContact] = useState(activeUser?.emergencyContact || '+91 98111 22334 (Family)');
+  const [meetingLocation, setMeetingLocation] = useState('');
+  const [clientNotes, setClientNotes] = useState('');
+  const [emergencyContact, setEmergencyContact] = useState(activeUser?.emergencyContact || '');
   const [paymentMethod, setPaymentMethod] = useState('wallet'); // 'wallet' or 'upi'
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(null);
@@ -64,9 +64,9 @@ export default function BookingModal({ onBookingCreated }) {
     setIsSubmitting(true);
     try {
       const payload = {
-        clientId: activeUser?.id || 'client-1',
-        clientName: activeUser?.name || 'Rahul Verma',
-        clientPhone: activeUser?.phone || '+91 98765 43210',
+        clientId: activeUser?.id || '',
+        clientName: activeUser?.name || 'Guest Hirer',
+        clientPhone: activeUser?.phone || '',
         partnerId: partner.id,
         serviceId: selectedServiceId,
         date: bookingDate,

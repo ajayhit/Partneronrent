@@ -18,17 +18,11 @@ import {
 import { formatCurrency } from '../../../utils/helpers';
 
 export default function DashboardTab({ stats, onNavigate }) {
-  const dailyData = stats?.charts?.dailyRevenue || [
-    { day: 'Mon', revenue: 14500, bookings: 4 },
-    { day: 'Tue', revenue: 18200, bookings: 6 },
-    { day: 'Wed', revenue: 22400, bookings: 7 },
-    { day: 'Thu', revenue: 19800, bookings: 5 },
-    { day: 'Fri', revenue: 34500, bookings: 11 },
-    { day: 'Sat', revenue: 48900, bookings: 16 },
-    { day: 'Sun', revenue: 52100, bookings: 18 }
-  ];
+  const dailyData = (stats?.charts?.dailyRevenue && stats.charts.dailyRevenue.length > 0)
+    ? stats.charts.dailyRevenue
+    : [];
 
-  const maxRevenue = Math.max(...dailyData.map(d => d.revenue), 60000);
+  const maxRevenue = dailyData.length > 0 ? Math.max(...dailyData.map(d => d.revenue), 1) : 1;
 
   return (
     <div>
@@ -40,10 +34,10 @@ export default function DashboardTab({ stats, onNavigate }) {
             <DollarSign size={14} color="#34d399" />
           </div>
           <div className="admin-stat-value" style={{ color: '#34d399' }}>
-            {formatCurrency(stats?.todayRevenue || 12450)}
+            {formatCurrency(stats?.todayRevenue ?? 0)}
           </div>
           <div className="admin-stat-footer" style={{ color: '#34d399' }}>
-            <TrendingUp size={12} /> +18.4% vs yesterday
+            <TrendingUp size={12} /> {stats?.todayRevenue > 0 ? 'Today’s booked revenue' : 'No revenue recorded today'}
           </div>
         </div>
 
@@ -96,7 +90,7 @@ export default function DashboardTab({ stats, onNavigate }) {
             <span>Today's Bookings</span>
             <Calendar size={14} color="#38bdf8" />
           </div>
-          <div className="admin-stat-value">{stats?.todayBookings || 3}</div>
+          <div className="admin-stat-value">{stats?.todayBookings ?? 0}</div>
           <div className="admin-stat-footer" style={{ color: '#38bdf8' }}>
             <span>Live check-ins today</span>
           </div>
@@ -219,43 +213,49 @@ export default function DashboardTab({ stats, onNavigate }) {
           </div>
 
           {/* SVG Bar & Sparkline Graphic */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '200px', padding: '10px 0 20px', gap: '12px' }}>
-            {dailyData.map((item, idx) => {
-              const heightPct = Math.round((item.revenue / maxRevenue) * 100);
-              return (
-                <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
-                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: '6px', fontWeight: 600 }}>
-                    ₹{(item.revenue / 1000).toFixed(1)}k
-                  </div>
-                  <div style={{
-                    width: '100%',
-                    maxWidth: '42px',
-                    height: `${heightPct}%`,
-                    background: 'linear-gradient(180deg, #38bdf8 0%, rgba(2, 132, 199, 0.4) 100%)',
-                    borderRadius: '8px 8px 3px 3px',
-                    position: 'relative',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 12px rgba(56, 189, 248, 0.2)'
-                  }}>
+          {dailyData.length === 0 ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '180px', color: '#64748b', fontSize: '0.85rem' }}>
+              No weekly revenue data recorded yet.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '200px', padding: '10px 0 20px', gap: '12px' }}>
+              {dailyData.map((item, idx) => {
+                const heightPct = Math.round((item.revenue / maxRevenue) * 100);
+                return (
+                  <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginBottom: '6px', fontWeight: 600 }}>
+                      ₹{(item.revenue / 1000).toFixed(1)}k
+                    </div>
                     <div style={{
-                      position: 'absolute',
-                      top: '-18px',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      fontSize: '0.68rem',
-                      fontWeight: 700,
-                      color: '#c084fc'
+                      width: '100%',
+                      maxWidth: '42px',
+                      height: `${heightPct}%`,
+                      background: 'linear-gradient(180deg, #38bdf8 0%, rgba(2, 132, 199, 0.4) 100%)',
+                      borderRadius: '8px 8px 3px 3px',
+                      position: 'relative',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 4px 12px rgba(56, 189, 248, 0.2)'
                     }}>
-                      {item.bookings}
+                      <div style={{
+                        position: 'absolute',
+                        top: '-18px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        fontSize: '0.68rem',
+                        fontWeight: 700,
+                        color: '#c084fc'
+                      }}>
+                        {item.bookings}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#cbd5e1', marginTop: '10px', fontWeight: 600 }}>
+                      {item.day}
                     </div>
                   </div>
-                  <div style={{ fontSize: '0.78rem', color: '#cbd5e1', marginTop: '10px', fontWeight: 600 }}>
-                    {item.day}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* City-wise Booking Statistics */}
@@ -273,28 +273,29 @@ export default function DashboardTab({ stats, onNavigate }) {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {(stats?.cityStats || [
-              { city: 'Delhi NCR', bookings: 84, revenue: 284000 },
-              { city: 'Mumbai', bookings: 62, revenue: 215000 },
-              { city: 'Bangalore', bookings: 49, revenue: 172000 },
-              { city: 'Jaipur', bookings: 31, revenue: 98000 }
-            ]).map((c, cIdx) => (
-              <div key={cIdx} style={{
-                background: 'rgba(255, 255, 255, 0.02)',
-                border: '1px solid rgba(255, 255, 255, 0.05)',
-                borderRadius: '10px',
-                padding: '10px 14px'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#fff' }}>{c.city}</div>
-                  <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#34d399' }}>{formatCurrency(c.revenue)}</div>
+            {(stats?.cityStats && stats.cityStats.length > 0) ? (
+              stats.cityStats.map((c, cIdx) => (
+                <div key={cIdx} style={{
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                  borderRadius: '10px',
+                  padding: '10px 14px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#fff' }}>{c.city}</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#34d399' }}>{formatCurrency(c.revenue)}</div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', color: '#94a3b8' }}>
+                    <span>{c.bookings} Bookings Fulfilled</span>
+                    <span>Avg ₹{Math.round(c.revenue / (c.bookings || 1))}/session</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', color: '#94a3b8' }}>
-                  <span>{c.bookings} Bookings Fulfilled</span>
-                  <span>Avg ₹{Math.round(c.revenue / (c.bookings || 1))}/session</span>
-                </div>
+              ))
+            ) : (
+              <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
+                No city booking activity recorded yet.
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

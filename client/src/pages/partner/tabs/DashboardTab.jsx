@@ -79,17 +79,38 @@ export default function DashboardTab({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
           <div style={{ position: 'relative' }}>
-            <img
-              src={partner?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
-              alt={partner?.name}
-              style={{
-                width: '68px',
-                height: '68px',
-                borderRadius: '50%',
-                objectFit: 'cover',
-                border: '3px solid #10b981'
-              }}
-            />
+            {partner?.avatar ? (
+              <img
+                src={partner.avatar}
+                alt={partner?.name}
+                style={{
+                  width: '68px',
+                  height: '68px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: '3px solid #10b981'
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: '68px',
+                  height: '68px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  border: '3px solid #10b981',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1.6rem',
+                  fontWeight: 800,
+                  color: '#ffffff',
+                  textTransform: 'uppercase'
+                }}
+              >
+                {partner?.name ? partner.name.trim().split(' ').map(w => w[0]).slice(0, 2).join('') : '?'}
+              </div>
+            )}
             <span
               style={{
                 position: 'absolute',

@@ -17,15 +17,30 @@ import {
 export default function EarningsTab({ partner, payouts = [], bookings = [], onTabChange, showToast }) {
   const [filterPeriod, setFilterPeriod] = useState('All Time');
 
-  // Exact figures from the user's prompt specifications:
-  const totalEarnings = 45500;
-  const pendingEarnings = 3500;
-  const availableBalance = 12000;
-  const withdrawn = 30000;
-  const platformCommission = 5000;
-
-  // Completed bookings for earnings list
+  // Dynamic figures calculated from real partner, payouts & bookings state:
   const completedBookings = bookings.filter(b => b.status === 'completed');
+  const totalEarnings = partner?.totalEarnings ?? completedBookings.reduce((sum, b) => sum + (b.partnerShare || Math.round((b.totalAmount || 0) * 0.8)), 0);
+  const pendingEarnings = bookings
+    .filter(b => b.status === 'pending' || b.status === 'confirmed' || b.status === 'in-progress')
+    .reduce((sum, b) => sum + (b.partnerShare || Math.round((b.totalAmount || 0) * 0.8)), 0);
+  const availableBalance = partner?.walletBalance ?? 0;
+  const withdrawn = payouts.filter(p => p.status === 'completed').reduce((sum, p) => sum + (p.amount || 0), 0);
+  const platformCommission = completedBookings.reduce((sum, b) => sum + Math.round((b.totalAmount || 0) * 0.2), 0);
+
+  // Dynamic monthly earnings from completed sessions
+  const monthlyData = {};
+  completedBookings.forEach(b => {
+    if (b.date) {
+      const m = new Date(b.date).toLocaleString('default', { month: 'short' });
+      monthlyData[m] = (monthlyData[m] || 0) + (b.partnerShare || Math.round((b.totalAmount || 0) * 0.8));
+    }
+  });
+  const maxEarned = Math.max(...Object.values(monthlyData), 1);
+  const monthlyBars = Object.entries(monthlyData).map(([month, earned]) => ({
+    month,
+    earned,
+    height: `${Math.max(Math.round((earned / maxEarned) * 100), 10)}%`
+  }));
 
   return (
     <div>
@@ -191,33 +206,32 @@ export default function EarningsTab({ partner, payouts = [], bookings = [], onTa
         </div>
 
         {/* Visual Chart Bars */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '180px', paddingTop: '20px', gap: '14px' }}>
-          {[
-            { month: 'Apr', earned: 8400, height: '40%' },
-            { month: 'May', earned: 12600, height: '58%' },
-            { month: 'Jun', earned: 15400, height: '70%' },
-            { month: 'Jul', earned: 18200, height: '82%' },
-            { month: 'Aug', earned: 21000, height: '94%' },
-            { month: 'Sep', earned: 24500, height: '100%' }
-          ].map(bar => (
-            <div key={bar.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
-              <span style={{ fontSize: '0.74rem', color: '#34d399', fontWeight: 700, marginBottom: '6px' }}>
-                {formatCurrency(bar.earned)}
-              </span>
-              <div style={{
-                width: '100%',
-                maxWidth: '48px',
-                height: bar.height,
-                background: 'linear-gradient(to top, #059669, #10b981)',
-                borderRadius: '6px 6px 0 0',
-                transition: 'height 0.3s ease'
-              }} />
-              <span style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '8px' }}>
-                {bar.month}
-              </span>
-            </div>
-          ))}
-        </div>
+        {monthlyBars.length === 0 ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '140px', color: '#64748b', fontSize: '0.85rem' }}>
+            No completed session earnings to chart yet.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: '180px', paddingTop: '20px', gap: '14px' }}>
+            {monthlyBars.map(bar => (
+              <div key={bar.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}>
+                <span style={{ fontSize: '0.74rem', color: '#34d399', fontWeight: 700, marginBottom: '6px' }}>
+                  {formatCurrency(bar.earned)}
+                </span>
+                <div style={{
+                  width: '100%',
+                  maxWidth: '48px',
+                  height: bar.height,
+                  background: 'linear-gradient(to top, #059669, #10b981)',
+                  borderRadius: '6px 6px 0 0',
+                  transition: 'height 0.3s ease'
+                }} />
+                <span style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '8px' }}>
+                  {bar.month}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Completed Sessions Earnings Ledger */}

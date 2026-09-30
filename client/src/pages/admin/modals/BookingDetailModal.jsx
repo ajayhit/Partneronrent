@@ -86,7 +86,7 @@ export default function BookingDetailModal({
               Customer
             </div>
             <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#fff' }}>{booking.clientName}</div>
-            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{booking.clientPhone || '+91 98765 43210'}</div>
+            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{booking.clientPhone || '—'}</div>
           </div>
 
           <div style={{

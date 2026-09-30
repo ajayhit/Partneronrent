@@ -127,11 +127,11 @@ export default function KycTab({
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
                   <div>
                     <span style={{ color: '#64748b', fontSize: '0.72rem' }}>Aadhaar / Primary ID:</span>
-                    <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{p.kycDocuments?.idNumber || 'XXXX-XXXX-8912'}</div>
+                    <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{p.kycDocuments?.idNumber || 'Not submitted'}</div>
                   </div>
                   <div>
                     <span style={{ color: '#64748b', fontSize: '0.72rem' }}>PAN Card:</span>
-                    <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{p.kycDocuments?.panNumber || 'ABCDE1234F'}</div>
+                    <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{p.kycDocuments?.panNumber || 'Not submitted'}</div>
                   </div>
                   <div>
                     <span style={{ color: '#64748b', fontSize: '0.72rem' }}>Selfie Match:</span>
@@ -141,12 +141,12 @@ export default function KycTab({
                   </div>
                   <div>
                     <span style={{ color: '#64748b', fontSize: '0.72rem' }}>Doc Expiry:</span>
-                    <div style={{ fontWeight: 600 }}>{p.kycDocuments?.expiryDate || '2030-12-31'}</div>
+                    <div style={{ fontWeight: 600 }}>{p.kycDocuments?.expiryDate || '—'}</div>
                   </div>
                 </div>
 
                 <div style={{ marginTop: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '6px', color: '#94a3b8', fontSize: '0.76rem' }}>
-                  {p.kycDocuments?.backgroundCheck || 'Court record scan in progress.'}
+                  {p.kycDocuments?.backgroundCheck || 'Pending verification review.'}
                 </div>
               </div>
 

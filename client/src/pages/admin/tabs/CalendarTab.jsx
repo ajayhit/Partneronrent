@@ -18,7 +18,7 @@ export default function CalendarTab({
 }) {
   const [selectedCity, setSelectedCity] = useState('All');
   const [selectedPartner, setSelectedPartner] = useState('All');
-  const [selectedDate, setSelectedDate] = useState('2026-09-24');
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   const cities = ['All', 'Delhi NCR', 'Mumbai', 'Bangalore', 'Jaipur', 'Pune', 'Hyderabad'];
 

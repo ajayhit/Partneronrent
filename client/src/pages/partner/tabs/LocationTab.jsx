@@ -137,12 +137,12 @@ export default function LocationTab({ bookings = [], showToast }) {
                     <div>Hirer Name: <strong style={{ color: '#fff' }}>{activeBooking?.clientName}</strong></div>
                     <div>
                       Phone: <strong style={{ color: '#38bdf8' }}>
-                        {privacyRevealed ? (activeBooking?.clientPhone || '+91 98765 43210') : '+91 98765 ••••• (Click Reveal)'}
+                        {privacyRevealed ? (activeBooking?.clientPhone || 'Not provided') : '•••••••••• (Click Reveal)'}
                       </strong>
                     </div>
                     <div>
                       Emergency Contact: <span style={{ color: '#94a3b8' }}>
-                        {privacyRevealed ? (activeBooking?.emergencyContact || '+91 98111 22334 (Brother)') : 'Protected until check-in'}
+                        {privacyRevealed ? (activeBooking?.emergencyContact || 'Not provided') : 'Protected until check-in'}
                       </span>
                     </div>
                   </div>

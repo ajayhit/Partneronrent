@@ -222,7 +222,7 @@ export default function PartnerEarnings() {
             <div
               onClick={() => {
                 setPayoutMethod('Bank');
-                setDestination(`${partner?.bankDetails?.bankName || 'HDFC Bank'} - A/C ${partner?.bankDetails?.accountNumber || '50100492819283'}`);
+                setDestination(partner?.bankDetails?.bankName ? `${partner.bankDetails.bankName} - A/C ${partner.bankDetails.accountNumber || ''}` : '');
               }}
               style={{
                 padding: '14px',

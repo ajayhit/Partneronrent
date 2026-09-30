@@ -100,17 +100,40 @@ export default function PartnerSidebar({
       <div className="partner-sidebar-header">
         <div className="partner-profile-chip">
           <div style={{ position: 'relative' }}>
-            <img
-              src={partner?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
-              alt={partner?.name}
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                objectFit: 'cover',
-                border: isOnline ? '2px solid #10b981' : '2px solid #64748b'
-              }}
-            />
+            {partner?.avatar ? (
+              <img
+                src={partner.avatar}
+                alt={partner?.name}
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: isOnline ? '2px solid #10b981' : '2px solid #64748b'
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  border: isOnline ? '2px solid #10b981' : '2px solid #64748b',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '1rem',
+                  fontWeight: 800,
+                  color: '#ffffff',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  flexShrink: 0
+                }}
+              >
+                {partner?.name ? partner.name.trim().split(' ').map(w => w[0]).slice(0, 2).join('') : '?'}
+              </div>
+            )}
             <span
               style={{
                 position: 'absolute',
@@ -228,7 +251,7 @@ export default function PartnerSidebar({
               Available Wallet
             </div>
             <div style={{ fontSize: '1.1rem', fontWeight: 800, color: '#34d399' }}>
-              {formatCurrency(partner?.walletBalance || 18400)}
+              {formatCurrency(partner?.walletBalance || 0)}
             </div>
           </div>
           <Wallet size={18} color="#34d399" />

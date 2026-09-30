@@ -19,6 +19,15 @@ const DEFAULT_USERS = [
   }
 ];
 
+// Default avatar shown when no photo is uploaded
+const DEFAULT_AVATAR = '/default-avatar.jpg';
+
+// Old placeholder avatar URLs that should be replaced with the default avatar
+const PLACEHOLDER_AVATARS = [
+  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=250&q=80',
+  'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=250&q=80'
+];
+
 function getMockUsers() {
   try {
     const stored = localStorage.getItem(MOCK_USERS_KEY);
@@ -38,6 +47,12 @@ function getMockUsers() {
     } else {
       users.push(DEFAULT_USERS[0]);
     }
+
+    // Replace old placeholder avatars with the default avatar
+    users = users.map(u =>
+      PLACEHOLDER_AVATARS.includes(u.avatar) || !u.avatar ? { ...u, avatar: DEFAULT_AVATAR } : u
+    );
+
     saveMockUsers(users);
     return users;
   } catch {
@@ -55,12 +70,16 @@ const SESSION_KEY = 'por_user_session';
 function loadSession() {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
-    const session = raw ? JSON.parse(raw) : null;
+    let session = raw ? JSON.parse(raw) : null;
     // Don't restore dummy demo sessions
     if (session && (session.id === 'client-1' || session.id === 'partner-p1' || session.email === 'rahul@example.com' || session.email === 'aanya@example.com')) {
       localStorage.removeItem(SESSION_KEY);
       localStorage.removeItem('por_role');
       return null;
+    }
+    // Replace old placeholder avatars with the default avatar in the restored session
+    if (session && (PLACEHOLDER_AVATARS.includes(session.avatar) || !session.avatar)) {
+      session = { ...session, avatar: DEFAULT_AVATAR };
     }
     return session;
   } catch {
@@ -183,11 +202,9 @@ export function AuthProvider({ children }) {
       phone: formData.phone || '',
       password: formData.password,
       city: formData.city || 'India',
-      avatar: role === 'partner'
-        ? 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=250&q=80'
-        : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=250&q=80',
+      avatar: DEFAULT_AVATAR,
       walletBalance: 0,
-      ...(role === 'partner' ? { hourlyRate: 1000, totalEarnings: 0 } : {})
+      ...(role === 'partner' ? { hourlyRate: 1000, totalEarnings: 0, kycStatus: 'not_submitted' } : {})
     };
     const updatedUsers = [...users, newUser];
     saveMockUsers(updatedUsers);

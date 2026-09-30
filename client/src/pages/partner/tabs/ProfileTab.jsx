@@ -30,14 +30,14 @@ export default function ProfileTab({ partner, onUpdateProfile, showToast }) {
     name: partner?.name || '',
     tagline: partner?.tagline || '',
     bio: partner?.bio || '',
-    age: partner?.age || 24,
+    age: partner?.age || '',
     gender: partner?.gender || 'Female',
-    city: partner?.city || 'Delhi NCR',
+    city: partner?.city || '',
     avatar: partner?.avatar || '',
     coverPhoto: partner?.coverPhoto || '',
     phone: partner?.phone || '',
     email: partner?.email || '',
-    languages: partner?.languages || ['English', 'Hindi'],
+    languages: partner?.languages || [],
     areas: partner?.areas || [],
     interests: partner?.interests || []
   });
@@ -131,17 +131,39 @@ export default function ProfileTab({ partner, onUpdateProfile, showToast }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-              <img
-                src={formData.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
-                alt="Avatar Preview"
-                style={{
-                  width: '90px',
-                  height: '90px',
-                  borderRadius: '50%',
-                  objectFit: 'cover',
-                  border: '3px solid #10b981'
-                }}
-              />
+              {formData.avatar ? (
+                <img
+                  src={formData.avatar}
+                  alt="Avatar Preview"
+                  style={{
+                    width: '90px',
+                    height: '90px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '3px solid #10b981'
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: '90px',
+                    height: '90px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    border: '3px solid #10b981',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '2rem',
+                    fontWeight: 800,
+                    color: '#ffffff',
+                    textTransform: 'uppercase',
+                    flexShrink: 0
+                  }}
+                >
+                  {formData.name ? formData.name.trim().split(' ').map(w => w[0]).slice(0, 2).join('') : '?'}
+                </div>
+              )}
               <div style={{ flex: 1 }}>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
                   Avatar Photo URL
@@ -516,18 +538,40 @@ export default function ProfileTab({ partner, onUpdateProfile, showToast }) {
               {/* Card content */}
               <div style={{ padding: '0 24px 24px', marginTop: '-45px', position: 'relative' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '14px' }}>
-                  <img
-                    src={formData.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
-                    alt="Preview"
-                    style={{
-                      width: '84px',
-                      height: '84px',
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      border: '3px solid #10b981',
-                      boxShadow: '0 4px 14px rgba(0,0,0,0.5)'
-                    }}
-                  />
+                  {formData.avatar ? (
+                    <img
+                      src={formData.avatar}
+                      alt="Preview"
+                      style={{
+                        width: '84px',
+                        height: '84px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '3px solid #10b981',
+                        boxShadow: '0 4px 14px rgba(0,0,0,0.5)'
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: '84px',
+                        height: '84px',
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                        border: '3px solid #10b981',
+                        boxShadow: '0 4px 14px rgba(0,0,0,0.5)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.8rem',
+                        fontWeight: 800,
+                        color: '#ffffff',
+                        textTransform: 'uppercase'
+                      }}
+                    >
+                      {formData.name ? formData.name.trim().split(' ').map(w => w[0]).slice(0, 2).join('') : '?'}
+                    </div>
+                  )}
                   <span className="partner-badge partner-badge-emerald">
                     ✓ Verified Companion
                   </span>

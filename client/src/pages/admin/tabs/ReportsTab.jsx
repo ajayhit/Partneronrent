@@ -20,7 +20,12 @@ export default function ReportsTab({
 
   const topPartnersByEarnings = [...partners].sort((a, b) => (b.totalEarnings || 0) - (a.totalEarnings || 0)).slice(0, 5);
 
-  const avgBookingValue = stats?.gmv && stats?.totalBookings ? Math.round(stats.gmv / stats.totalBookings) : 3400;
+  const avgBookingValue = stats?.gmv && stats?.totalBookings ? Math.round(stats.gmv / stats.totalBookings) : 0;
+  const netMargin = stats?.gmv > 0 ? `${Math.round(((stats.platformRevenue || 0) / stats.gmv) * 100)}%` : '0%';
+  const completionRate = stats?.totalBookings > 0 ? `${Math.round(((stats.completedBookingsCount || 0) / stats.totalBookings) * 100)}%` : '0%';
+  const monthlyRevenue = stats?.charts?.monthlyRevenue || [];
+  const cityStats = stats?.cityStats || [];
+  const totalCityRev = cityStats.reduce((sum, c) => sum + (c.revenue || 0), 0);
 
   return (
     <div>
@@ -55,38 +60,38 @@ export default function ReportsTab({
           <div className="admin-stat-value" style={{ color: '#38bdf8' }}>
             {formatCurrency(avgBookingValue)}
           </div>
-          <div className="admin-stat-footer" style={{ color: '#34d399' }}>
-            +12.5% festive season surge
+          <div className="admin-stat-footer" style={{ color: stats?.totalBookings > 0 ? '#34d399' : '#94a3b8' }}>
+            {stats?.totalBookings > 0 ? `Across ${stats.totalBookings} total sessions` : 'No bookings completed yet'}
           </div>
         </div>
 
         <div className="admin-stat-card">
           <div className="admin-stat-label">Net Platform Margin</div>
           <div className="admin-stat-value" style={{ color: '#c084fc' }}>
-            18.2%
+            {netMargin}
           </div>
           <div className="admin-stat-footer" style={{ color: '#94a3b8' }}>
-            After payment gateway fees
+            Platform fee after gateway costs
           </div>
         </div>
 
         <div className="admin-stat-card">
-          <div className="admin-stat-label">Repeat Hirer Rate</div>
+          <div className="admin-stat-label">Session Completion Rate</div>
           <div className="admin-stat-value" style={{ color: '#34d399' }}>
-            44.8%
+            {completionRate}
           </div>
           <div className="admin-stat-footer" style={{ color: '#34d399' }}>
-            Strong loyalty in Delhi NCR & Mumbai
+            {stats?.completedBookingsCount || 0} successfully concluded
           </div>
         </div>
 
         <div className="admin-stat-card">
           <div className="admin-stat-label">Dispute Resolution Rate</div>
           <div className="admin-stat-value" style={{ color: '#fbbf24' }}>
-            98.5%
+            {stats?.openDisputes === 0 ? '100%' : 'In Progress'}
           </div>
           <div className="admin-stat-footer" style={{ color: '#94a3b8' }}>
-            Avg resolution time 2.4 hrs
+            {stats?.openDisputes > 0 ? `${stats.openDisputes} disputes pending` : 'Zero open disputes'}
           </div>
         </div>
       </div>
@@ -99,26 +104,25 @@ export default function ReportsTab({
               Monthly Gross Merchandise Volume (GMV)
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {(stats?.charts?.monthlyRevenue || [
-                { month: 'April 2026', revenue: 180000 },
-                { month: 'May 2026', revenue: 240000 },
-                { month: 'June 2026', revenue: 310000 },
-                { month: 'July 2026', revenue: 395000 },
-                { month: 'August 2026', revenue: 470000 },
-                { month: 'September 2026', revenue: 585000 }
-              ]).map((m, mIdx) => (
-                <div key={mIdx} style={{
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  borderRadius: '10px',
-                  padding: '12px 16px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
-                  <strong style={{ color: '#fff' }}>{m.month}</strong>
-                  <span style={{ fontWeight: 800, color: '#34d399' }}>{formatCurrency(m.revenue)}</span>
+              {monthlyRevenue.length === 0 ? (
+                <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
+                  No monthly GMV data available yet.
                 </div>
-              ))}
+              ) : (
+                monthlyRevenue.map((m, mIdx) => (
+                  <div key={mIdx} style={{
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    borderRadius: '10px',
+                    padding: '12px 16px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <strong style={{ color: '#fff' }}>{m.month}</strong>
+                    <span style={{ fontWeight: 800, color: '#34d399' }}>{formatCurrency(m.revenue)}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -127,26 +131,30 @@ export default function ReportsTab({
               City Revenue Contribution
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {[
-                { city: 'Delhi NCR', share: '42%', rev: '₹2,84,000' },
-                { city: 'Mumbai', share: '31%', rev: '₹2,15,000' },
-                { city: 'Bangalore', share: '18%', rev: '₹1,72,000' },
-                { city: 'Jaipur & Rajasthan', share: '9%', rev: '₹98,000' }
-              ].map((c, cIdx) => (
-                <div key={cIdx} style={{
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  borderRadius: '10px',
-                  padding: '12px 14px'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ fontWeight: 700, color: '#fff' }}>{c.city}</span>
-                    <span style={{ fontWeight: 700, color: '#38bdf8' }}>{c.rev} ({c.share})</span>
-                  </div>
-                  <div style={{ width: '100%', height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: c.share, height: '100%', background: '#38bdf8' }} />
-                  </div>
+              {cityStats.length === 0 ? (
+                <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>
+                  No city revenue recorded yet.
                 </div>
-              ))}
+              ) : (
+                cityStats.map((c, cIdx) => {
+                  const sharePct = totalCityRev > 0 ? Math.round((c.revenue / totalCityRev) * 100) : 0;
+                  return (
+                    <div key={cIdx} style={{
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      borderRadius: '10px',
+                      padding: '12px 14px'
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span style={{ fontWeight: 700, color: '#fff' }}>{c.city}</span>
+                        <span style={{ fontWeight: 700, color: '#38bdf8' }}>{formatCurrency(c.revenue)} ({sharePct}%)</span>
+                      </div>
+                      <div style={{ width: '100%', height: '6px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ width: `${sharePct}%`, height: '100%', background: '#38bdf8' }} />
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
@@ -167,27 +175,35 @@ export default function ReportsTab({
                   <th>Hours Completed</th>
                   <th>Rating</th>
                   <th>Cancellation Rate</th>
-                  <th>No-Show Rate</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>
-                {topPartnersByEarnings.map((p, pIdx) => (
-                  <tr key={p.id}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontWeight: 800, color: '#38bdf8' }}>#{pIdx + 1}</span>
-                        <img src={p.avatar} alt={p.name} style={{ width: '36px', height: '36px', borderRadius: '10px', objectFit: 'cover' }} />
-                        <strong>{p.name}</strong>
-                      </div>
+                {topPartnersByEarnings.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
+                      No partner records found.
                     </td>
-                    <td>{p.city}</td>
-                    <td><strong style={{ color: '#34d399' }}>{formatCurrency(p.totalEarnings || 0)}</strong></td>
-                    <td>{p.completedHours || 0}h</td>
-                    <td><strong style={{ color: '#fbbf24' }}>★ {p.rating || 5.0}</strong></td>
-                    <td>{p.cancellationRate || '1.5%'}</td>
-                    <td>0% (Flawless)</td>
                   </tr>
-                ))}
+                ) : (
+                  topPartnersByEarnings.map((p, pIdx) => (
+                    <tr key={p.id}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <span style={{ fontWeight: 800, color: '#38bdf8' }}>#{pIdx + 1}</span>
+                          <img src={p.avatar} alt={p.name} style={{ width: '36px', height: '36px', borderRadius: '10px', objectFit: 'cover' }} />
+                          <strong>{p.name}</strong>
+                        </div>
+                      </td>
+                      <td>{p.city}</td>
+                      <td><strong style={{ color: '#34d399' }}>{formatCurrency(p.totalEarnings || 0)}</strong></td>
+                      <td>{p.completedHours || 0}h</td>
+                      <td><strong style={{ color: '#fbbf24' }}>★ {p.rating || 5.0}</strong></td>
+                      <td>{p.cancellationRate || '0%'}</td>
+                      <td><span className="admin-badge admin-badge-emerald">{p.status || 'Active'}</span></td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -201,19 +217,25 @@ export default function ReportsTab({
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
             <div style={{ padding: '16px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px' }}>
-              <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>NEW CUSTOMERS (THIS MONTH)</div>
-              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#38bdf8', margin: '4px 0' }}>148 Hirers</div>
-              <div style={{ fontSize: '0.76rem', color: '#34d399' }}>+24% month-on-month</div>
+              <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>TOTAL REGISTERED CUSTOMERS</div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#38bdf8', margin: '4px 0' }}>
+                {stats?.totalCustomers || 0} Hirers
+              </div>
+              <div style={{ fontSize: '0.76rem', color: '#34d399' }}>Verified user profiles</div>
             </div>
             <div style={{ padding: '16px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px' }}>
-              <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>REPEAT Hirers</div>
-              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#c084fc', margin: '4px 0' }}>68 Hirers</div>
-              <div style={{ fontSize: '0.76rem', color: '#cbd5e1' }}>Avg 3.2 bookings per user</div>
+              <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>COMPLETED SESSIONS</div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#c084fc', margin: '4px 0' }}>
+                {stats?.completedBookingsCount || 0} Sessions
+              </div>
+              <div style={{ fontSize: '0.76rem', color: '#cbd5e1' }}>Across all categories</div>
             </div>
             <div style={{ padding: '16px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px' }}>
-              <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>TOP BOOKED SERVICE</div>
-              <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fbbf24', margin: '4px 0' }}>Cafe & Conversation</div>
-              <div style={{ fontSize: '0.76rem', color: '#cbd5e1' }}>46% of total session hours</div>
+              <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>ACTIVE VERIFIED PARTNERS</div>
+              <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#fbbf24', margin: '4px 0' }}>
+                {stats?.activePartners || 0} Partners
+              </div>
+              <div style={{ fontSize: '0.76rem', color: '#cbd5e1' }}>Ready to accept bookings</div>
             </div>
           </div>
         </div>

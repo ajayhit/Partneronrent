@@ -187,15 +187,15 @@ export default function CustomerProfileModal({
                 </div>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Document Type:</span>
-                  <div style={{ fontWeight: 600 }}>{customer.idType || 'Aadhaar Card'}</div>
+                  <div style={{ fontWeight: 600 }}>{customer.idType || 'Not submitted'}</div>
                 </div>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>ID Number (Masked):</span>
-                  <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{customer.idNumber || 'XXXX-XXXX-9214'}</div>
+                  <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{customer.idNumber || 'Not submitted'}</div>
                 </div>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Emergency Contact:</span>
-                  <div style={{ fontWeight: 600 }}>{customer.emergencyContact || '+91 98111 22334'}</div>
+                  <div style={{ fontWeight: 600 }}>{customer.emergencyContact || 'Not provided'}</div>
                 </div>
               </div>
             </div>
@@ -225,8 +225,8 @@ export default function CustomerProfileModal({
               <h4 style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '10px' }}>Account Metadata</h4>
               <div style={{ fontSize: '0.82rem', color: '#cbd5e1', lineHeight: '1.8' }}>
                 <div>• Customer ID: <span style={{ fontFamily: 'monospace', color: '#38bdf8' }}>{customer.id}</span></div>
-                <div>• Platform Member Since: {customer.joinedDate || '2024-01-15'}</div>
-                <div>• Registered City: {customer.city || 'Delhi NCR'}</div>
+                <div>• Platform Member Since: {customer.joinedDate || (customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : 'N/A')}</div>
+                <div>• Registered City: {customer.city || 'Not specified'}</div>
               </div>
             </div>
           </div>
