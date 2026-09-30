@@ -12,8 +12,22 @@ import {
   Check,
   Plus,
   X,
-  Save
+  Save,
+  Calendar
 } from 'lucide-react';
+
+function calculateAge(dobString) {
+  if (!dobString) return '';
+  const birthDate = new Date(dobString);
+  if (isNaN(birthDate.getTime())) return '';
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const m = today.getMonth() - birthDate.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age >= 0 ? age : '';
+}
 
 const ALL_LANGUAGES = [
   'English', 'Hindi', 'Bengali', 'Marathi', 'Telugu', 'Tamil', 'Kannada', 'Gujarati', 'Punjabi', 'Malayalam'
@@ -25,15 +39,16 @@ const POPULAR_INTERESTS = [
   'Yoga & Mindfulness', 'Fashion Shopping', 'Standup Comedy', 'Heritage Walks'
 ];
 
-export default function ProfileTab({ partner, onUpdateProfile, showToast }) {
+export default function ProfileTab({ partner, onUpdateProfile, onTabChange, showToast }) {
   const [formData, setFormData] = useState({
     name: partner?.name || '',
     tagline: partner?.tagline || '',
     bio: partner?.bio || '',
+    dob: partner?.dob || '',
     age: partner?.age || '',
     gender: partner?.gender || 'Female',
     city: partner?.city || '',
-    avatar: partner?.avatar || '',
+    avatar: partner?.avatar || '/default-avatar.jpg',
     coverPhoto: partner?.coverPhoto || '',
     phone: partner?.phone || '',
     email: partner?.email || '',
@@ -84,6 +99,16 @@ export default function ProfileTab({ partner, onUpdateProfile, showToast }) {
     }));
   };
 
+  const handleDobChange = (e) => {
+    const newDob = e.target.value;
+    const computedAge = calculateAge(newDob);
+    setFormData(prev => ({
+      ...prev,
+      dob: newDob,
+      age: computedAge !== '' ? computedAge : prev.age
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -120,6 +145,71 @@ export default function ProfileTab({ partner, onUpdateProfile, showToast }) {
           </button>
         </div>
       </div>
+
+      {/* KYC Rejection Notice */}
+      {partner?.kycStatus === 'rejected' && (
+        <div style={{
+          background: 'rgba(239, 68, 68, 0.12)',
+          border: '1px solid #ef4444',
+          borderRadius: '12px',
+          padding: '16px 20px',
+          marginBottom: '20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '16px',
+          flexWrap: 'wrap'
+        }}>
+          <div>
+            <div style={{ fontWeight: 800, color: '#f87171', fontSize: '0.96rem' }}>
+              ⚠️ Verification Application Rejected by Administrator
+            </div>
+            <div style={{ color: '#cbd5e1', fontSize: '0.84rem', marginTop: '4px' }}>
+              Reason: <strong style={{ color: '#fff' }}>"{partner?.kycRejectionReason || partner?.kycDocuments?.rejectionReason || 'Please review your documents and profile details.'}"</strong>
+            </div>
+          </div>
+          {onTabChange && (
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => onTabChange('kyc')}
+              style={{ background: '#ef4444', padding: '8px 18px', fontSize: '0.82rem', fontWeight: 700 }}
+            >
+              Update &amp; Re-Submit Application →
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* KYC Pending Notice */}
+      {partner?.kycStatus !== 'verified' && partner?.kycStatus !== 'rejected' && (
+        <div style={{
+          background: 'rgba(245, 158, 11, 0.1)',
+          border: '1px solid #f59e0b',
+          borderRadius: '12px',
+          padding: '14px 18px',
+          marginBottom: '20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: '16px',
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ color: '#cbd5e1', fontSize: '0.84rem' }}>
+            ⏳ <strong>Identity Verification Required:</strong> Complete your profile details and submit government KYC documents to activate your account.
+          </div>
+          {onTabChange && (
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => onTabChange('kyc')}
+              style={{ padding: '6px 14px', fontSize: '0.8rem', fontWeight: 700 }}
+            >
+              Go to KYC Verification →
+            </button>
+          )}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         {/* Photos & Media Card */}
@@ -236,7 +326,22 @@ export default function ProfileTab({ partner, onUpdateProfile, showToast }) {
 
             <div>
               <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
-                Age
+                <Calendar size={13} style={{ display: 'inline', marginRight: '4px' }} />
+                Date of Birth (DOB) *
+              </label>
+              <input
+                type="date"
+                value={formData.dob || ''}
+                onChange={handleDobChange}
+                max={new Date().toISOString().split('T')[0]}
+                required
+                style={{ width: '100%' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                Age {formData.dob ? <span style={{ color: '#38bdf8', fontWeight: 400 }}>(Auto-calculated from DOB)</span> : ''} *
               </label>
               <input
                 type="number"
@@ -247,6 +352,11 @@ export default function ProfileTab({ partner, onUpdateProfile, showToast }) {
                 required
                 style={{ width: '100%' }}
               />
+              {formData.dob && Number(formData.age) < 18 && (
+                <div style={{ fontSize: '0.74rem', color: '#f87171', marginTop: '3px' }}>
+                  ⚠ Companion age must be at least 18 years.
+                </div>
+              )}
             </div>
 
             <div>
@@ -579,9 +689,9 @@ export default function ProfileTab({ partner, onUpdateProfile, showToast }) {
 
                 <h3 style={{ fontSize: '1.4rem', color: '#fff', margin: '0 0 4px' }}>{formData.name}</h3>
                 <div style={{ fontSize: '0.85rem', color: '#c084fc', marginBottom: '8px' }}>{formData.tagline}</div>
-                <div style={{ fontSize: '0.82rem', color: '#94a3b8', display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                <div style={{ fontSize: '0.82rem', color: '#94a3b8', display: 'flex', gap: '12px', marginBottom: '12px', flexWrap: 'wrap' }}>
                   <span>📍 {formData.city}</span>
-                  <span>🎂 {formData.age} yrs • {formData.gender}</span>
+                  <span>🎂 {formData.age} yrs {formData.dob ? `(DOB: ${formData.dob})` : ''} • {formData.gender}</span>
                 </div>
 
                 <p style={{ fontSize: '0.84rem', color: '#cbd5e1', lineHeight: '1.5', marginBottom: '14px' }}>

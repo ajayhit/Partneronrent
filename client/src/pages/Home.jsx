@@ -292,6 +292,11 @@ export default function Home({ setActivePage, onSelectPartner }) {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <h3 style={{ fontSize: '1.1rem', color: '#fff', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {partner.name}, {partner.age}
+                      {partner.dob && (
+                        <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 400, marginLeft: '6px' }}>
+                          🎂 {partner.dob}
+                        </span>
+                      )}
                     </h3>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#94a3b8', fontSize: '0.78rem', marginBottom: '8px' }}>
                       <MapPin size={12} /> {partner.city}

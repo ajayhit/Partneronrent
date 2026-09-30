@@ -10,6 +10,7 @@ const DB_PATH = path.join(__dirname, 'data', 'db.json');
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.static(path.join(__dirname, '../client/public')));
 
 // Helper functions for reading and writing data
 function readData() {
@@ -132,7 +133,7 @@ app.post('/api/partners/:id/toggle-online', (req, res) => {
   res.json({ isOnline: db.partners[index].isOnline });
 });
 
-// Partner KYC submission
+// Partner KYC and Joined Profile submission
 app.post('/api/partners/:id/kyc', (req, res) => {
   const db = readData();
   let index = db.partners.findIndex(p => p.id === req.params.id);
@@ -152,7 +153,22 @@ app.post('/api/partners/:id/kyc', (req, res) => {
     idFrontName,
     idBackName,
     panFileName,
-    selfieFileName
+    selfieFileName,
+    // Joined Companion Profile Fields
+    name,
+    tagline,
+    bio,
+    age,
+    gender,
+    city,
+    avatar,
+    coverPhoto,
+    phone,
+    email,
+    languages,
+    areas,
+    interests,
+    hourlyRate
   } = req.body;
 
   const kycDocs = {
@@ -173,37 +189,68 @@ app.post('/api/partners/:id/kyc', (req, res) => {
     selfieFileName: selfieFileName || (selfieDoc ? 'selfie.jpg' : null),
     submittedAt: new Date().toISOString(),
     backgroundCheck: 'Under automated Aadhaar/Govt ID verification review',
+    rejectionReason: null,
     verificationHistory: [
       {
         date: new Date().toISOString().replace('T', ' ').slice(0, 16),
         status: 'Submitted',
-        note: 'Govt ID proofs and selfie submitted for compliance verification.'
+        note: 'Complete profile details and Govt ID proofs submitted for compliance verification.'
       }
     ]
   };
 
+  const profileUpdates = {};
+  if (name !== undefined) profileUpdates.name = name;
+  if (tagline !== undefined) profileUpdates.tagline = tagline;
+  if (bio !== undefined) profileUpdates.bio = bio;
+  if (age !== undefined && age !== '') profileUpdates.age = Number(age);
+  if (gender !== undefined) profileUpdates.gender = gender;
+  if (city !== undefined) profileUpdates.city = city;
+  if (avatar !== undefined) profileUpdates.avatar = avatar;
+  if (coverPhoto !== undefined) profileUpdates.coverPhoto = coverPhoto;
+  if (phone !== undefined) profileUpdates.phone = phone;
+  if (email !== undefined) profileUpdates.email = email;
+  if (languages !== undefined) profileUpdates.languages = Array.isArray(languages) ? languages : [];
+  if (areas !== undefined) profileUpdates.areas = Array.isArray(areas) ? areas : [];
+  if (interests !== undefined) profileUpdates.interests = Array.isArray(interests) ? interests : [];
+  if (hourlyRate !== undefined) profileUpdates.hourlyRate = Number(hourlyRate);
+
   if (index === -1) {
     const newPartner = {
       id: req.params.id,
-      name: holderName || 'Partner Applicant',
-      city: 'Delhi NCR',
+      name: name || holderName || 'Partner Applicant',
+      city: city || 'Delhi NCR',
       kycStatus: 'pending',
+      kycRejectionReason: null,
       isOnline: false,
-      hourlyRate: 1500,
-      avatar: selfieDoc || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      hourlyRate: hourlyRate ? Number(hourlyRate) : 1500,
+      avatar: avatar || selfieDoc || '/default-avatar.jpg',
+      coverPhoto: coverPhoto || '',
+      tagline: tagline || '',
+      bio: bio || '',
+      age: age ? Number(age) : 24,
+      gender: gender || 'Female',
+      phone: phone || '',
+      email: email || '',
+      languages: Array.isArray(languages) ? languages : ['English', 'Hindi'],
+      areas: Array.isArray(areas) ? areas : [],
+      interests: Array.isArray(interests) ? interests : [],
       walletBalance: 0,
       totalEarnings: 0,
       rating: 5.0,
       reviewCount: 0,
       completedHours: 0,
       services: [],
+      ...profileUpdates,
       kycDocuments: kycDocs
     };
     db.partners.push(newPartner);
     index = db.partners.length - 1;
   } else {
     db.partners[index].kycStatus = 'pending';
+    db.partners[index].kycRejectionReason = null;
     db.partners[index].isOnline = false;
+    Object.assign(db.partners[index], profileUpdates);
     db.partners[index].kycDocuments = {
       ...(db.partners[index].kycDocuments || {}),
       ...kycDocs
@@ -211,13 +258,18 @@ app.post('/api/partners/:id/kyc', (req, res) => {
   }
 
   // Update corresponding user in db.users if present
-  const userIdx = db.users.findIndex(u => u.id === req.params.id || u.partnerProfileId === req.params.id);
+  const userIdx = db.users.findIndex(u => u.id === req.params.id || u.partnerProfileId === req.params.id || (email && u.email && u.email.toLowerCase() === email.toLowerCase()));
   if (userIdx !== -1) {
     db.users[userIdx].kycStatus = 'pending';
+    db.users[userIdx].kycRejectionReason = null;
+    if (name) db.users[userIdx].name = name;
+    if (avatar) db.users[userIdx].avatar = avatar;
+    if (phone) db.users[userIdx].phone = phone;
+    if (city) db.users[userIdx].city = city;
   }
 
   writeData(db);
-  res.json({ message: 'KYC submitted successfully', partner: db.partners[index] });
+  res.json({ message: 'Profile and KYC submitted successfully for admin review', partner: db.partners[index] });
 });
 
 // 4. Bookings
@@ -755,19 +807,34 @@ app.put('/api/admin/partners/:id/kyc', (req, res) => {
   if (status === 'verified') {
     partner.status = 'verified';
     partner.badge = 'Verified Partner';
+    partner.kycRejectionReason = null;
   } else if (status === 'rejected') {
     partner.status = 'rejected';
+    partner.isOnline = false;
+    partner.kycRejectionReason = notes || 'Verification rejected by administrator';
+  } else {
+    partner.kycRejectionReason = null;
   }
 
   if (!partner.kycDocuments) partner.kycDocuments = {};
   partner.kycDocuments.reviewedAt = new Date().toISOString();
   partner.kycDocuments.reviewNotes = notes || '';
+  partner.kycDocuments.rejectionReason = status === 'rejected' ? (notes || 'Verification rejected by administrator') : null;
   if (!partner.kycDocuments.verificationHistory) partner.kycDocuments.verificationHistory = [];
   partner.kycDocuments.verificationHistory.unshift({
     date: new Date().toISOString().split('T')[0],
     status: status.toUpperCase(),
-    note: notes || 'Reviewed by KYC verification desk'
+    note: notes || (status === 'verified' ? 'Approved by verification desk' : 'Rejected by verification desk')
   });
+
+  // Sync with matching user in db.users
+  const userIdx = db.users.findIndex(u => u.id === partner.id || u.partnerProfileId === partner.id || (u.email && partner.email && u.email.toLowerCase() === partner.email.toLowerCase()));
+  if (userIdx !== -1) {
+    db.users[userIdx].kycStatus = status;
+    db.users[userIdx].kycRejectionReason = partner.kycRejectionReason;
+    if (!db.users[userIdx].kycDocuments) db.users[userIdx].kycDocuments = {};
+    db.users[userIdx].kycDocuments.rejectionReason = partner.kycDocuments.rejectionReason;
+  }
 
   logAudit(db, adminName, 'KYC Verification', 'Partner', partner.id, oldKyc, status, notes);
   writeData(db);
@@ -1210,6 +1277,14 @@ app.post('/api/auth/login', (req, res) => {
   }
 
   const { password: _pw, ...safeUser } = user;
+  if (user.role === 'partner' || user.role === 'both') {
+    const partner = db.partners.find(p => p.id === user.id || p.id === user.partnerProfileId || (p.email && user.email && p.email.toLowerCase() === user.email.toLowerCase()));
+    if (partner) {
+      safeUser.kycStatus = partner.kycStatus || safeUser.kycStatus || 'not_submitted';
+      safeUser.kycRejectionReason = partner.kycRejectionReason || partner.kycDocuments?.rejectionReason || null;
+      safeUser.kycDocuments = partner.kycDocuments || safeUser.kycDocuments || {};
+    }
+  }
   res.json({
     success: true,
     message: 'Authentication successful.',

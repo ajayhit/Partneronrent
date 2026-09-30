@@ -109,7 +109,14 @@ export default function PartnerProfile({ partnerId, partnerObj, onBack, setActiv
 
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                  <h1 style={{ fontSize: '2rem' }}>{partner.name}, {partner.age}</h1>
+                  <h1 style={{ fontSize: '2rem' }}>
+                    {partner.name}, {partner.age}
+                    {partner.dob && (
+                      <span style={{ fontSize: '1rem', color: '#94a3b8', fontWeight: 400, marginLeft: '10px' }}>
+                        🎂 {partner.dob}
+                      </span>
+                    )}
+                  </h1>
                   <span className="badge badge-verified">
                     <ShieldCheck size={14} /> {partner.badge || 'Verified Partner'}
                   </span>

@@ -55,7 +55,7 @@ export default function PartnerProfileModal({
   const handleKYCAction = async (status) => {
     let reason = '';
     if (status === 'rejected') {
-      reason = prompt('Enter rejection reason for partner KYC:', 'Document image blurred or ID mismatch');
+      reason = prompt('Enter rejection reason to show to the partner on their panel:\n\n(e.g., Aadhaar photo blurred, PAN name mismatch, incomplete bio):', partner?.kycRejectionReason || 'Document image blurred or ID mismatch');
       if (!reason) return;
     } else {
       reason = prompt('Enter verification approval note:', 'Digilocker verified & background clear');
@@ -99,12 +99,13 @@ export default function PartnerProfileModal({
           border: '1px solid rgba(255, 255, 255, 0.08)',
           borderRadius: '16px',
           padding: '18px',
-          marginBottom: '20px'
+          marginBottom: '16px'
         }}>
           <img
-            src={partner.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80'}
+            src={partner.avatar || '/default-avatar.jpg'}
             alt={partner.name}
             style={{ width: '80px', height: '80px', borderRadius: '18px', objectFit: 'cover', border: '2px solid rgba(56, 189, 248, 0.3)' }}
+            onError={e => { e.target.src = '/default-avatar.jpg'; }}
           />
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
@@ -136,6 +137,21 @@ export default function PartnerProfileModal({
             </div>
           </div>
         </div>
+
+        {/* Rejection notice if rejected */}
+        {partner.kycStatus === 'rejected' && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.35)',
+            borderRadius: '12px',
+            padding: '12px 16px',
+            marginBottom: '16px',
+            fontSize: '0.84rem',
+            color: '#fca5a5'
+          }}>
+            <strong style={{ color: '#ef4444' }}>Current Rejection Reason (Shown to Partner):</strong> "{partner.kycRejectionReason || partner.kycDocuments?.rejectionReason || partner.kycDocuments?.reviewNotes || 'Verification rejected'}"
+          </div>
+        )}
 
         {/* Action Toolbar */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: '22px', flexWrap: 'wrap' }}>
@@ -235,8 +251,12 @@ export default function PartnerProfileModal({
               <h4 style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '12px' }}>Demographics & Availability</h4>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', fontSize: '0.85rem' }}>
                 <div>
-                  <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Gender & Age:</span>
-                  <div style={{ fontWeight: 600 }}>{partner.gender || 'Not specified'}, {partner.age ? `${partner.age} yrs` : 'Age not specified'}</div>
+                  <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Gender:</span>
+                  <div style={{ fontWeight: 600 }}>{partner.gender || 'Not specified'}</div>
+                </div>
+                <div>
+                  <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Date of Birth:</span>
+                  <div style={{ fontWeight: 600 }}>{partner.dob || 'Not specified'}{partner.age ? ` (${partner.age} yrs)` : ''}</div>
                 </div>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>Languages:</span>

@@ -61,11 +61,33 @@ function getMockUsers() {
 }
 
 function saveMockUsers(users) {
-  localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(users));
+  try {
+    localStorage.setItem(MOCK_USERS_KEY, JSON.stringify(users));
+  } catch (err) {
+    console.warn('Could not save mock users to localStorage (quota exceeded):', err);
+  }
 }
 
 // ─── Session persistence key ─────────────────────────────────────────────────
 const SESSION_KEY = 'por_user_session';
+
+function sanitizeSessionForStorage(sess) {
+  if (!sess) return null;
+  const copy = { ...sess };
+  // Never store base64 document files or massive strings in localStorage
+  if (copy.kycDocuments) {
+    const { idFrontDoc, idBackDoc, panDoc, selfieDoc, addressDoc, ...safeKyc } = copy.kycDocuments;
+    copy.kycDocuments = safeKyc;
+  }
+  // Strip large base64 data URLs from avatar/coverPhoto to prevent exceeding localStorage quota
+  if (typeof copy.avatar === 'string' && copy.avatar.startsWith('data:')) {
+    copy.avatar = DEFAULT_AVATAR;
+  }
+  if (typeof copy.coverPhoto === 'string' && copy.coverPhoto.startsWith('data:')) {
+    copy.coverPhoto = '';
+  }
+  return copy;
+}
 
 function loadSession() {
   try {
@@ -76,6 +98,15 @@ function loadSession() {
       localStorage.removeItem(SESSION_KEY);
       localStorage.removeItem('por_role');
       return null;
+    }
+    // Clean up oversized data from legacy stored sessions
+    if (session) {
+      session = sanitizeSessionForStorage(session);
+      try {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+      } catch {
+        // ignore
+      }
     }
     // Replace old placeholder avatars with the default avatar in the restored session
     if (session && (PLACEHOLDER_AVATARS.includes(session.avatar) || !session.avatar)) {
@@ -97,15 +128,38 @@ export function AuthProvider({ children }) {
   const activeUser = session?.role === 'client' || session?.role === 'both' || session?.role === 'admin' ? session : null;
   const activePartner = session?.role === 'partner' || session?.role === 'both' ? session : null;
 
-  // Persist session changes
+  // Persist session changes safely without exceeding localStorage quota
   useEffect(() => {
     if (session) {
-      localStorage.setItem(SESSION_KEY, JSON.stringify(session));
-      localStorage.setItem('por_role', session.role);
+      try {
+        const safeSession = sanitizeSessionForStorage(session);
+        localStorage.setItem(SESSION_KEY, JSON.stringify(safeSession));
+        localStorage.setItem('por_role', session.role || 'guest');
+      } catch (err) {
+        console.warn('LocalStorage quota exceeded when storing session, falling back to minimal session:', err);
+        try {
+          const minimal = {
+            id: session.id,
+            name: session.name,
+            email: session.email,
+            role: session.role || 'guest',
+            city: session.city,
+            avatar: DEFAULT_AVATAR,
+            kycStatus: session.kycStatus,
+            kycRejectionReason: session.kycRejectionReason
+          };
+          localStorage.setItem(SESSION_KEY, JSON.stringify(minimal));
+          localStorage.setItem('por_role', session.role || 'guest');
+        } catch (innerErr) {
+          console.warn('Unable to persist even minimal session to localStorage:', innerErr);
+        }
+      }
     } else {
-      localStorage.removeItem(SESSION_KEY);
-      localStorage.removeItem('por_role');
-      localStorage.removeItem('por_active_page');
+      try {
+        localStorage.removeItem(SESSION_KEY);
+        localStorage.removeItem('por_role');
+        localStorage.removeItem('por_active_page');
+      } catch {}
     }
   }, [session]);
 

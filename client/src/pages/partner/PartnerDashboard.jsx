@@ -48,7 +48,7 @@ import {
 } from 'lucide-react';
 
 export default function PartnerDashboard({ initialTab = 'dashboard', setActivePage }) {
-  const { activePartner, logout } = useAuth();
+  const { activePartner, logout, updateSession } = useAuth();
   const { openChat, openSOS, showToast } = useApp();
 
   // Navigation State - if partner KYC is not verified, default to kyc tab
@@ -85,6 +85,15 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
       ]);
       if (partnerData && !partnerData.error) {
         setPartner(prev => ({ ...(prev || {}), ...partnerData }));
+        if (updateSession && (partnerData.kycStatus !== activePartner?.kycStatus || partnerData.kycRejectionReason !== activePartner?.kycRejectionReason)) {
+          updateSession({
+            ...activePartner,
+            name: partnerData.name || activePartner?.name,
+            city: partnerData.city || activePartner?.city,
+            kycStatus: partnerData.kycStatus,
+            kycRejectionReason: partnerData.kycRejectionReason
+          });
+        }
         // If partner's KYC is not verified, redirect to kyc tab
         if (!partnerData.kycStatus || partnerData.kycStatus !== 'verified') {
           setActiveTab('kyc');
@@ -102,7 +111,7 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
   // Guard tab switching: if KYC is not verified, redirect to KYC tab
   const handleTabChange = (tabId) => {
     if ((!partner?.kycStatus || partner.kycStatus !== 'verified') && tabId !== 'kyc' && tabId !== 'guidelines' && tabId !== 'settings') {
-      showToast('KYC verification required. Please complete your verification first.', 'warning');
+      showToast('Profile & KYC verification required. Please complete verification first.', 'warning');
       setActiveTab('kyc');
       return;
     }
@@ -129,13 +138,31 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
   const handleUpdateProfile = async (profileData) => {
     const updated = await updatePartnerProfile(partner?.id, profileData);
     setPartner(prev => ({ ...prev, ...updated }));
+    if (updateSession) {
+      updateSession({
+        ...activePartner,
+        name: updated.name || activePartner?.name,
+        city: updated.city || activePartner?.city
+      });
+    }
     return updated;
   };
 
-  // 3. KYC submission
+  // 3. KYC and Joined Profile submission
   const handleSubmitKYC = async (kycData) => {
     const res = await submitPartnerKYC(partner?.id, kycData);
-    if (res.partner) setPartner(res.partner);
+    if (res.partner) {
+      setPartner(res.partner);
+      if (updateSession) {
+        updateSession({
+          ...activePartner,
+          name: res.partner.name || activePartner?.name,
+          city: res.partner.city || activePartner?.city,
+          kycStatus: res.partner.kycStatus,
+          kycRejectionReason: res.partner.kycRejectionReason
+        });
+      }
+    }
     loadAllData();
   };
 
@@ -394,6 +421,7 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
           <ProfileTab
             partner={partner}
             onUpdateProfile={handleUpdateProfile}
+            onTabChange={setActiveTab}
             showToast={showToast}
           />
         )}

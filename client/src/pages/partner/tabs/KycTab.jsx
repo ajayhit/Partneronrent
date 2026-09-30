@@ -1,16 +1,17 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   ShieldCheck, Clock, AlertTriangle, FileText,
   Upload, CheckCircle2, XCircle, Camera,
   CreditCard, History, Paperclip, Trash2, Lock,
-  Eye, X, ExternalLink, Download
+  Eye, X, Download, User, MapPin, Languages, Sparkles,
+  Phone, Mail, Check, Plus, AlertOctagon, HelpCircle
 } from 'lucide-react';
 
 // ── Aadhaar Verhoeff Validation ───────────────────────────────────────────
 const _d = [[0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],[4,0,1,2,3,9,5,6,7,8],[5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],[8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0]];
 const _p = [[0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],[9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]];
 function validateAadhaar(num) {
-  const digits = num.replace(/\s|-/g, '');
+  const digits = String(num || '').replace(/\s|-/g, '');
   if (!/^\d{12}$/.test(digits)) return false;
   if (digits[0] === '0' || digits[0] === '1') return false;
   let c = 0;
@@ -35,10 +36,19 @@ function fileToDataUrl(file) {
   });
 }
 
+const ALL_LANGUAGES = [
+  'English', 'Hindi', 'Bengali', 'Marathi', 'Telugu', 'Tamil', 'Kannada', 'Gujarati', 'Punjabi', 'Malayalam'
+];
+
+const POPULAR_INTERESTS = [
+  'Coffee Tasting', 'Art Galleries', 'Indie Cinema', 'Bookstores', 'Live Concerts',
+  'Street Food Tours', 'Museum Walks', 'Board Games', 'Gym & Fitness', 'Tech & Startups',
+  'Yoga & Mindfulness', 'Fashion Shopping', 'Standup Comedy', 'Heritage Walks'
+];
+
 // ── Document Preview Modal ────────────────────────────────────────────────
 function DocumentPreviewModal({ doc, onClose }) {
   if (!doc) return null;
-  // Enhanced detection for PDF and Image documents
   const isPDF = Boolean(
     doc.url && (
       doc.url.startsWith('data:application/pdf') ||
@@ -109,10 +119,9 @@ function DocumentPreviewModal({ doc, onClose }) {
           </button>
         </div>
 
-        {/* Document Content */}
+        {/* Content */}
         <div style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
           {isImage ? (
-            /* ── Actual uploaded image ── */
             <div style={{
               borderRadius: '12px', overflow: 'hidden',
               border: '1px solid rgba(255,255,255,0.12)',
@@ -139,7 +148,6 @@ function DocumentPreviewModal({ doc, onClose }) {
               </div>
             </div>
           ) : isPDF ? (
-            /* ── PDF viewer with embed and fallback ── */
             <div style={{
               borderRadius: '12px', overflow: 'hidden',
               border: '1px solid rgba(255,255,255,0.12)',
@@ -174,71 +182,17 @@ function DocumentPreviewModal({ doc, onClose }) {
               </object>
             </div>
           ) : (
-            /* ── No image stored — fallback info card ── */
             <div style={{
               background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.12)',
               borderRadius: '12px', padding: '40px 24px', textAlign: 'center'
             }}>
-              <div style={{
-                width: '56px', height: '56px', borderRadius: '14px', margin: '0 auto 16px',
-                background: doc.type === 'pan' ? 'rgba(251,191,36,0.15)' : doc.type === 'selfie' ? 'rgba(192,132,252,0.15)' : 'rgba(56,189,248,0.15)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center'
-              }}>
-                <FileText size={28} color={doc.type === 'pan' ? '#fbbf24' : doc.type === 'selfie' ? '#c084fc' : '#38bdf8'} />
-              </div>
+              <FileText size={40} color="#38bdf8" style={{ margin: '0 auto 12px' }} />
               <div style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>{doc.title}</div>
-              <div style={{ fontSize: '0.84rem', color: '#94a3b8', marginBottom: '20px' }}>
-                {doc.fileName
-                  ? `File: ${doc.fileName} — submitted successfully`
-                  : 'Document submitted and stored securely'}
-              </div>
-              <div style={{
-                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px',
-                background: 'rgba(255,255,255,0.04)', borderRadius: '10px',
-                padding: '16px', textAlign: 'left'
-              }}>
-                <div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>Legal Name</div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e2e8f0' }}>{doc.holderName || '—'}</div>
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>
-                    {doc.type === 'pan' ? 'PAN Number' : 'Aadhaar (Masked)'}
-                  </div>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#e2e8f0', letterSpacing: '0.05em' }}>
-                    {doc.type === 'pan'
-                      ? (doc.panNumber || '—')
-                      : (doc.idNumber ? doc.idNumber.replace(/(\d{4})(\d{4})(\d{4})/, 'XXXX-XXXX-$3') : '—')}
-                  </div>
-                </div>
-              </div>
-              <div style={{
-                marginTop: '16px', fontSize: '0.76rem', color: '#475569',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
-              }}>
-                <ShieldCheck size={13} color="#34d399" />
-                Document stored in encrypted KYC vault. Preview not available for legacy records.
+              <div style={{ fontSize: '0.84rem', color: '#94a3b8' }}>
+                {doc.fileName ? `File: ${doc.fileName} — submitted successfully` : 'Document submitted securely'}
               </div>
             </div>
           )}
-
-          {/* Status bar */}
-          <div style={{
-            marginTop: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            fontSize: '0.75rem', color: '#94a3b8', padding: '9px 14px',
-            background: 'rgba(255,255,255,0.03)', borderRadius: '8px',
-            border: '1px solid rgba(255,255,255,0.06)'
-          }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <ShieldCheck size={13} color="#34d399" /> PartnerOnRent Secure KYC Vault
-            </span>
-            <span style={{
-              color: doc.status === 'verified' ? '#34d399' : '#fbbf24',
-              fontWeight: 700, textTransform: 'uppercase', fontSize: '0.72rem'
-            }}>
-              {doc.status === 'verified' ? '✓ Verified' : '⏳ Under Review'}
-            </span>
-          </div>
         </div>
 
         {/* Footer */}
@@ -297,7 +251,7 @@ function FileUploadBox({ label, color, accept, file, onChange, onRemove, onPrevi
         onChange={e => { if (e.target.files[0]) onChange(e.target.files[0]); e.target.value = ''; }}
       />
       {file ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
           <Paperclip size={15} color={color} />
           <span style={{ fontSize: '0.8rem', color: '#34d399', fontWeight: 600, wordBreak: 'break-all' }}>{file.name}</span>
           {onPreview && (
@@ -328,21 +282,21 @@ function FileUploadBox({ label, color, accept, file, onChange, onRemove, onPrevi
   );
 }
 
-// ── Submitted KYC Report ──────────────────────────────────────────────────
-function SubmittedReport({ data, status }) {
+// ── Submitted Summary Report (Joined Profile & KYC) ────────────────────────
+function SubmittedReport({ partner, data, status }) {
   const [previewDoc, setPreviewDoc] = useState(null);
 
   const badge = status === 'verified'
-    ? { label: 'Verified', color: '#10b981', bg: 'rgba(16,185,129,0.1)' }
+    ? { label: 'Verified', color: '#10b981', bg: 'rgba(16,185,129,0.15)' }
     : status === 'rejected'
-    ? { label: 'Rejected', color: '#ef4444', bg: 'rgba(239,68,68,0.1)' }
-    : { label: 'Under Review', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' };
+    ? { label: 'Rejected', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' }
+    : { label: 'Under Review', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' };
 
   const Row = ({ label, value }) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
       <span style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 500 }}>{label}</span>
-      <span style={{ fontSize: '0.88rem', color: '#e2e8f0', fontWeight: 700 }}>{value || '—'}</span>
+      <span style={{ fontSize: '0.86rem', color: '#e2e8f0', fontWeight: 600, textAlign: 'right', maxWidth: '60%' }}>{value || '—'}</span>
     </div>
   );
 
@@ -368,9 +322,6 @@ function SubmittedReport({ data, status }) {
                   type: docType,
                   url: docUrl,
                   fileName: fileName || `${label.toLowerCase().replace(/[^a-z0-9]/g, '_')}.${isPdfUrl ? 'pdf' : 'jpg'}`,
-                  holderName: data.holderName,
-                  idNumber: data.idNumber,
-                  panNumber: data.panNumber,
                   status
                 });
               }}
@@ -380,10 +331,8 @@ function SubmittedReport({ data, status }) {
                 background: 'rgba(56, 189, 248, 0.12)',
                 border: '1px solid rgba(56, 189, 248, 0.35)',
                 color: '#38bdf8', fontSize: '0.78rem', fontWeight: 700,
-                cursor: 'pointer', transition: 'all 0.15s'
+                cursor: 'pointer'
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(56, 189, 248, 0.25)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(56, 189, 248, 0.12)'; }}
             >
               <Eye size={13} /> View
             </button>
@@ -398,14 +347,13 @@ function SubmittedReport({ data, status }) {
     : '—';
 
   return (
-    <div className="partner-panel">
-      {/* Document Preview Lightbox Modal */}
+    <div className="partner-panel" style={{ marginBottom: '24px' }}>
       <DocumentPreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
         <div className="partner-panel-title" style={{ margin: 0 }}>
           <FileText size={18} color="#38bdf8" />
-          <span>Submitted KYC Details</span>
+          <span>Submitted Profile &amp; KYC Application Dossier</span>
         </div>
         <span style={{
           fontSize: '0.78rem', fontWeight: 700, padding: '4px 12px',
@@ -415,51 +363,79 @@ function SubmittedReport({ data, status }) {
           {badge.label}
         </span>
       </div>
-      <Row label="Legal Name" value={data.holderName} />
-      <Row label="Document Type" value="Aadhaar Card" />
-      <Row label="Aadhaar Number" value={maskedAadhaar} />
-      <Row label="PAN Number" value={data.panNumber} />
-      <DocRow
-        label="Aadhaar Front"
-        fileName={data.idFrontName}
-        docUrl={data.idFrontDoc}
-        docType="aadhaar"
-        docTitle="Aadhaar Card (Front)"
-      />
-      {(data.idBackName || data.idBackDoc) && (
-        <DocRow
-          label="Aadhaar Back"
-          fileName={data.idBackName}
-          docUrl={data.idBackDoc}
-          docType="aadhaar"
-          docTitle="Aadhaar Card (Back)"
-        />
-      )}
-      <DocRow
-        label="PAN Card Photo"
-        fileName={data.panFileName}
-        docUrl={data.panDoc}
-        docType="pan"
-        docTitle="PAN Card Photo"
-      />
-      <DocRow
-        label="Selfie with ID"
-        fileName={data.selfieFileName}
-        docUrl={data.selfieDoc}
-        docType="selfie"
-        docTitle="Selfie with Aadhaar"
-      />
-      {status === 'rejected' && (
-        <div style={{ marginTop: '16px', padding: '12px 16px', background: 'rgba(239,68,68,0.08)',
-          border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', fontSize: '0.83rem', color: '#fca5a5' }}>
-          ⚠️ Your KYC was rejected. Scroll down to update and re-submit your details.
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+        {/* Profile Summary Column */}
+        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#38bdf8', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <User size={16} /> Companion Profile Details
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
+            <img
+              src={partner?.avatar || '/default-avatar.jpg'}
+              alt={partner?.name || 'Avatar'}
+              style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #38bdf8' }}
+            />
+            <div>
+              <div style={{ fontWeight: 700, color: '#fff', fontSize: '1rem' }}>{partner?.name || '—'}</div>
+              <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{partner?.tagline || 'Companion Profile'}</div>
+            </div>
+          </div>
+          <Row label="Date of Birth" value={partner?.dob ? `${partner.dob} (Age: ${partner.age || '—'} yrs)` : (partner?.age ? `${partner.age} yrs` : '—')} />
+          <Row label="Gender" value={partner?.gender || '—'} />
+          <Row label="Primary City" value={partner?.city} />
+          <Row label="Phone" value={partner?.phone} />
+          <Row label="Email" value={partner?.email} />
+          <Row label="Languages" value={partner?.languages?.join(', ')} />
+          <Row label="Localities" value={partner?.areas?.join(', ')} />
+          <Row label="Interests" value={partner?.interests?.join(', ')} />
         </div>
-      )}
+
+        {/* KYC Docs Column */}
+        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#34d399', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <ShieldCheck size={16} /> Government ID &amp; Proofs
+          </div>
+          <Row label="Legal Name on ID" value={data.holderName || partner?.name} />
+          <Row label="Aadhaar Number" value={maskedAadhaar} />
+          <Row label="PAN Number" value={data.panNumber} />
+          <DocRow
+            label="Aadhaar Front"
+            fileName={data.idFrontName}
+            docUrl={data.idFrontDoc}
+            docType="aadhaar"
+            docTitle="Aadhaar Card (Front)"
+          />
+          {(data.idBackName || data.idBackDoc) && (
+            <DocRow
+              label="Aadhaar Back"
+              fileName={data.idBackName}
+              docUrl={data.idBackDoc}
+              docType="aadhaar"
+              docTitle="Aadhaar Card (Back)"
+            />
+          )}
+          <DocRow
+            label="PAN Card Photo"
+            fileName={data.panFileName}
+            docUrl={data.panDoc}
+            docType="pan"
+            docTitle="PAN Card Photo"
+          />
+          <DocRow
+            label="Selfie with Aadhaar"
+            fileName={data.selfieFileName}
+            docUrl={data.selfieDoc}
+            docType="selfie"
+            docTitle="Selfie with Aadhaar"
+          />
+        </div>
+      </div>
     </div>
   );
 }
 
-// ── Main Component ────────────────────────────────────────────────────────
+// ── Main KycTab Component ──────────────────────────────────────────────────
 export default function KycTab({ partner, onSubmitKYC, showToast }) {
   const currentStatus  = partner?.kycStatus || 'not_submitted';
   const isVerified     = currentStatus === 'verified';
@@ -469,38 +445,83 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
 
   const kd = partner?.kycDocuments || {};
 
-  const [holderName, setHolderName] = useState(isRejected ? (kd.holderName || partner?.name || '') : '');
-  const [idNumber,   setIdNumber]   = useState(isRejected ? (kd.idNumber?.replace(/\D/g, '').slice(0, 12) || '') : '');
-  const [panNumber,  setPanNumber]  = useState(isRejected ? (kd.panNumber  || '') : '');
+  // Rejection Reason from admin (stored on partner object or inside kycDocuments)
+  const rejectionReason = partner?.kycRejectionReason || kd?.rejectionReason || kd?.reviewNotes || '';
+
+  // ── Profile Fields State ─────────────────────────────────────────────────
+  const [name, setName]               = useState(partner?.name || '');
+  const [tagline, setTagline]         = useState(partner?.tagline || '');
+  const [bio, setBio]                 = useState(partner?.bio || '');
+  const [age, setAge]                 = useState(partner?.age || '24');
+  const [gender, setGender]           = useState(partner?.gender || 'Female');
+  const [city, setCity]               = useState(partner?.city || 'Delhi NCR');
+  const [phone, setPhone]             = useState(partner?.phone || '');
+  const [email, setEmail]             = useState(partner?.email || '');
+  const [avatar, setAvatar]           = useState(partner?.avatar || '/default-avatar.jpg');
+  const [coverPhoto, setCoverPhoto]   = useState(partner?.coverPhoto || '');
+  const [languages, setLanguages]     = useState(partner?.languages || ['English', 'Hindi']);
+  const [areas, setAreas]             = useState(partner?.areas || []);
+  const [interests, setInterests]     = useState(partner?.interests || ['Coffee Tasting', 'Art Galleries']);
+  const [newArea, setNewArea]         = useState('');
+  const [avatarFile, setAvatarFile]   = useState(null);
+
+  // ── KYC Document Fields State ────────────────────────────────────────────
+  const [holderName, setHolderName]   = useState(kd.holderName || partner?.name || '');
+  const [idNumber, setIdNumber]       = useState(kd.idNumber?.replace(/\D/g, '').slice(0, 12) || '');
+  const [panNumber, setPanNumber]     = useState(kd.panNumber || '');
   const [aadhaarError, setAadhaarError] = useState('');
-  const [panError,     setPanError]     = useState('');
-  const [idFrontFile,  setIdFrontFile]  = useState(null);
-  const [idBackFile,   setIdBackFile]   = useState(null);
-  const [panFile,      setPanFile]      = useState(null);
-  const [selfieFile,   setSelfieFile]   = useState(null);
+  const [panError, setPanError]       = useState('');
+  const [idFrontFile, setIdFrontFile] = useState(null);
+  const [idBackFile, setIdBackFile]   = useState(null);
+  const [panFile, setPanFile]         = useState(null);
+  const [selfieFile, setSelfieFile]   = useState(null);
+  const [agreed, setAgreed]           = useState(false);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formPreviewDoc, setFormPreviewDoc] = useState(null);
 
-  const handlePreviewFile = async (file, title, docType) => {
-    if (!file) return;
-    const url = await fileToDataUrl(file);
-    setFormPreviewDoc({
-      title,
-      type: docType,
-      url,
-      fileName: file.name,
-      holderName,
-      idNumber,
-      panNumber,
-      status: 'pending'
-    });
+  // Keep state in sync if partner data updates from parent
+  useEffect(() => {
+    if (partner) {
+      if (partner.name && !name) setName(partner.name);
+      if (partner.phone && !phone) setPhone(partner.phone);
+      if (partner.email && !email) setEmail(partner.email);
+      if (partner.city && !city) setCity(partner.city);
+      if (partner.avatar && (!avatar || avatar === '/default-avatar.jpg')) setAvatar(partner.avatar);
+      if (kd.holderName && !holderName) setHolderName(kd.holderName);
+      if (kd.idNumber && !idNumber) setIdNumber(kd.idNumber.replace(/\D/g, '').slice(0, 12));
+      if (kd.panNumber && !panNumber) setPanNumber(kd.panNumber);
+    }
+  }, [partner?.id]);
+
+  const handleToggleLang = (lang) => {
+    if (isLocked) return;
+    setLanguages(prev => prev.includes(lang) ? prev.filter(l => l !== lang) : [...prev, lang]);
+  };
+
+  const handleToggleInterest = (interest) => {
+    if (isLocked) return;
+    setInterests(prev => prev.includes(interest) ? prev.filter(i => i !== interest) : [...prev, interest]);
+  };
+
+  const handleAddArea = (e) => {
+    e.preventDefault();
+    if (!newArea.trim() || isLocked) return;
+    if (areas.includes(newArea.trim())) return;
+    setAreas(prev => [...prev, newArea.trim()]);
+    setNewArea('');
+  };
+
+  const handleRemoveArea = (areaToRemove) => {
+    if (isLocked) return;
+    setAreas(prev => prev.filter(a => a !== areaToRemove));
   };
 
   const handleAadhaarChange = (val) => {
     const digits = val.replace(/\D/g, '').slice(0, 12);
     setIdNumber(digits);
     if (digits.length === 12) {
-      setAadhaarError(!validateAadhaar(digits) ? 'Invalid Aadhaar number. Please check and re-enter.' : '');
+      setAadhaarError(!validateAadhaar(digits) ? 'Invalid Aadhaar number. Please check digits.' : '');
     } else {
       setAadhaarError('');
     }
@@ -516,43 +537,100 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
     }
   };
 
+  const handleAvatarFileChange = async (file) => {
+    setAvatarFile(file);
+    const dataUrl = await fileToDataUrl(file);
+    if (dataUrl) setAvatar(dataUrl);
+  };
+
+  const handlePreviewFile = async (file, title, docType) => {
+    if (!file) return;
+    const url = await fileToDataUrl(file);
+    setFormPreviewDoc({
+      title,
+      type: docType,
+      url,
+      fileName: file.name,
+      status: 'pending'
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!holderName.trim())           { showToast('Please enter your legal name as per Aadhaar', 'warning'); return; }
+
+    // 1. Profile Validation
+    if (!name.trim())                  { showToast('Please enter your full profile name', 'warning'); return; }
+    if (!tagline.trim())               { showToast('Please enter a brief tagline/headline', 'warning'); return; }
+    if (!age || Number(age) < 18)      { showToast('Companion age must be at least 18 years', 'warning'); return; }
+    if (!bio.trim() || bio.trim().length < 20) { showToast('Please write a brief bio of at least 20 characters', 'warning'); return; }
+    if (!phone.trim())                 { showToast('Please provide your phone number', 'warning'); return; }
+
+    // 2. KYC Validation
+    if (!holderName.trim())            { showToast('Please enter your legal name as per Aadhaar', 'warning'); return; }
     if (idNumber.length !== 12)        { showToast('Please enter a valid 12-digit Aadhaar number', 'warning'); return; }
-    if (!validateAadhaar(idNumber))    { showToast('Aadhaar number is invalid. Please re-check.', 'warning'); return; }
+    if (!validateAadhaar(idNumber))    { showToast('Aadhaar checksum is invalid. Please check the digits.', 'warning'); return; }
     if (panNumber.length !== 10)       { showToast('Please enter a valid 10-character PAN number', 'warning'); return; }
     if (!validatePAN(panNumber))       { showToast('PAN format is invalid. Expected: ABCDE1234F', 'warning'); return; }
-    if (!idFrontFile)                  { showToast('Please upload front of your Aadhaar card', 'warning'); return; }
-    if (!panFile)                      { showToast('Please upload your PAN card photo', 'warning'); return; }
-    if (!selfieFile)                   { showToast('Please upload a selfie with your Aadhaar', 'warning'); return; }
+
+    // For documents: if re-submitting after rejection, existing docs are preserved unless replaced
+    const hasFront = idFrontFile || kd.idFrontDoc;
+    const hasPan = panFile || kd.panDoc;
+    const hasSelfie = selfieFile || kd.selfieDoc;
+
+    if (!hasFront)                     { showToast('Please upload front of your Aadhaar card', 'warning'); return; }
+    if (!hasPan)                       { showToast('Please upload your PAN card photo', 'warning'); return; }
+    if (!hasSelfie)                    { showToast('Please upload a selfie holding your Aadhaar card', 'warning'); return; }
+
+    if (!agreed && !isRejected) {
+      showToast('Please confirm the accuracy declaration before submitting', 'warning');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      const [idFrontDoc, idBackDoc, panDoc, selfieDoc] = await Promise.all([
-        fileToDataUrl(idFrontFile),
-        fileToDataUrl(idBackFile),
-        fileToDataUrl(panFile),
-        fileToDataUrl(selfieFile),
+      const [idFrontDoc, idBackDoc, panDoc, selfieDoc, uploadedAvatar] = await Promise.all([
+        idFrontFile ? fileToDataUrl(idFrontFile) : Promise.resolve(kd.idFrontDoc),
+        idBackFile  ? fileToDataUrl(idBackFile)  : Promise.resolve(kd.idBackDoc),
+        panFile     ? fileToDataUrl(panFile)     : Promise.resolve(kd.panDoc),
+        selfieFile  ? fileToDataUrl(selfieFile)  : Promise.resolve(kd.selfieDoc),
+        avatarFile  ? fileToDataUrl(avatarFile)  : Promise.resolve(avatar),
       ]);
 
-      await onSubmitKYC({
+      const payload = {
+        // Profile fields
+        name: name.trim(),
+        tagline: tagline.trim(),
+        bio: bio.trim(),
+        age: Number(age),
+        gender,
+        city,
+        phone: phone.trim(),
+        email: email.trim(),
+        avatar: uploadedAvatar || avatar || '/default-avatar.jpg',
+        coverPhoto,
+        languages,
+        areas,
+        interests,
+
+        // KYC fields
         idType: 'Aadhaar Card',
         idNumber,
-        holderName,
+        holderName: holderName.trim(),
         panNumber,
         idFrontDoc,
         idBackDoc,
         panDoc,
         selfieDoc,
-        idFrontName:   idFrontFile?.name,
-        idBackName:    idBackFile?.name,
-        panFileName:   panFile?.name,
-        selfieFileName: selfieFile?.name,
-      });
-      showToast('KYC documents submitted for admin verification!');
+        idFrontName:   idFrontFile?.name || kd.idFrontName,
+        idBackName:    idBackFile?.name  || kd.idBackName,
+        panFileName:   panFile?.name     || kd.panFileName,
+        selfieFileName: selfieFile?.name || kd.selfieFileName,
+      };
+
+      await onSubmitKYC(payload);
+      showToast('Profile and KYC submitted successfully! Under admin review.');
     } catch (err) {
-      showToast('Failed to submit KYC. Please try again.', 'danger');
+      showToast('Failed to submit application. Please check your network and try again.', 'danger');
     } finally {
       setIsSubmitting(false);
     }
@@ -569,22 +647,23 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
     <div>
       {/* Page Header */}
       <div style={{ marginBottom: '24px' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-          🪪 Identity Verification &amp; KYC
+        <h2 style={{ fontSize: '1.55rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+          👤 Companion Profile &amp; KYC Verification
         </h2>
         <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: '4px 0 0' }}>
-          Complete your KYC to activate your profile and start accepting booking requests.
+          Complete your companion profile details and submit identity proof documents together.
+          Our compliance administration team inspects all details before activating your bookings.
         </p>
       </div>
 
       {/* Status Tracker Panel */}
       <div className="partner-panel">
-        <div className="partner-panel-title" style={{ marginBottom: '20px' }}>
-          <ShieldCheck size={20} color={isVerified ? '#34d399' : '#fbbf24'} />
-          <span>Verification Status</span>
+        <div className="partner-panel-title" style={{ marginBottom: '18px' }}>
+          <ShieldCheck size={20} color={isVerified ? '#34d399' : isRejected ? '#ef4444' : '#fbbf24'} />
+          <span>Verification &amp; Approval Status</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', padding: '10px 0', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', padding: '6px 0', marginBottom: '18px' }}>
           {steps.map((st, idx) => (
             <div key={st.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{
@@ -608,229 +687,556 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
           ))}
         </div>
 
-        {/* Status Callout */}
+        {/* ── Prominent Status Callout ── */}
         <div style={{
-          background: isVerified ? 'rgba(16,185,129,0.1)' : isUnderReview ? 'rgba(245,158,11,0.1)' : isRejected ? 'rgba(239,68,68,0.1)' : 'rgba(56,189,248,0.1)',
+          background: isVerified ? 'rgba(16,185,129,0.1)' : isUnderReview ? 'rgba(245,158,11,0.1)' : isRejected ? 'rgba(239,68,68,0.12)' : 'rgba(56,189,248,0.1)',
           border: `1px solid ${isVerified ? '#10b981' : isUnderReview ? '#f59e0b' : isRejected ? '#ef4444' : '#38bdf8'}`,
-          borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px'
+          borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: '16px'
         }}>
           {isVerified
-            ? <CheckCircle2 size={32} color="#10b981" />
+            ? <CheckCircle2 size={32} color="#10b981" style={{ flexShrink: 0, marginTop: '2px' }} />
             : isUnderReview
-            ? <Clock size={32} color="#f59e0b" />
+            ? <Clock size={32} color="#f59e0b" style={{ flexShrink: 0, marginTop: '2px' }} />
             : isRejected
-            ? <XCircle size={32} color="#ef4444" />
-            : <AlertTriangle size={32} color="#38bdf8" />}
-          <div>
-            <div style={{ fontWeight: 700, fontSize: '1rem', color: '#fff' }}>
+            ? <XCircle size={32} color="#ef4444" style={{ flexShrink: 0, marginTop: '2px' }} />
+            : <AlertTriangle size={32} color="#38bdf8" style={{ flexShrink: 0, marginTop: '2px' }} />}
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: '1.02rem', color: '#fff' }}>
               {isVerified
                 ? 'Account Verified & Background Cleared'
                 : isUnderReview
-                ? 'Documents Under Review — You will be notified on approval'
+                ? 'Application & Documents Under Admin Review'
                 : isRejected
-                ? 'Verification Rejected — Update your details and re-submit'
-                : 'KYC Submission Required to Activate Your Profile'}
+                ? 'Verification Application Rejected by Admin'
+                : 'Complete Your Profile & KYC Submission'}
             </div>
-            <div style={{ fontSize: '0.84rem', color: '#cbd5e1', marginTop: '3px' }}>
+            <div style={{ fontSize: '0.85rem', color: '#cbd5e1', marginTop: '4px', lineHeight: '1.5' }}>
               {isVerified
-                ? 'Your profile carries the green Verified Badge. You can now accept booking requests.'
+                ? 'Congratulations! Your profile has been reviewed and approved by administration. You can now go ONLINE and accept client bookings.'
                 : isUnderReview
-                ? 'Verification typically takes 6–12 hours. Details are locked during review.'
+                ? 'Your companion profile details and KYC documents have been submitted to the admin compliance team for inspection. Verification typically takes 6–12 hours.'
                 : isRejected
-                ? 'Your previous submission was rejected. Please correct and re-submit your documents.'
-                : 'Submit valid Aadhaar, PAN card, and a selfie to enable bookings.'}
+                ? 'The administration team reviewed your application and rejected it. Please review the specific rejection reason below, correct your information or document uploads, and re-submit.'
+                : 'Please fill out your companion profile information and upload valid government-issued ID proofs (Aadhaar, PAN, and selfie) below to activate your account.'}
             </div>
+
+            {/* ── PROMINENT REJECTION REASON BOX ── */}
+            {isRejected && (
+              <div style={{
+                marginTop: '14px',
+                padding: '14px 18px',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.45)',
+                borderRadius: '10px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fca5a5', fontWeight: 800, fontSize: '0.88rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <AlertOctagon size={16} color="#ef4444" />
+                  Admin Rejection Reason &amp; Feedback:
+                </div>
+                <div style={{
+                  color: '#ffffff',
+                  fontSize: '0.94rem',
+                  fontWeight: 600,
+                  marginTop: '8px',
+                  lineHeight: '1.5',
+                  padding: '8px 12px',
+                  background: 'rgba(0, 0, 0, 0.25)',
+                  borderRadius: '6px',
+                  borderLeft: '3px solid #ef4444'
+                }}>
+                  "{rejectionReason || 'Document photos were unclear or details mismatched. Please check and re-submit.'}"
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#fca5a5', marginTop: '8px' }}>
+                  ℹ️ Scroll down to the form below to update the indicated details or re-upload clear photos, then click <strong>"Re-Submit Application"</strong>.
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Submitted Report — shown when pending, rejected, or verified */}
+      {/* Submitted Report Summary — shown when under review, rejected, or verified */}
       {(isUnderReview || isVerified || isRejected) && (kd.holderName || kd.idNumber || partner?.name) && (
-        <SubmittedReport data={{ ...kd, holderName: kd.holderName || partner?.name || '' }} status={currentStatus} />
+        <SubmittedReport partner={partner} data={{ ...kd, holderName: kd.holderName || partner?.name || '' }} status={currentStatus} />
       )}
 
-      {/* Locked notice for pending review */}
+      {/* Locked message during review */}
       {isUnderReview && (
         <div className="partner-panel" style={{ textAlign: 'center', padding: '36px 20px' }}>
-          <Lock size={40} color="#f59e0b" style={{ margin: '0 auto 14px' }} />
-          <h3 style={{ color: '#fbbf24', fontWeight: 700, margin: '0 0 8px' }}>Documents Locked for Review</h3>
-          <p style={{ color: '#94a3b8', fontSize: '0.9rem', maxWidth: '480px', margin: '0 auto' }}>
-            Your KYC documents are currently under review. You cannot modify your details during this time.
-            We will notify you once the review is complete.
+          <Lock size={42} color="#f59e0b" style={{ margin: '0 auto 14px' }} />
+          <h3 style={{ color: '#fbbf24', fontWeight: 700, margin: '0 0 8px' }}>Application Locked for Administrative Inspection</h3>
+          <p style={{ color: '#94a3b8', fontSize: '0.9rem', maxWidth: '520px', margin: '0 auto', lineHeight: '1.6' }}>
+            Your profile details and identification proofs are currently in the administrator review queue.
+            You will be notified immediately once approved or if any corrections are needed.
           </p>
         </div>
       )}
 
-      {/* KYC Form — shown only when not submitted or rejected */}
+      {/* ── Unified Profile & KYC Form (Active when not_submitted OR rejected) ── */}
       {!isVerified && !isUnderReview && (
         <form onSubmit={handleSubmit}>
-          {isRejected && (
-            <div style={{
-              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)',
-              borderRadius: '10px', padding: '12px 18px', marginBottom: '20px',
-              fontSize: '0.85rem', color: '#fca5a5'
-            }}>
-              ⚠️ Your previous KYC was rejected. Please correct your details and re-submit below.
+          {/* SECTION 1: COMPANION PROFILE INFORMATION */}
+          <div className="partner-panel">
+            <div className="partner-panel-title" style={{ marginBottom: '18px' }}>
+              <User size={18} color="#38bdf8" />
+              <span>Step 1: Companion Profile Information</span>
             </div>
-          )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-
-            {/* 1. Aadhaar Card */}
-            <div className="partner-panel" style={{ marginBottom: 0 }}>
-              <div className="partner-panel-title" style={{ marginBottom: '14px' }}>
-                <FileText size={18} color="#38bdf8" />
-                <span>1. Aadhaar Card</span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
-                    Legal Name as per Aadhaar *
-                  </label>
-                  <input type="text" value={holderName} onChange={e => setHolderName(e.target.value)}
-                    placeholder="Enter your full legal name" style={{ width: '100%' }} required disabled={isLocked} />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
-                    Aadhaar Number * <span style={{ color: '#64748b', fontWeight: 400 }}>(12 digits)</span>
+            {/* Avatar & Photo */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <img
+                  src={avatar || '/default-avatar.jpg'}
+                  alt="Avatar Preview"
+                  style={{
+                    width: '84px', height: '84px', borderRadius: '50%',
+                    objectFit: 'cover', border: '3px solid #38bdf8', flexShrink: 0
+                  }}
+                  onError={e => { e.target.src = '/default-avatar.jpg'; }}
+                />
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                    Profile Photo / Headshot *
                   </label>
                   <input
-                    type="text" value={idNumber} onChange={e => handleAadhaarChange(e.target.value)}
-                    placeholder="XXXXXXXXXXXX" maxLength={12}
-                    style={{
-                      width: '100%', letterSpacing: '0.15em', fontWeight: 700,
-                      borderColor: aadhaarError ? '#ef4444' : idNumber.length === 12 && !aadhaarError ? '#10b981' : ''
-                    }}
-                    required disabled={isLocked}
+                    type="file"
+                    accept="image/*"
+                    onChange={e => e.target.files[0] && handleAvatarFileChange(e.target.files[0])}
+                    style={{ fontSize: '0.82rem', width: '100%' }}
                   />
-                  {aadhaarError ? (
-                    <div style={{ fontSize: '0.76rem', color: '#f87171', marginTop: '4px' }}>⚠ {aadhaarError}</div>
-                  ) : idNumber.length === 12 ? (
-                    <div style={{ fontSize: '0.76rem', color: '#34d399', marginTop: '4px' }}>✓ Valid Aadhaar number</div>
-                  ) : null}
-                  <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '3px' }}>
-                    Validated using the Verhoeff checksum algorithm
+                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px' }}>
+                    Upload a pleasant, clear headshot photo (JPG or PNG).
                   </div>
                 </div>
-                <FileUploadBox
-                  label="Upload Front of Aadhaar *" color="#38bdf8"
-                  file={idFrontFile} onChange={setIdFrontFile} onRemove={() => setIdFrontFile(null)}
-                  onPreview={() => handlePreviewFile(idFrontFile, 'Aadhaar Card Front', 'aadhaar')}
-                  disabled={isLocked}
-                />
-                <FileUploadBox
-                  label="Upload Back of Aadhaar" color="#38bdf8"
-                  file={idBackFile} onChange={setIdBackFile} onRemove={() => setIdBackFile(null)}
-                  onPreview={() => handlePreviewFile(idBackFile, 'Aadhaar Card Back', 'aadhaar')}
-                  disabled={isLocked}
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                  Tagline / Professional Headline *
+                </label>
+                <input
+                  type="text"
+                  value={tagline}
+                  onChange={e => setTagline(e.target.value)}
+                  placeholder="e.g. Psychology Graduate • Coffee & Culture Enthusiast"
+                  required
+                  style={{ width: '100%' }}
                 />
               </div>
             </div>
 
-            {/* 2. PAN Card */}
-            <div className="partner-panel" style={{ marginBottom: 0 }}>
-              <div className="partner-panel-title" style={{ marginBottom: '14px' }}>
-                <CreditCard size={18} color="#fbbf24" />
-                <span>2. PAN Card</span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
-                    PAN Number * <span style={{ color: '#64748b', fontWeight: 400 }}>(e.g. ABCDE1234F)</span>
-                  </label>
-                  <input
-                    type="text" maxLength={10} value={panNumber} onChange={e => handlePANChange(e.target.value)}
-                    placeholder="ABCDE1234F"
-                    style={{
-                      width: '100%', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700,
-                      borderColor: panError ? '#ef4444' : panNumber.length === 10 && !panError ? '#10b981' : ''
-                    }}
-                    required disabled={isLocked}
-                  />
-                  {panError ? (
-                    <div style={{ fontSize: '0.76rem', color: '#f87171', marginTop: '4px' }}>⚠ {panError}</div>
-                  ) : panNumber.length === 10 ? (
-                    <div style={{ fontSize: '0.76rem', color: '#34d399', marginTop: '4px' }}>✓ Valid PAN format</div>
-                  ) : null}
-                  <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '3px' }}>
-                    Format: 5 letters · 4 digits · 1 letter — Required for TDS &amp; earnings payout.
-                  </div>
-                </div>
-                <FileUploadBox
-                  label="Upload Photo of PAN Card *" color="#fbbf24"
-                  file={panFile} onChange={setPanFile} onRemove={() => setPanFile(null)}
-                  onPreview={() => handlePreviewFile(panFile, 'PAN Card Photo', 'pan')}
-                  disabled={isLocked}
+            {/* Profile Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                  Full Display Name *
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="Your full public name"
+                  required
+                  style={{ width: '100%' }}
                 />
-                <div style={{
-                  background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
-                  borderRadius: '8px', padding: '10px 14px', fontSize: '0.78rem', color: '#cbd5e1'
-                }}>
-                  ℹ️ The name on your PAN must match the name on your Aadhaar.
-                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                  Age * <span style={{ color: '#64748b', fontWeight: 400 }}>(Must be 18+)</span>
+                </label>
+                <input
+                  type="number"
+                  min="18"
+                  max="75"
+                  value={age}
+                  onChange={e => setAge(e.target.value)}
+                  required
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                  Gender *
+                </label>
+                <select
+                  value={gender}
+                  onChange={e => setGender(e.target.value)}
+                  style={{ width: '100%' }}
+                >
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
+                  <option value="Non-Binary">Non-Binary</option>
+                  <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                  Operating City *
+                </label>
+                <select
+                  value={city}
+                  onChange={e => setCity(e.target.value)}
+                  style={{ width: '100%' }}
+                >
+                  <option>Delhi NCR</option>
+                  <option>Mumbai</option>
+                  <option>Bangalore</option>
+                  <option>Pune</option>
+                  <option>Hyderabad</option>
+                  <option>Chennai</option>
+                  <option>Kolkata</option>
+                  <option>Jaipur</option>
+                  <option>Chandigarh</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                  <Phone size={13} style={{ display: 'inline', marginRight: '4px' }} />
+                  Contact Phone Number *
+                </label>
+                <input
+                  type="text"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  required
+                  style={{ width: '100%' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                  <Mail size={13} style={{ display: 'inline', marginRight: '4px' }} />
+                  Contact Email Address *
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="companion@example.com"
+                  required
+                  style={{ width: '100%' }}
+                />
               </div>
             </div>
 
-            {/* 3. Selfie with Aadhaar */}
-            <div className="partner-panel" style={{ marginBottom: 0 }}>
-              <div className="partner-panel-title" style={{ marginBottom: '14px' }}>
-                <Camera size={18} color="#c084fc" />
-                <span>3. Selfie with Aadhaar</span>
+            {/* Bio */}
+            <div style={{ marginTop: '16px' }}>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                Companion Bio &amp; About Me * <span style={{ color: '#64748b', fontWeight: 400 }}>(Admin reads this during review)</span>
+              </label>
+              <textarea
+                rows="3"
+                value={bio}
+                onChange={e => setBio(e.target.value)}
+                placeholder="Introduce yourself, your conversational style, hobbies, preferred meetup locations, and values of platonic companionship..."
+                required
+                style={{ width: '100%', resize: 'vertical' }}
+              />
+            </div>
+
+            {/* Languages */}
+            <div style={{ marginTop: '16px' }}>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '8px' }}>
+                <Languages size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                Spoken Languages (Select all that apply)
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {ALL_LANGUAGES.map(lang => {
+                  const selected = languages.includes(lang);
+                  return (
+                    <button
+                      key={lang}
+                      type="button"
+                      onClick={() => handleToggleLang(lang)}
+                      style={{
+                        padding: '6px 14px', borderRadius: '9999px', fontSize: '0.8rem',
+                        fontWeight: 600,
+                        background: selected ? 'rgba(56, 189, 248, 0.25)' : 'rgba(15, 23, 42, 0.6)',
+                        border: selected ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.1)',
+                        color: selected ? '#ffffff' : '#94a3b8',
+                        display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'
+                      }}
+                    >
+                      {selected && <Check size={12} />} {lang}
+                    </button>
+                  );
+                })}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0 }}>
-                  Upload a clear photo of yourself holding your Aadhaar card.
-                  Both your face and the Aadhaar number must be clearly visible.
-                </p>
-                <FileUploadBox
-                  label="Upload Selfie with Aadhaar *" color="#c084fc" accept="image/*"
-                  file={selfieFile} onChange={setSelfieFile} onRemove={() => setSelfieFile(null)}
-                  onPreview={() => handlePreviewFile(selfieFile, 'Selfie with Aadhaar', 'selfie')}
-                  disabled={isLocked}
+            </div>
+
+            {/* Localities & Areas */}
+            <div style={{ marginTop: '16px' }}>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '8px' }}>
+                <MapPin size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                Service Areas / Localities Covered
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                {areas.map(area => (
+                  <span
+                    key={area}
+                    style={{
+                      padding: '5px 12px', borderRadius: '8px',
+                      background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)',
+                      color: '#38bdf8', fontSize: '0.82rem', fontWeight: 600,
+                      display: 'flex', alignItems: 'center', gap: '6px'
+                    }}
+                  >
+                    <MapPin size={12} /> {area}
+                    <button type="button" onClick={() => handleRemoveArea(area)} style={{ color: '#f87171', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                      <X size={13} />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: '8px', maxWidth: '420px' }}>
+                <input
+                  type="text"
+                  placeholder="Add locality (e.g. Connaught Place, Koramangala)..."
+                  value={newArea}
+                  onChange={e => setNewArea(e.target.value)}
+                  style={{ flex: 1, fontSize: '0.86rem' }}
                 />
-                <div style={{
-                  background: 'rgba(192,132,252,0.08)', border: '1px solid rgba(192,132,252,0.2)',
-                  borderRadius: '8px', padding: '10px 14px', fontSize: '0.78rem', color: '#cbd5e1'
-                }}>
-                  📸 No sunglasses, masks, or filters. Ensure good lighting.
+                <button type="button" onClick={handleAddArea} className="btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Plus size={14} /> Add
+                </button>
+              </div>
+            </div>
+
+            {/* Interests */}
+            <div style={{ marginTop: '16px' }}>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '8px' }}>
+                <Sparkles size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                Interests &amp; Activities
+              </label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {POPULAR_INTERESTS.map(interest => {
+                  const selected = interests.includes(interest);
+                  return (
+                    <button
+                      key={interest}
+                      type="button"
+                      onClick={() => handleToggleInterest(interest)}
+                      style={{
+                        padding: '6px 14px', borderRadius: '9999px', fontSize: '0.8rem',
+                        fontWeight: 600,
+                        background: selected ? 'rgba(245, 158, 11, 0.2)' : 'rgba(15, 23, 42, 0.6)',
+                        border: selected ? '1px solid #fbbf24' : '1px solid rgba(255, 255, 255, 0.1)',
+                        color: selected ? '#ffffff' : '#94a3b8',
+                        display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'
+                      }}
+                    >
+                      {selected && <Check size={12} />} {interest}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 2: GOVERNMENT ID & KYC DOCUMENTS */}
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldCheck size={20} color="#10b981" />
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                Step 2: Government Identity Documents (KYC)
+              </h3>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+
+              {/* 1. Aadhaar Card */}
+              <div className="partner-panel" style={{ marginBottom: 0 }}>
+                <div className="partner-panel-title" style={{ marginBottom: '14px' }}>
+                  <FileText size={18} color="#38bdf8" />
+                  <span>1. Aadhaar Card</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                      Legal Name as per Aadhaar *
+                    </label>
+                    <input
+                      type="text"
+                      value={holderName}
+                      onChange={e => setHolderName(e.target.value)}
+                      placeholder="Enter your legal name as on card"
+                      style={{ width: '100%' }}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                      Aadhaar Number * <span style={{ color: '#64748b', fontWeight: 400 }}>(12 digits)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={idNumber}
+                      onChange={e => handleAadhaarChange(e.target.value)}
+                      placeholder="XXXXXXXXXXXX"
+                      maxLength={12}
+                      style={{
+                        width: '100%', letterSpacing: '0.15em', fontWeight: 700,
+                        borderColor: aadhaarError ? '#ef4444' : idNumber.length === 12 && !aadhaarError ? '#10b981' : ''
+                      }}
+                      required
+                    />
+                    {aadhaarError ? (
+                      <div style={{ fontSize: '0.76rem', color: '#f87171', marginTop: '4px' }}>⚠ {aadhaarError}</div>
+                    ) : idNumber.length === 12 ? (
+                      <div style={{ fontSize: '0.76rem', color: '#34d399', marginTop: '4px' }}>✓ Valid Aadhaar number</div>
+                    ) : null}
+                  </div>
+                  <FileUploadBox
+                    label="Upload Front of Aadhaar *" color="#38bdf8"
+                    file={idFrontFile} onChange={setIdFrontFile} onRemove={() => setIdFrontFile(null)}
+                    onPreview={() => handlePreviewFile(idFrontFile, 'Aadhaar Card Front', 'aadhaar')}
+                  />
+                  <FileUploadBox
+                    label="Upload Back of Aadhaar" color="#38bdf8"
+                    file={idBackFile} onChange={setIdBackFile} onRemove={() => setIdBackFile(null)}
+                    onPreview={() => handlePreviewFile(idBackFile, 'Aadhaar Card Back', 'aadhaar')}
+                  />
+                </div>
+              </div>
+
+              {/* 2. PAN Card */}
+              <div className="partner-panel" style={{ marginBottom: 0 }}>
+                <div className="partner-panel-title" style={{ marginBottom: '14px' }}>
+                  <CreditCard size={18} color="#fbbf24" />
+                  <span>2. PAN Card</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                      PAN Number * <span style={{ color: '#64748b', fontWeight: 400 }}>(e.g. ABCDE1234F)</span>
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={10}
+                      value={panNumber}
+                      onChange={e => handlePANChange(e.target.value)}
+                      placeholder="ABCDE1234F"
+                      style={{
+                        width: '100%', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700,
+                        borderColor: panError ? '#ef4444' : panNumber.length === 10 && !panError ? '#10b981' : ''
+                      }}
+                      required
+                    />
+                    {panError ? (
+                      <div style={{ fontSize: '0.76rem', color: '#f87171', marginTop: '4px' }}>⚠ {panError}</div>
+                    ) : panNumber.length === 10 ? (
+                      <div style={{ fontSize: '0.76rem', color: '#34d399', marginTop: '4px' }}>✓ Valid PAN format</div>
+                    ) : null}
+                  </div>
+                  <FileUploadBox
+                    label="Upload Photo of PAN Card *" color="#fbbf24"
+                    file={panFile} onChange={setPanFile} onRemove={() => setPanFile(null)}
+                    onPreview={() => handlePreviewFile(panFile, 'PAN Card Photo', 'pan')}
+                  />
+                  <div style={{
+                    background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
+                    borderRadius: '8px', padding: '10px 14px', fontSize: '0.78rem', color: '#cbd5e1'
+                  }}>
+                    ℹ️ Legal name on PAN must match Aadhaar card.
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Selfie with Aadhaar */}
+              <div className="partner-panel" style={{ marginBottom: 0 }}>
+                <div className="partner-panel-title" style={{ marginBottom: '14px' }}>
+                  <Camera size={18} color="#c084fc" />
+                  <span>3. Selfie with Aadhaar</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0 }}>
+                    Upload a clear photo of yourself holding your Aadhaar card.
+                    Both your face and the document details must be visible.
+                  </p>
+                  <FileUploadBox
+                    label="Upload Selfie with Aadhaar *" color="#c084fc" accept="image/*"
+                    file={selfieFile} onChange={setSelfieFile} onRemove={() => setSelfieFile(null)}
+                    onPreview={() => handlePreviewFile(selfieFile, 'Selfie with Aadhaar', 'selfie')}
+                  />
+                  <div style={{
+                    background: 'rgba(192,132,252,0.08)', border: '1px solid rgba(192,132,252,0.2)',
+                    borderRadius: '8px', padding: '10px 14px', fontSize: '0.78rem', color: '#cbd5e1'
+                  }}>
+                    📸 Ensure ample lighting, neutral expression, and avoid sunglasses or masks.
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Submit */}
-          <div style={{ textAlign: 'right', marginBottom: '30px' }}>
+          {/* Declaration Checkbox */}
+          <div className="partner-panel" style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={e => setAgreed(e.target.checked)}
+                style={{ marginTop: '3px' }}
+                required={!isRejected}
+              />
+              <span style={{ fontSize: '0.84rem', color: '#cbd5e1', lineHeight: '1.5' }}>
+                I confirm that all profile information and government identity documents uploaded above are accurate, valid, and belong to me.
+                I understand that PartnerOnRent compliance administration conducts background checks, and false submissions will result in immediate disqualification.
+              </span>
+            </label>
+          </div>
+
+          {/* Submit Action Bar */}
+          <div style={{ textAlign: 'right', marginBottom: '40px' }}>
             <button
-              type="submit" className="btn-primary"
-              disabled={isSubmitting || isLocked || !!aadhaarError || !!panError}
+              type="submit"
+              className="btn-primary"
+              disabled={isSubmitting || !!aadhaarError || !!panError}
               style={{
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                padding: '14px 32px', fontSize: '1rem', fontWeight: 700
+                background: isRejected ? 'linear-gradient(135deg, #38bdf8 0%, #2563eb 100%)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                padding: '14px 36px', fontSize: '1rem', fontWeight: 700, borderRadius: '12px',
+                boxShadow: '0 4px 18px rgba(16, 185, 129, 0.3)'
               }}
             >
-              {isSubmitting ? 'Submitting...' : isRejected ? 'Re-submit KYC Documents' : 'Submit KYC Documents'}
+              {isSubmitting
+                ? 'Submitting Application...'
+                : isRejected
+                ? 'Re-Submit Corrected Profile & KYC Application'
+                : 'Submit Complete Profile & KYC for Verification'}
             </button>
           </div>
         </form>
       )}
 
-      {/* Verification History — only shown if verified and history exists */}
-      {isVerified && partner?.kycDocuments?.verificationHistory?.length > 0 && (
+      {/* Verification Audit History */}
+      {partner?.kycDocuments?.verificationHistory?.length > 0 && (
         <div className="partner-panel">
           <div className="partner-panel-title" style={{ marginBottom: '16px' }}>
             <History size={18} color="#c084fc" />
             <span>Verification Audit History</span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {partner.kycDocuments.verificationHistory.map((item, i) => (
               <div key={i} style={{
                 display: 'flex', gap: '14px', alignItems: 'flex-start',
                 padding: '12px 16px', background: 'rgba(15,23,42,0.4)',
-                borderRadius: '10px', borderLeft: '3px solid #10b981'
+                borderRadius: '10px',
+                borderLeft: `3px solid ${item.status === 'VERIFIED' ? '#10b981' : item.status === 'REJECTED' ? '#ef4444' : '#38bdf8'}`
               }}>
                 <div style={{ minWidth: '130px', fontSize: '0.78rem', color: '#94a3b8' }}>{item.date}</div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.88rem', color: '#fff', marginBottom: '2px' }}>{item.status}</div>
+                  <div style={{
+                    fontWeight: 700, fontSize: '0.88rem',
+                    color: item.status === 'VERIFIED' ? '#34d399' : item.status === 'REJECTED' ? '#f87171' : '#38bdf8',
+                    marginBottom: '2px'
+                  }}>
+                    {item.status}
+                  </div>
                   <div style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>{item.note}</div>
                 </div>
               </div>
@@ -839,7 +1245,7 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
         </div>
       )}
 
-      {/* Form Document Preview Modal */}
+      {/* Form Document Lightbox Preview Modal */}
       <DocumentPreviewModal doc={formPreviewDoc} onClose={() => setFormPreviewDoc(null)} />
     </div>
   );

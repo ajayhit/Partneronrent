@@ -187,11 +187,11 @@ export async function resolveAdminSOSAlert(id, notes) {
   return res.json();
 }
 
-export async function updatePartnerKYCAdmin(partnerId, status, notes) {
+export async function updatePartnerKYCAdmin(partnerId, status, notes, adminName) {
   const res = await fetch(`${API_BASE}/admin/partners/${partnerId}/kyc`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status, notes })
+    body: JSON.stringify({ status, notes, adminName })
   });
   return res.json();
 }

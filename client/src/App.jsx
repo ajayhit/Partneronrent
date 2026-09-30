@@ -329,12 +329,60 @@ function MainLayout() {
   );
 }
 
+// ── Error Boundary Component ──────────────────────────────────────────────
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('ErrorBoundary caught:', error, errorInfo);
+  }
+  handleReset = () => {
+    try {
+      localStorage.removeItem('por_user_session');
+    } catch {}
+    window.location.reload();
+  };
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          minHeight: '100vh', background: '#0b1329', color: '#fff',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', padding: '20px', textAlign: 'center'
+        }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '10px' }}>Something went wrong</h2>
+          <p style={{ color: '#94a3b8', maxWidth: '500px', marginBottom: '20px', fontSize: '0.9rem' }}>
+            A temporary display or storage error occurred. Click the button below to reload and continue.
+          </p>
+          <button
+            onClick={this.handleReset}
+            style={{
+              background: '#38bdf8', color: '#0f172a', fontWeight: 700,
+              padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: 'pointer'
+            }}
+          >
+            Reload Platform
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   return (
-    <AuthProvider>
-      <AppProvider>
-        <MainLayout />
-      </AppProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppProvider>
+          <MainLayout />
+        </AppProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

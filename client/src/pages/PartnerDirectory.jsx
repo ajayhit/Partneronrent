@@ -257,8 +257,13 @@ export default function PartnerDirectory({ onSelectPartner, setActivePage }) {
                 <div style={{ position: 'absolute', bottom: '12px', left: '16px', right: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                   <div>
                     <h3 style={{ fontSize: '1.3rem', color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,0.7)' }}>
-                      {partner.name}, {partner.age}
-                    </h3>
+                        {partner.name}, {partner.age}
+                      </h3>
+                      {partner.dob && (
+                        <div style={{ fontSize: '0.74rem', color: '#cbd5e1', marginBottom: '2px' }}>
+                          🎂 {partner.dob}
+                        </div>
+                      )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#cbd5e1', fontSize: '0.82rem' }}>
                       <MapPin size={13} color="#ec4899" /> {partner.city}
                     </div>
