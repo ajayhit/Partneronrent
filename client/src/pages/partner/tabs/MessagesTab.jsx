@@ -12,51 +12,23 @@ import {
   Lock
 } from 'lucide-react';
 
-const INITIAL_CONVERSATIONS = [
-  {
-    bookingId: 'BK-1084',
-    clientName: 'Rahul Verma',
-    service: 'Cafe & Conversation',
-    date: '2024-09-18',
-    unread: false,
-    messages: [
-      { id: 1, sender: 'client', text: 'Hi Aanya! Looking forward to our coffee session at Blue Tokai tomorrow.', time: '04:15 PM' },
-      { id: 2, sender: 'partner', text: 'Hi Rahul! Yes, see you there at 5 PM at the main seating area.', time: '04:20 PM' },
-      { id: 3, sender: 'client', text: 'Sounds perfect, will share the 4-digit OTP as soon as I arrive.', time: '04:22 PM' }
-    ]
-  },
-  {
-    bookingId: 'BK-1065',
-    clientName: 'Sneha Roy',
-    service: 'Shopping Companion',
-    date: '2024-09-20',
-    unread: true,
-    messages: [
-      { id: 1, sender: 'client', text: 'Hey Aanya! I was thinking we could start at Zara in Select Citywalk.', time: '11:00 AM' },
-      { id: 2, sender: 'partner', text: 'Hi Sneha! That works great for me. See you at the entrance.', time: '11:15 AM' }
-    ]
-  }
-];
+const INITIAL_CONVERSATIONS = [];
 
-const SYSTEM_MESSAGES = [
-  { id: 1, title: 'Payout Dispatched', text: 'Your withdrawal request for ₹10,000 via UPI (UTR: 202409158912) was successfully settled.', time: '2024-09-15 11:22 AM' },
-  { id: 2, title: 'Booking Confirmed', text: 'Booking BK-1084 with Rahul Verma has been confirmed for 2024-09-18.', time: '2024-09-17 06:30 PM' },
-  { id: 3, title: 'KYC Document Verified', text: 'Your Aadhaar and Police background check has been verified through 2029.', time: '2024-01-12 04:45 PM' }
-];
+const SYSTEM_MESSAGES = [];
 
 export default function MessagesTab({ partner, showToast }) {
   const [activeSubTab, setActiveSubTab] = useState('bookings'); // 'bookings', 'system', 'support'
   const [conversations, setConversations] = useState(INITIAL_CONVERSATIONS);
-  const [selectedBookingId, setSelectedBookingId] = useState(INITIAL_CONVERSATIONS[0].bookingId);
+  const [selectedBookingId, setSelectedBookingId] = useState(null);
   const [newMessage, setNewMessage] = useState('');
 
   // Support chat state
   const [supportMessages, setSupportMessages] = useState([
-    { id: 1, sender: 'support', text: 'Hello Aanya! Welcome to Partner Priority Support. How can our safety and operations team assist you today?', time: '10:00 AM' }
+    { id: 1, sender: 'support', text: 'Hello! Welcome to Partner Priority Support. How can our safety and operations team assist you today?', time: '10:00 AM' }
   ]);
   const [newSupportMsg, setNewSupportMsg] = useState('');
 
-  const currentConv = conversations.find(c => c.bookingId === selectedBookingId) || conversations[0];
+  const currentConv = conversations.find(c => c.bookingId === selectedBookingId) || conversations[0] || null;
 
   const handleSendMessage = (e) => {
     e.preventDefault();

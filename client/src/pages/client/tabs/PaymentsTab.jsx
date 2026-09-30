@@ -13,68 +13,7 @@ import {
   ShieldCheck
 } from 'lucide-react';
 
-const INITIAL_TRANSACTIONS = [
-  {
-    id: 'TXN-90214',
-    bookingId: 'BK-10025',
-    paymentId: 'PAY-UPI-884102',
-    partnerName: 'Rahul Sharma',
-    serviceName: 'Movie Companion',
-    amount: 1500,
-    discount: 100,
-    platformFee: 150,
-    totalPaid: 1550,
-    paymentMethod: 'UPI (GPay)',
-    paymentStatus: 'successful',
-    date: '2026-09-28 14:30',
-    receiptUrl: '#'
-  },
-  {
-    id: 'TXN-90188',
-    bookingId: 'BK-10018',
-    paymentId: 'PAY-WLT-771923',
-    partnerName: 'Aanya Sharma',
-    serviceName: 'Cafe & Conversation',
-    amount: 1200,
-    discount: 0,
-    platformFee: 120,
-    totalPaid: 1320,
-    paymentMethod: 'Hirer Wallet',
-    paymentStatus: 'successful',
-    date: '2026-09-18 11:20',
-    receiptUrl: '#'
-  },
-  {
-    id: 'TXN-89942',
-    bookingId: 'BK-09941',
-    paymentId: 'PAY-RFD-551029',
-    partnerName: 'Kabir Mathur',
-    serviceName: 'Shopping Companion',
-    amount: 1800,
-    discount: 0,
-    platformFee: 0,
-    totalPaid: 1800,
-    paymentMethod: 'Refund to Wallet',
-    paymentStatus: 'refunded',
-    date: '2026-09-02 16:45',
-    receiptUrl: '#'
-  },
-  {
-    id: 'TXN-89712',
-    bookingId: 'BK-09855',
-    paymentId: 'PAY-FL-110294',
-    partnerName: 'Priya Patel',
-    serviceName: 'City Exploration',
-    amount: 2100,
-    discount: 0,
-    platformFee: 210,
-    totalPaid: 2310,
-    paymentMethod: 'Credit Card (HDFC)',
-    paymentStatus: 'failed',
-    date: '2026-08-25 18:10',
-    receiptUrl: '#'
-  }
-];
+const INITIAL_TRANSACTIONS = [];
 
 const PAYMENT_TABS = [
   { id: 'all', label: 'Payment History' },

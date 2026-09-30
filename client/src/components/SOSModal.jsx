@@ -18,8 +18,8 @@ export default function SOSModal() {
     try {
       const payload = {
         bookingId: sosModal?.booking?.id || 'GENERAL',
-        triggeredBy: currentRole === 'client' ? (activeUser?.id || 'client-1') : (activePartner?.id || 'partner-p1'),
-        userName: currentRole === 'client' ? (activeUser?.name || 'Rahul Verma') : (activePartner?.name || 'Aanya Sharma'),
+        triggeredBy: currentRole === 'client' ? (activeUser?.id || '') : (activePartner?.id || ''),
+        userName: currentRole === 'client' ? (activeUser?.name || '') : (activePartner?.name || ''),
         userRole: currentRole,
         location: sosModal?.booking?.meetingLocation || 'Active Meetup / GPS Broadcast',
         reason

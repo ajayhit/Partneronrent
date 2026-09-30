@@ -25,7 +25,7 @@ export default function PartnerEarnings() {
   // Payout request form
   const [withdrawAmount, setWithdrawAmount] = useState(5000);
   const [payoutMethod, setPayoutMethod] = useState('UPI'); // 'UPI' or 'Bank'
-  const [destination, setDestination] = useState(partner?.bankDetails?.upiId || 'aanya@okhdfcbank');
+  const [destination, setDestination] = useState(partner?.bankDetails?.upiId || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -36,8 +36,8 @@ export default function PartnerEarnings() {
     setLoading(true);
     try {
       const [partnerData, payoutData] = await Promise.all([
-        fetchPartnerById(activePartner?.id || 'partner-p1'),
-        fetchPayouts({ partnerId: activePartner?.id || 'partner-p1' })
+        fetchPartnerById(activePartner?.id),
+        fetchPayouts({ partnerId: activePartner?.id })
       ]);
       if (partnerData) setPartner(partnerData);
       if (payoutData) setPayouts(payoutData);
@@ -199,7 +199,7 @@ export default function PartnerEarnings() {
             <div
               onClick={() => {
                 setPayoutMethod('UPI');
-                setDestination(partner?.bankDetails?.upiId || 'aanya@okhdfcbank');
+                setDestination(partner?.bankDetails?.upiId || '');
               }}
               style={{
                 padding: '14px',

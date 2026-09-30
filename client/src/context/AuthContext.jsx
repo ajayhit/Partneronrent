@@ -2,35 +2,10 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
-// ─── Mock User Store ────────────────────────────────────────────────────────
-// Pre-seeded demo accounts
+// ─── User Store ──────────────────────────────────────────────────────────────
 const MOCK_USERS_KEY = 'por_mock_users';
 
 const DEFAULT_USERS = [
-  {
-    id: 'client-1',
-    name: 'Rahul Verma',
-    role: 'client',
-    email: 'rahul@example.com',
-    phone: '+91 98765 43210',
-    password: 'demo1234',
-    city: 'Delhi NCR',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=250&q=80',
-    walletBalance: 4500
-  },
-  {
-    id: 'partner-p1',
-    name: 'Aanya Sharma',
-    role: 'partner',
-    email: 'aanya@example.com',
-    phone: '+91 91234 56789',
-    password: 'demo1234',
-    city: 'Delhi NCR',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-    hourlyRate: 1500,
-    walletBalance: 18400,
-    totalEarnings: 94000
-  },
   {
     id: 'admin-1',
     name: 'Super Administrator',
@@ -49,19 +24,21 @@ function getMockUsers() {
     const stored = localStorage.getItem(MOCK_USERS_KEY);
     let users = stored ? JSON.parse(stored) : DEFAULT_USERS;
     
-    // Ensure admin user has latest credentials
+    // Purge old dummy accounts from localStorage
+    users = users.filter(u => u.id !== 'client-1' && u.id !== 'partner-p1' && u.email !== 'rahul@example.com' && u.email !== 'aanya@example.com');
+    
+    // Ensure admin user exists with latest credentials
     const adminIdx = users.findIndex(u => u.role === 'admin');
     if (adminIdx !== -1) {
       if (!users[adminIdx].password || users[adminIdx].password === 'admin2024') {
         users[adminIdx].password = 'Admin@12345';
         users[adminIdx].email = 'admin@partneronrent.in';
         users[adminIdx].name = 'Super Administrator';
-        saveMockUsers(users);
       }
     } else {
-      users.push(DEFAULT_USERS[2]);
-      saveMockUsers(users);
+      users.push(DEFAULT_USERS[0]);
     }
+    saveMockUsers(users);
     return users;
   } catch {
     return DEFAULT_USERS;
@@ -73,12 +50,19 @@ function saveMockUsers(users) {
 }
 
 // ─── Session persistence key ─────────────────────────────────────────────────
-const SESSION_KEY = 'por_session';
+const SESSION_KEY = 'por_user_session';
 
 function loadSession() {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
+    const session = raw ? JSON.parse(raw) : null;
+    // Don't restore dummy demo sessions
+    if (session && (session.id === 'client-1' || session.id === 'partner-p1' || session.email === 'rahul@example.com' || session.email === 'aanya@example.com')) {
+      localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem('por_role');
+      return null;
+    }
+    return session;
   } catch {
     return null;
   }
@@ -138,8 +122,6 @@ export function AuthProvider({ children }) {
       const roleMatches = !role || u.role === role;
       const emailMatches =
         uEmail === normEmail ||
-        (normEmail === 'aanya.sharma@example.com' && uEmail === 'aanya@example.com') ||
-        (normEmail === 'rahul.verma@example.com' && uEmail === 'rahul@example.com') ||
         (cleanInput && uPhone.length >= 6 && uPhone.includes(cleanInput)) ||
         (u.role === 'admin' && (normEmail === 'admin@partneronrent.in' || normEmail === 'admin@partneronrent.com'));
 

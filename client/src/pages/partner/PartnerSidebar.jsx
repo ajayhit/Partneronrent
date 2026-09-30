@@ -127,7 +127,7 @@ export default function PartnerSidebar({
 
           <div style={{ overflow: 'hidden' }}>
             <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#fff', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-              {partner?.name || 'Aanya Sharma'}
+              {partner?.name || ''}
             </div>
             <div style={{ fontSize: '0.72rem', color: isVerified ? '#34d399' : '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <ShieldCheck size={11} /> {isVerified ? 'Verified Partner' : 'Under Review'}

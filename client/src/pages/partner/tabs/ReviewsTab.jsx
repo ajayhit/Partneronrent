@@ -12,41 +12,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
-const INITIAL_REVIEWS = [
-  {
-    id: 'rev-1',
-    bookingId: 'BK-1084',
-    clientName: 'Rahul Verma',
-    clientAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=250&q=80',
-    service: 'Cafe & Conversation',
-    rating: 5,
-    date: '2024-09-18',
-    comment: 'Aanya is an exceptionally warm and thoughtful listener. We met at Blue Tokai Cafe and discussed work stress and indie cinema. Completely respectful and platonic. Highly recommended!',
-    partnerReply: 'Thank you so much Rahul! It was a pleasure chatting with you. Wishing you the very best with your new project!'
-  },
-  {
-    id: 'rev-2',
-    bookingId: 'BK-1065',
-    clientName: 'Sneha Roy',
-    clientAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=250&q=80',
-    service: 'Shopping Companion',
-    rating: 5,
-    date: '2024-09-12',
-    comment: 'Had the best shopping day at Select Citywalk! Aanya gave amazing honest styling advice and kept the vibe super positive throughout the 3 hours. Will definitely hire again.',
-    partnerReply: null
-  },
-  {
-    id: 'rev-3',
-    bookingId: 'BK-1042',
-    clientName: 'Vikram Malhotra',
-    clientAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=250&q=80',
-    service: 'City Exploration',
-    rating: 4.8,
-    date: '2024-08-30',
-    comment: 'Very polite, punctual, and knew all the great heritage photo spots around Hauz Khas village. Great walking companion.',
-    partnerReply: 'Thanks Vikram! Loved exploring the heritage monuments with you.'
-  }
-];
+const INITIAL_REVIEWS = [];
 
 export default function ReviewsTab({ partner, showToast }) {
   const [reviews, setReviews] = useState(INITIAL_REVIEWS);
@@ -56,8 +22,8 @@ export default function ReviewsTab({ partner, showToast }) {
   const [reportReason, setReportReason] = useState('Offensive / Inappropriate Language');
   const [reportDetails, setReportDetails] = useState('');
 
-  const overallRating = partner?.rating || 4.95;
-  const totalReviews = partner?.reviewCount || 42;
+  const overallRating = partner?.rating ? partner.rating : 0;
+  const totalReviews = partner?.reviewCount || 0;
 
   const handleSendReply = (reviewId) => {
     const text = replyInputs[reviewId];
@@ -144,8 +110,17 @@ export default function ReviewsTab({ partner, showToast }) {
 
       {/* Reviews Stream */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {reviews.map(rev => (
-          <div key={rev.id} className="partner-panel" style={{ marginBottom: 0 }}>
+        {reviews.length === 0 ? (
+          <div className="partner-panel" style={{ textAlign: 'center', padding: '50px 20px', color: '#64748b' }}>
+            <MessageSquare size={36} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
+            <h4 style={{ color: '#94a3b8', fontSize: '1.05rem', margin: '0 0 6px' }}>No reviews yet</h4>
+            <p style={{ fontSize: '0.85rem', margin: 0 }}>
+              Completed bookings with client feedback and ratings will appear here.
+            </p>
+          </div>
+        ) : (
+          reviews.map(rev => (
+            <div key={rev.id} className="partner-panel" style={{ marginBottom: 0 }}>
             
             {/* Header: Client Avatar, Name, Rating, Date */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '12px' }}>
@@ -228,7 +203,8 @@ export default function ReviewsTab({ partner, showToast }) {
             )}
 
           </div>
-        ))}
+        ))
+      )}
       </div>
 
       {/* Report Inappropriate Review Modal */}

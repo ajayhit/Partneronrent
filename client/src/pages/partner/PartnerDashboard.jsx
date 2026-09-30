@@ -75,7 +75,7 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
   }, [activePartner?.id]);
 
   const loadAllData = async () => {
-    const partnerId = activePartner?.id || 'partner-p1';
+    const partnerId = activePartner?.id;
     try {
       const [partnerData, bookingList, payoutList] = await Promise.all([
         fetchPartnerById(partnerId),
@@ -114,7 +114,7 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
       return;
     }
     try {
-      const res = await togglePartnerOnline(partner?.id || 'partner-p1');
+      const res = await togglePartnerOnline(partner?.id);
       setPartner(prev => ({ ...prev, isOnline: res.isOnline }));
       showToast(res.isOnline ? 'You are now ONLINE & accepting hire requests!' : 'You are now OFFLINE (Shift Ended).');
     } catch (err) {
@@ -124,33 +124,33 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
 
   // 2. Profile update
   const handleUpdateProfile = async (profileData) => {
-    const updated = await updatePartnerProfile(partner?.id || 'partner-p1', profileData);
+    const updated = await updatePartnerProfile(partner?.id, profileData);
     setPartner(prev => ({ ...prev, ...updated }));
     return updated;
   };
 
   // 3. KYC submission
   const handleSubmitKYC = async (kycData) => {
-    const res = await submitPartnerKYC(partner?.id || 'partner-p1', kycData);
+    const res = await submitPartnerKYC(partner?.id, kycData);
     if (res.partner) setPartner(res.partner);
     loadAllData();
   };
 
   // 4. Update services & pricing
   const handleUpdateServices = async (servicesList) => {
-    const updated = await updatePartnerProfile(partner?.id || 'partner-p1', { services: servicesList });
+    const updated = await updatePartnerProfile(partner?.id, { services: servicesList });
     setPartner(prev => ({ ...prev, services: servicesList }));
   };
 
   // 5. Update availability
   const handleUpdateAvailability = async (availabilityData) => {
-    const updated = await updatePartnerProfile(partner?.id || 'partner-p1', availabilityData);
+    const updated = await updatePartnerProfile(partner?.id, availabilityData);
     setPartner(prev => ({ ...prev, ...availabilityData }));
   };
 
   // 6. Update bank details
   const handleUpdateBankDetails = async (bankDetails) => {
-    const updated = await updatePartnerProfile(partner?.id || 'partner-p1', { bankDetails });
+    const updated = await updatePartnerProfile(partner?.id, { bankDetails });
     setPartner(prev => ({ ...prev, bankDetails }));
   };
 

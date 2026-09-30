@@ -285,7 +285,7 @@ app.post('/api/bookings', (req, res) => {
 
   const newBooking = {
     id: `BK-${Date.now().toString().slice(-4)}`,
-    clientId: clientId || 'client-1',
+    clientId: clientId || '',
     clientName: clientName || clientUser?.name || 'Guest Hirer',
     clientPhone: clientPhone || clientUser?.phone || '+91 98765 00000',
     partnerId,
@@ -647,15 +647,21 @@ app.get('/api/admin/stats', (req, res) => {
     cityStats[cityName].revenue += (b.totalAmount || 0);
   });
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayRevenue = bookings
+    .filter(b => b.date === todayStr)
+    .reduce((sum, b) => sum + (b.platformRevenue || 0), 0);
+  const todayBookingsCount = bookings.filter(b => b.date === todayStr).length;
+
   res.json({
     gmv,
-    todayRevenue: Math.round(gmv * 0.18),
+    todayRevenue,
     platformRevenue,
     partnerEarnings,
     partnerPayoutsDisbursed,
     totalRefunds,
     totalBookings,
-    todayBookings: Math.min(totalBookings, 3),
+    todayBookings: todayBookingsCount,
     upcomingBookingsCount: upcomingBookings.length,
     completedBookingsCount: completedBookings.length,
     cancelledBookingsCount: cancelledBookings.length,
@@ -671,23 +677,8 @@ app.get('/api/admin/stats', (req, res) => {
     safetyAlertsCount,
     cityStats: Object.values(cityStats),
     charts: {
-      dailyRevenue: [
-        { day: 'Mon', revenue: 14500, bookings: 4 },
-        { day: 'Tue', revenue: 18200, bookings: 6 },
-        { day: 'Wed', revenue: 22400, bookings: 7 },
-        { day: 'Thu', revenue: 19800, bookings: 5 },
-        { day: 'Fri', revenue: 34500, bookings: 11 },
-        { day: 'Sat', revenue: 48900, bookings: 16 },
-        { day: 'Sun', revenue: 52100, bookings: 18 }
-      ],
-      monthlyRevenue: [
-        { month: 'Apr', revenue: 180000 },
-        { month: 'May', revenue: 240000 },
-        { month: 'Jun', revenue: 310000 },
-        { month: 'Jul', revenue: 395000 },
-        { month: 'Aug', revenue: 470000 },
-        { month: 'Sep', revenue: 585000 }
-      ]
+      dailyRevenue: [],
+      monthlyRevenue: []
     }
   });
 });

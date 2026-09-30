@@ -41,8 +41,8 @@ export default function ChatDrawer() {
     if (!inputText.trim()) return;
 
     const senderRole = currentRole;
-    const senderId = currentRole === 'client' ? (activeUser?.id || 'client-1') : (activePartner?.id || 'partner-p1');
-    const senderName = currentRole === 'client' ? (activeUser?.name || 'Rahul Verma') : (activePartner?.name || 'Aanya Sharma');
+    const senderId = currentRole === 'client' ? (activeUser?.id || '') : (activePartner?.id || '');
+    const senderName = currentRole === 'client' ? (activeUser?.name || '') : (activePartner?.name || '');
 
     try {
       const newMsg = await sendMessage(booking.id, {

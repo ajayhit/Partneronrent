@@ -434,11 +434,11 @@ export default function PartnerProfileModal({
                 </div>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>IFSC Code:</span>
-                  <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{partner.bankDetails?.ifsc || 'HDFC0001234'}</div>
+                  <div style={{ fontWeight: 600, fontFamily: 'monospace' }}>{partner.bankDetails?.ifsc || '—'}</div>
                 </div>
                 <div>
                   <span style={{ color: '#64748b', fontSize: '0.75rem' }}>UPI ID:</span>
-                  <div style={{ fontWeight: 600, color: '#38bdf8' }}>{partner.bankDetails?.upiId || 'aanya@okhdfcbank'}</div>
+                  <div style={{ fontWeight: 600, color: '#38bdf8' }}>{partner.bankDetails?.upiId || '—'}</div>
                 </div>
               </div>
             </div>

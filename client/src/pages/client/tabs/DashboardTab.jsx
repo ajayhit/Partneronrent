@@ -82,7 +82,7 @@ export default function DashboardTab({
               <span style={{ fontSize: '0.84rem', color: '#94a3b8' }}>📍 {client?.city || 'Delhi NCR'}</span>
             </div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
-              Welcome back, {client?.name?.split(' ')[0] || 'Rahul'}!
+              Welcome back, {client?.name?.split(' ')[0] || 'Member'}!
             </h1>
             <p style={{ fontSize: '0.86rem', color: '#cbd5e1', margin: '3px 0 0' }}>
               Find safe, platonic companions for cinema, cafes, dining, and city exploration.
@@ -110,7 +110,7 @@ export default function DashboardTab({
             className="btn-secondary"
             style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            <Wallet size={16} /> Wallet: {formatCurrency(client?.walletBalance || 4500)}
+            <Wallet size={16} /> Wallet: {formatCurrency(client?.walletBalance || 0)}
           </button>
         </div>
       </div>
@@ -364,45 +364,48 @@ export default function DashboardTab({
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {(favorites.length > 0 ? favorites : [
-              { id: 'partner-p1', name: 'Aanya Sharma', city: 'Delhi NCR', rating: 4.95, rate: 500, avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80', services: '🎬 Movie • ☕ Cafe' },
-              { id: 'partner-p2', name: 'Kabir Mathur', city: 'Mumbai', rating: 4.88, rate: 600, avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80', services: '🚶 Exploration • 🛍️ Shopping' }
-            ]).map(fav => (
-              <div
-                key={fav.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '12px 14px',
-                  background: 'rgba(15, 22, 38, 0.6)',
-                  borderRadius: '10px',
-                  border: '1px solid rgba(255, 255, 255, 0.06)'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <img
-                    src={fav.avatar}
-                    alt={fav.name}
-                    style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }}
-                  />
-                  <div>
-                    <strong style={{ color: '#fff', fontSize: '0.92rem' }}>{fav.name}</strong>
-                    <div style={{ fontSize: '0.76rem', color: '#94a3b8' }}>
-                      ⭐ {fav.rating} • {fav.city}
+            {favorites.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '28px 16px', color: '#64748b', fontSize: '0.85rem' }}>
+                No favorite companions saved yet. Tap the heart on companion cards to save them.
+              </div>
+            ) : (
+              favorites.map(fav => (
+                <div
+                  key={fav.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 14px',
+                    background: 'rgba(15, 22, 38, 0.6)',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(255, 255, 255, 0.06)'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <img
+                      src={fav.avatar}
+                      alt={fav.name}
+                      style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }}
+                    />
+                    <div>
+                      <strong style={{ color: '#fff', fontSize: '0.92rem' }}>{fav.name}</strong>
+                      <div style={{ fontSize: '0.76rem', color: '#94a3b8' }}>
+                        ⭐ {fav.rating} • {fav.city}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <button
-                  className="btn-primary btn-sm"
-                  onClick={() => onFindCompanion(fav)}
-                  style={{ background: 'linear-gradient(135deg, #ec4899 0%, #7c3aed 100%)' }}
-                >
-                  Book Now
-                </button>
-              </div>
-            ))}
+                  <button
+                    className="btn-primary btn-sm"
+                    onClick={() => onFindCompanion(fav)}
+                    style={{ background: 'linear-gradient(135deg, #ec4899 0%, #7c3aed 100%)' }}
+                  >
+                    Book Now
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -422,31 +425,34 @@ export default function DashboardTab({
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {[
-              { id: 1, partner: 'Aanya Sharma', service: 'Cafe & Conversation', rating: 5, date: '18 Sep 2026', comment: 'Aanya was a wonderful listener! Discussed cinema and art. Highly recommended.' },
-              { id: 2, partner: 'Kabir Mathur', service: 'City Exploration', rating: 5, date: '04 Sep 2026', comment: 'Punctual, energetic, and knew all the great heritage photo spots in Bandra.' }
-            ].map(rev => (
-              <div
-                key={rev.id}
-                style={{
-                  padding: '12px 14px',
-                  background: 'rgba(15, 22, 38, 0.6)',
-                  borderRadius: '10px',
-                  border: '1px solid rgba(255, 255, 255, 0.06)'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <strong style={{ color: '#fff', fontSize: '0.88rem' }}>{rev.partner}</strong>
-                  <div style={{ display: 'flex', gap: '2px', color: '#fbbf24' }}>
-                    {[...Array(rev.rating)].map((_, i) => <Star key={i} size={12} fill="#fbbf24" />)}
-                  </div>
-                </div>
-                <div style={{ fontSize: '0.76rem', color: '#38bdf8' }}>{rev.service} • {rev.date}</div>
-                <p style={{ fontSize: '0.8rem', color: '#cbd5e1', margin: '4px 0 0', fontStyle: 'italic' }}>
-                  "{rev.comment}"
-                </p>
+            {reviews.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '28px 16px', color: '#64748b', fontSize: '0.85rem' }}>
+                No reviews submitted yet. Completed sessions can be rated from your bookings.
               </div>
-            ))}
+            ) : (
+              reviews.map(rev => (
+                <div
+                  key={rev.id}
+                  style={{
+                    padding: '12px 14px',
+                    background: 'rgba(15, 22, 38, 0.6)',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(255, 255, 255, 0.06)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <strong style={{ color: '#fff', fontSize: '0.88rem' }}>{rev.partner}</strong>
+                    <div style={{ display: 'flex', gap: '2px', color: '#fbbf24' }}>
+                      {[...Array(rev.rating || 5)].map((_, i) => <Star key={i} size={12} fill="#fbbf24" />)}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: '#38bdf8' }}>{rev.service} • {rev.date}</div>
+                  <p style={{ fontSize: '0.8rem', color: '#cbd5e1', margin: '4px 0 0', fontStyle: 'italic' }}>
+                    "{rev.comment}"
+                  </p>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -468,35 +474,49 @@ export default function DashboardTab({
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          {[
-            { id: 1, title: 'Booking Confirmed', text: 'Booking BK-10025 with Rahul has been confirmed for 28 Sep 2026 at 06:00 PM.', time: '2 hours ago', icon: Calendar, color: '#38bdf8' },
-            { id: 2, title: 'Payment Successful', text: '₹1,500 was successfully paid from your wallet for booking BK-10025.', time: '2 hours ago', icon: Wallet, color: '#10b981' },
-            { id: 3, title: 'Coupons Available', text: 'Use code WELCOME100 for ₹100 off on your next cinema companionship session!', time: '1 day ago', icon: Star, color: '#f472b6' }
-          ].map(notif => (
-            <div
-              key={notif.id}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '12px 16px',
-                background: 'rgba(15, 22, 38, 0.4)',
-                borderRadius: '10px',
-                border: '1px solid rgba(255, 255, 255, 0.05)'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: `${notif.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <notif.icon size={16} color={notif.color} />
-                </div>
-                <div>
-                  <strong style={{ color: '#fff', fontSize: '0.86rem' }}>{notif.title}</strong>
-                  <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>{notif.text}</div>
-                </div>
-              </div>
-              <span style={{ fontSize: '0.74rem', color: '#64748b', whiteSpace: 'nowrap' }}>{notif.time}</span>
+          {notifications.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '28px 16px', color: '#64748b', fontSize: '0.85rem' }}>
+              No recent notifications or activity records.
             </div>
-          ))}
+          ) : (
+            notifications.slice(0, 5).map(notif => {
+              const Icon = notif.icon || Bell;
+              return (
+                <div
+                  key={notif.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 16px',
+                    background: 'rgba(15, 22, 38, 0.4)',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(255, 255, 255, 0.05)'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '8px',
+                      background: 'rgba(56, 189, 248, 0.15)',
+                      color: notif.color || '#38bdf8',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <Icon size={16} />
+                    </div>
+                    <div>
+                      <strong style={{ color: '#fff', fontSize: '0.86rem' }}>{notif.title}</strong>
+                      <p style={{ fontSize: '0.78rem', color: '#cbd5e1', margin: '2px 0 0' }}>{notif.text}</p>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b', whiteSpace: 'nowrap' }}>{notif.time}</span>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

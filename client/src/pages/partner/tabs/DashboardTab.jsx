@@ -56,11 +56,11 @@ export default function DashboardTab({
     upcomingBookings.reduce((sum, b) => sum + (b.partnerShare || 0), 0) +
     activeSessions.reduce((sum, b) => sum + (b.partnerShare || 0), 0);
 
-  const totalEarnings = partner?.totalEarnings || 94000;
-  const walletBalance = partner?.walletBalance || 18400;
-  const rating = partner?.rating || 4.95;
-  const reviewCount = partner?.reviewCount || 42;
-  const cancellationRate = partner?.cancellationRate || '1.8%';
+  const totalEarnings = partner?.totalEarnings ?? 0;
+  const walletBalance = partner?.walletBalance ?? 0;
+  const rating = partner?.rating ? partner.rating : 0;
+  const reviewCount = partner?.reviewCount ?? 0;
+  const cancellationRate = partner?.cancellationRate || '0%';
 
   return (
     <div>

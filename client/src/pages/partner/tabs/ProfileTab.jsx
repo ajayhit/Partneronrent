@@ -35,11 +35,11 @@ export default function ProfileTab({ partner, onUpdateProfile, showToast }) {
     city: partner?.city || 'Delhi NCR',
     avatar: partner?.avatar || '',
     coverPhoto: partner?.coverPhoto || '',
-    phone: partner?.phone || '+91 91234 56789',
-    email: partner?.email || 'aanya@example.com',
+    phone: partner?.phone || '',
+    email: partner?.email || '',
     languages: partner?.languages || ['English', 'Hindi'],
-    areas: partner?.areas || ['Connaught Place', 'Hauz Khas', 'Saket', 'Cyber Hub Gurgaon'],
-    interests: partner?.interests || ['Coffee Tasting', 'Indie Cinema', 'Bookstores', 'Museum Walks']
+    areas: partner?.areas || [],
+    interests: partner?.interests || []
   });
 
   const [newArea, setNewArea] = useState('');

@@ -231,110 +231,127 @@ export default function Home({ setActivePage, onSelectPartner }) {
           </button>
         </div>
 
-        <div className="grid-4">
-          {featuredPartners.map(partner => (
-            <div 
-              key={partner.id}
-              className="glass-panel"
-              style={{
-                borderRadius: 'var(--radius-lg)',
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                transition: 'transform 0.2s ease',
-                cursor: 'pointer'
-              }}
-              onClick={() => {
-                if (!isAuthenticated) {
-                  setActivePage('auth');
-                  return;
-                }
-                if (onSelectPartner) onSelectPartner(partner);
-                setActivePage('partner-detail');
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-5px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+        {featuredPartners.length === 0 ? (
+          <div className="glass-panel" style={{ textAlign: 'center', padding: '50px 20px', color: '#94a3b8', borderRadius: 'var(--radius-lg)' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🌟</div>
+            <h3 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '8px' }}>No companions registered yet</h3>
+            <p style={{ maxWidth: '500px', margin: '0 auto 20px', fontSize: '0.9rem', lineHeight: '1.6' }}>
+              We are onboarding verified companions across major cities. Register today to become a foundational verified companion!
+            </p>
+            <button
+              onClick={() => setActivePage('auth')}
+              className="btn-primary"
+              style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', padding: '10px 24px' }}
             >
-              {/* Avatar & badges (no photo) */}
-              <div style={{
-                padding: '24px 20px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '14px',
-                background: 'linear-gradient(135deg, rgba(124,58,237,0.12) 0%, rgba(236,72,153,0.08) 100%)'
-              }}>
+              Join as a Companion
+            </button>
+          </div>
+        ) : (
+          <div className="grid-4">
+            {featuredPartners.map(partner => (
+              <div 
+                key={partner.id}
+                className="glass-panel"
+                style={{
+                  borderRadius: 'var(--radius-lg)',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'transform 0.2s ease',
+                  cursor: 'pointer'
+                }}
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    setActivePage('auth');
+                    return;
+                  }
+                  if (onSelectPartner) onSelectPartner(partner);
+                  setActivePage('partner-detail');
+                }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-5px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                {/* Avatar & badges (no photo) */}
                 <div style={{
-                  width: '64px', height: '64px', borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #7c3aed, #ec4899)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '1.6rem', fontWeight: 800, color: '#fff',
-                  flexShrink: 0,
-                  boxShadow: '0 0 18px rgba(124,58,237,0.4)'
+                  padding: '24px 20px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '14px',
+                  background: 'linear-gradient(135deg, rgba(124,58,237,0.12) 0%, rgba(236,72,153,0.08) 100%)'
                 }}>
-                  {partner.name?.charAt(0)}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 style={{ fontSize: '1.1rem', color: '#fff', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {partner.name}, {partner.age}
-                  </h3>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#94a3b8', fontSize: '0.78rem', marginBottom: '8px' }}>
-                    <MapPin size={12} /> {partner.city}
+                  <div style={{
+                    width: '64px', height: '64px', borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #7c3aed, #ec4899)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '1.6rem', fontWeight: 800, color: '#fff',
+                    flexShrink: 0,
+                    boxShadow: '0 0 18px rgba(124,58,237,0.4)'
+                  }}>
+                    {partner.name?.charAt(0)}
                   </div>
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    <span className="badge badge-verified" style={{ fontSize: '0.7rem' }}><ShieldCheck size={11} /> Verified</span>
-                    {partner.isOnline && (
-                      <span className="badge" style={{ background: 'rgba(16,185,129,0.9)', color: '#fff', fontSize: '0.7rem' }}>
-                        <span className="badge-online" style={{ background: '#fff', width: '6px', height: '6px', display: 'inline-block', borderRadius: '50%', marginRight: '4px' }}></span>Online
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3 style={{ fontSize: '1.1rem', color: '#fff', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {partner.name}, {partner.age}
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#94a3b8', fontSize: '0.78rem', marginBottom: '8px' }}>
+                      <MapPin size={12} /> {partner.city}
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      <span className="badge badge-verified" style={{ fontSize: '0.7rem' }}><ShieldCheck size={11} /> Verified</span>
+                      {partner.isOnline && (
+                        <span className="badge" style={{ background: 'rgba(16,185,129,0.9)', color: '#fff', fontSize: '0.7rem' }}>
+                          <span className="badge-online" style={{ background: '#fff', width: '6px', height: '6px', display: 'inline-block', borderRadius: '50%', marginRight: '4px' }}></span>Online
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card Body */}
+                <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <p style={{
+                    color: '#94a3b8',
+                    fontSize: '0.82rem',
+                    lineHeight: '1.5',
+                    marginBottom: '14px',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden'
+                  }}>
+                    {partner.bio}
+                  </p>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', fontSize: '0.82rem' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#fbbf24', fontWeight: 700 }}>
+                        <Star size={14} fill="#fbbf24" /> {partner.rating} ({partner.reviewCount})
                       </span>
-                    )}
+                      <span style={{ color: '#94a3b8' }}>
+                        {partner.completedHours}h completed
+                      </span>
+                    </div>
+
+                    <button 
+                      className="btn-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!isAuthenticated) {
+                          setActivePage('auth');
+                          return;
+                        }
+                        openBookingModal(partner);
+                      }}
+                      style={{ width: '100%', padding: '10px', fontSize: '0.88rem' }}
+                    >
+                      Hire Hourly
+                    </button>
                   </div>
                 </div>
               </div>
-
-              {/* Card Body */}
-              <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <p style={{
-                  color: '#94a3b8',
-                  fontSize: '0.82rem',
-                  lineHeight: '1.5',
-                  marginBottom: '14px',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden'
-                }}>
-                  {partner.bio}
-                </p>
-
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', fontSize: '0.82rem' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#fbbf24', fontWeight: 700 }}>
-                      <Star size={14} fill="#fbbf24" /> {partner.rating} ({partner.reviewCount})
-                    </span>
-                    <span style={{ color: '#94a3b8' }}>
-                      {partner.completedHours}h completed
-                    </span>
-                  </div>
-
-                  <button 
-                    className="btn-primary"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!isAuthenticated) {
-                        setActivePage('auth');
-                        return;
-                      }
-                      openBookingModal(partner);
-                    }}
-                    style={{ width: '100%', padding: '10px', fontSize: '0.88rem' }}
-                  >
-                    Hire Hourly
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Interactive Partner Earnings Calculator (KoPartner Model: Earn upto ₹1.5L/mo at 80% split) */}

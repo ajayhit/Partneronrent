@@ -19,7 +19,7 @@ export default function PartnerKYC() {
 
   const loadDetails = async () => {
     try {
-      const data = await fetchPartnerById(activePartner?.id || 'partner-p1');
+      const data = await fetchPartnerById(activePartner?.id);
       if (data) {
         setPartner(data);
         if (data.kycDocuments?.idType) setIdType(data.kycDocuments.idType);

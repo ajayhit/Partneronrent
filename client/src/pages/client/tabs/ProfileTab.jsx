@@ -16,15 +16,15 @@ const POPULAR_LANGUAGES = ['English', 'Hindi', 'Bengali', 'Marathi', 'Tamil', 'T
 
 export default function ProfileTab({ client, onUpdateProfile, showToast }) {
   const [formData, setFormData] = useState({
-    name: client?.name || 'Rahul Verma',
+    name: client?.name || '',
     avatar: client?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=250&q=80',
-    mobile: client?.phone || '+91 98765 43210',
-    email: client?.email || 'rahul.verma@example.com',
-    dob: client?.dob || '1996-05-14',
+    mobile: client?.phone || '',
+    email: client?.email || '',
+    dob: client?.dob || '',
     gender: client?.gender || 'Male',
     city: client?.city || 'Delhi NCR',
-    address: client?.address || 'B-12, Greater Kailash Part 1, New Delhi 110048',
-    emergencyContact: client?.emergencyContact || '+91 98111 22334 (Brother - Amit Verma)',
+    address: client?.address || '',
+    emergencyContact: client?.emergencyContact || '',
     preferredLanguages: client?.preferredLanguages || ['English', 'Hindi']
   });
 

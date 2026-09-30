@@ -31,9 +31,9 @@ export default function SettingsTab({ partner, onLogout, showToast }) {
   const [selectedLanguage, setSelectedLanguage] = useState('English');
 
   // Account details
-  const [email, setEmail] = useState(partner?.email || 'aanya@example.com');
-  const [phone, setPhone] = useState(partner?.phone || '+91 91234 56789');
-  const [emergencyContact, setEmergencyContact] = useState('+91 98111 22334 (Brother - Rohit Sharma)');
+  const [email, setEmail] = useState(partner?.email || '');
+  const [phone, setPhone] = useState(partner?.phone || '');
+  const [emergencyContact, setEmergencyContact] = useState(partner?.emergencyContact || '');
 
   // Pause profile state
   const [profilePaused, setProfilePaused] = useState(false);

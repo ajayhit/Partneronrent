@@ -14,21 +14,21 @@ import {
 export default function BankDetailsTab({ partner, payouts = [], onRequestPayout, onUpdateBankDetails, showToast }) {
   // Bank details form state
   const [bankDetails, setBankDetails] = useState({
-    accountHolder: partner?.bankDetails?.accountHolder || partner?.name || 'Aanya Sharma',
-    bankName: partner?.bankDetails?.bankName || 'HDFC Bank',
-    accountNumber: partner?.bankDetails?.accountNumber || '50100492819283',
-    ifsc: partner?.bankDetails?.ifsc || 'HDFC0001234',
-    upiId: partner?.bankDetails?.upiId || 'aanya@okhdfcbank'
+    accountHolder: partner?.bankDetails?.accountHolder || partner?.name || '',
+    bankName: partner?.bankDetails?.bankName || '',
+    accountNumber: partner?.bankDetails?.accountNumber || '',
+    ifsc: partner?.bankDetails?.ifsc || '',
+    upiId: partner?.bankDetails?.upiId || ''
   });
 
   // Payout request form
-  const [withdrawAmount, setWithdrawAmount] = useState(5000);
+  const [withdrawAmount, setWithdrawAmount] = useState(500);
   const [payoutMethod, setPayoutMethod] = useState('UPI'); // 'UPI' or 'Bank'
-  const [destination, setDestination] = useState(partner?.bankDetails?.upiId || 'aanya@okhdfcbank');
+  const [destination, setDestination] = useState(partner?.bankDetails?.upiId || '');
   const [isSubmittingPayout, setIsSubmittingPayout] = useState(false);
   const [isSavingBank, setIsSavingBank] = useState(false);
 
-  const availableBalance = partner?.walletBalance || 12000;
+  const availableBalance = partner?.walletBalance || 0;
 
   const handleSaveBankDetails = async (e) => {
     e.preventDefault();
@@ -59,7 +59,7 @@ export default function BankDetailsTab({ partner, payouts = [], onRequestPayout,
     setIsSubmittingPayout(true);
     try {
       await onRequestPayout({
-        partnerId: partner?.id || 'partner-p1',
+        partnerId: partner?.id,
         amount: withdrawAmount,
         method: payoutMethod === 'UPI' ? 'UPI' : 'Bank Transfer',
         destination
@@ -153,7 +153,7 @@ export default function BankDetailsTab({ partner, payouts = [], onRequestPayout,
               <div
                 onClick={() => {
                   setPayoutMethod('UPI');
-                  setDestination(bankDetails.upiId || 'aanya@okhdfcbank');
+                  setDestination(bankDetails.upiId || '');
                 }}
                 style={{
                   padding: '12px',
@@ -352,12 +352,7 @@ export default function BankDetailsTab({ partner, payouts = [], onRequestPayout,
             <tbody>
               {payouts.length === 0 ? (
                 <tr>
-                  <td><strong>UTR-20240915-8912</strong></td>
-                  <td><strong style={{ color: '#34d399' }}>₹10,000</strong></td>
-                  <td>UPI Instant</td>
-                  <td>aanya@okhdfcbank</td>
-                  <td>2024-09-15 11:20</td>
-                  <td><span className="partner-badge partner-badge-emerald">Settled</span></td>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>No payout records found.</td>
                 </tr>
               ) : (
                 payouts.map(p => (

@@ -55,7 +55,7 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
     setLoading(true);
     try {
       const [bookingsData, partnersData] = await Promise.all([
-        fetchBookings({ clientId: activeUser?.id || 'client-1' }),
+        fetchBookings({ clientId: activeUser?.id }),
         fetchPartners()
       ]);
       setBookings(Array.isArray(bookingsData) ? bookingsData : []);
@@ -99,15 +99,15 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
     if (setActivePage) setActivePage('home');
   };
 
-  // Client info (fallback to defaults)
+  // Client info
   const clientInfo = {
-    id: activeUser?.id || 'client-1',
-    name: activeUser?.name || 'Arjun Mehta',
-    email: activeUser?.email || 'arjun.mehta@email.com',
-    phone: activeUser?.phone || '+91 98765 43210',
+    id: activeUser?.id,
+    name: activeUser?.name || '',
+    email: activeUser?.email || '',
+    phone: activeUser?.phone || '',
     avatar: activeUser?.avatar || null,
-    walletBalance: activeUser?.walletBalance || 4500,
-    city: activeUser?.city || 'Jaipur',
+    walletBalance: activeUser?.walletBalance || 0,
+    city: activeUser?.city || '',
     verified: true
   };
 

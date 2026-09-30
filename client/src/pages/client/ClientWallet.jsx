@@ -21,7 +21,7 @@ export default function ClientWallet() {
 
     setIsSubmitting(true);
     try {
-      const res = await topupWallet(activeUser?.id || 'client-1', topupAmount);
+      const res = await topupWallet(activeUser?.id, topupAmount);
       setActiveUser(prev => ({ ...prev, walletBalance: res.walletBalance }));
       showToast(`Wallet topped up by ${formatCurrency(topupAmount)} successfully!`);
       setSuccessMsg(`Added ${formatCurrency(topupAmount)} to your wallet!`);
@@ -57,7 +57,7 @@ export default function ClientWallet() {
           Available Balance
         </div>
         <div style={{ fontSize: '3rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '14px' }}>
-          {formatCurrency(activeUser?.walletBalance || 4500)}
+          {formatCurrency(activeUser?.walletBalance || 0)}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', opacity: 0.95 }}>
           <ShieldCheck size={18} /> Escrow Protection: Funds released only when you share OTP with your companion.
@@ -136,46 +136,8 @@ export default function ClientWallet() {
       {/* Recent Wallet Transactions Ledger */}
       <div className="glass-panel" style={{ padding: '24px' }}>
         <h3 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>Recent Wallet Activity</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '12px 16px',
-            borderRadius: 'var(--radius-sm)',
-            background: 'rgba(15, 23, 42, 0.5)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ArrowUpRight size={18} color="#f87171" />
-              </div>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#fff' }}>Booking Payment - Aanya Sharma</div>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Movie Companion (3 hrs) • Booking #BK-1001</div>
-              </div>
-            </div>
-            <div style={{ fontWeight: 700, color: '#f87171' }}>-₹6,037</div>
-          </div>
-
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '12px 16px',
-            borderRadius: 'var(--radius-sm)',
-            background: 'rgba(15, 23, 42, 0.5)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <ArrowDownLeft size={18} color="#34d399" />
-              </div>
-              <div>
-                <div style={{ fontWeight: 600, fontSize: '0.9rem', color: '#fff' }}>Wallet Top-up (UPI)</div>
-                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>GPay via Axis Bank</div>
-              </div>
-            </div>
-            <div style={{ fontWeight: 700, color: '#34d399' }}>+₹5,000</div>
+          <div style={{ textAlign: 'center', padding: '32px', color: '#64748b', fontSize: '0.9rem' }}>
+            No wallet transactions yet. Make your first top-up to get started!
           </div>
 
         </div>

@@ -11,30 +11,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
-const INITIAL_HIRER_REVIEWS = [
-  {
-    id: 'rev-1',
-    bookingId: 'BK-10018',
-    partnerName: 'Aanya Sharma',
-    partnerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-    service: 'Cafe & Conversation',
-    rating: 5,
-    date: '18 Sep 2026',
-    comment: 'Aanya is an exceptionally warm and thoughtful listener. We met at Blue Tokai Cafe and discussed work stress and indie cinema. Completely respectful and platonic. Highly recommended!',
-    tags: ['Punctual', 'Polite', 'Great Listener', 'Safe Experience']
-  },
-  {
-    id: 'rev-2',
-    bookingId: 'BK-09941',
-    partnerName: 'Kabir Mathur',
-    partnerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-    service: 'City Exploration',
-    rating: 5,
-    date: '02 Sep 2026',
-    comment: 'Great companion for walking around Bandra and finding heritage spots. Punctual and very respectful.',
-    tags: ['Energetic', 'Knowledgeable', 'Punctual']
-  }
-];
+const INITIAL_HIRER_REVIEWS = [];
 
 export default function ReviewsTab({ bookings = [], showToast }) {
   const [reviews, setReviews] = useState(INITIAL_HIRER_REVIEWS);
@@ -42,7 +19,7 @@ export default function ReviewsTab({ bookings = [], showToast }) {
 
   // Write new review form state
   const completedBookings = bookings.filter(b => b.status === 'completed');
-  const [selectedBookingId, setSelectedBookingId] = useState(completedBookings[0]?.id || 'BK-10025');
+  const [selectedBookingId, setSelectedBookingId] = useState(completedBookings[0]?.id || '');
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [selectedTags, setSelectedTags] = useState(['Punctual', 'Polite']);
@@ -66,12 +43,11 @@ export default function ReviewsTab({ bookings = [], showToast }) {
       return;
     }
 
-    const selectedBk = completedBookings.find(b => b.id === selectedBookingId) || {
-      id: selectedBookingId,
-      partnerName: 'Rahul Sharma',
-      partnerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-      serviceName: 'Movie Companion'
-    };
+    const selectedBk = completedBookings.find(b => b.id === selectedBookingId);
+    if (!selectedBk) {
+      showToast('Please select a completed booking to review.', 'warning');
+      return;
+    }
 
     const newRev = {
       id: `rev-${Date.now()}`,
@@ -146,7 +122,7 @@ export default function ReviewsTab({ bookings = [], showToast }) {
                     </option>
                   ))
                 ) : (
-                  <option value="BK-10025">#BK-10025 • Partner: Rahul Sharma (Movie Companion)</option>
+                  <option value="">No completed bookings available</option>
                 )}
               </select>
             </div>

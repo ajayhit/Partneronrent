@@ -11,41 +11,12 @@ import {
   AlertTriangle
 } from 'lucide-react';
 
-const INITIAL_HIRER_CHATS = [
-  {
-    bookingId: 'BK-10025',
-    partnerName: 'Rahul Sharma',
-    service: 'Movie Companion',
-    date: '28 Sep 2026',
-    time: '06:00 PM',
-    status: 'active',
-    partnerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
-    messages: [
-      { id: 1, sender: 'client', text: 'Hi Rahul! Looking forward to the movie at PVR Director Cut this evening.', time: '02:15 PM' },
-      { id: 2, sender: 'partner', text: 'Hi! Yes, I will reach the cinema main lobby by 5:50 PM. See you soon.', time: '02:20 PM' },
-      { id: 3, sender: 'client', text: 'Great! I will share the starting OTP as soon as we meet.', time: '02:22 PM' }
-    ]
-  },
-  {
-    bookingId: 'BK-10018',
-    partnerName: 'Aanya Sharma',
-    service: 'Cafe & Conversation',
-    date: '18 Sep 2026',
-    time: '04:00 PM',
-    status: 'previous',
-    partnerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-    messages: [
-      { id: 1, sender: 'client', text: 'Hi Aanya, are you at Blue Tokai?', time: '03:55 PM' },
-      { id: 2, sender: 'partner', text: 'Yes, seated near the outdoor reading corner!', time: '03:57 PM' },
-      { id: 3, sender: 'client', text: 'Thank you for the wonderful session today!', time: '07:10 PM' }
-    ]
-  }
-];
+const INITIAL_HIRER_CHATS = [];
 
 export default function MessagesTab({ client, showToast }) {
   const [activeSubTab, setActiveSubTab] = useState('active'); // 'active', 'previous', 'support'
   const [chats, setChats] = useState(INITIAL_HIRER_CHATS);
-  const [selectedBookingId, setSelectedBookingId] = useState(INITIAL_HIRER_CHATS[0].bookingId);
+  const [selectedBookingId, setSelectedBookingId] = useState(INITIAL_HIRER_CHATS[0]?.bookingId || '');
   const [newMessage, setNewMessage] = useState('');
 
   // Support messages
