@@ -452,7 +452,8 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
   const [name, setName]               = useState(partner?.name || '');
   const [tagline, setTagline]         = useState(partner?.tagline || '');
   const [bio, setBio]                 = useState(partner?.bio || '');
-  const [age, setAge]                 = useState(partner?.age || '24');
+  const [dob, setDob]                 = useState(partner?.dob || '');
+  const [age, setAge]                 = useState(partner?.age || '');
   const [gender, setGender]           = useState(partner?.gender || 'Female');
   const [city, setCity]               = useState(partner?.city || 'Delhi NCR');
   const [phone, setPhone]             = useState(partner?.phone || '');
@@ -487,6 +488,7 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
       if (partner.phone && !phone) setPhone(partner.phone);
       if (partner.email && !email) setEmail(partner.email);
       if (partner.city && !city) setCity(partner.city);
+      if (partner.dob && !dob) setDob(partner.dob);
       if (partner.avatar && (!avatar || avatar === '/default-avatar.jpg')) setAvatar(partner.avatar);
       if (kd.holderName && !holderName) setHolderName(kd.holderName);
       if (kd.idNumber && !idNumber) setIdNumber(kd.idNumber.replace(/\D/g, '').slice(0, 12));
@@ -601,6 +603,7 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
         name: name.trim(),
         tagline: tagline.trim(),
         bio: bio.trim(),
+        dob,
         age: Number(age),
         gender,
         city,
@@ -843,17 +846,43 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
-                  Age * <span style={{ color: '#64748b', fontWeight: 400 }}>(Must be 18+)</span>
+                  📅 Date of Birth *
                 </label>
                 <input
-                  type="number"
-                  min="18"
-                  max="75"
-                  value={age}
-                  onChange={e => setAge(e.target.value)}
+                  type="date"
+                  value={dob}
+                  onChange={e => {
+                    const newDob = e.target.value;
+                    setDob(newDob);
+                    if (newDob) {
+                      const birth = new Date(newDob);
+                      const today = new Date();
+                      let calcAge = today.getFullYear() - birth.getFullYear();
+                      const m = today.getMonth() - birth.getMonth();
+                      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) calcAge--;
+                      if (calcAge >= 0) setAge(String(calcAge));
+                    }
+                  }}
+                  max={new Date().toISOString().split('T')[0]}
+                  disabled={isLocked}
                   required
                   style={{ width: '100%' }}
                 />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                  Age <span style={{ color: '#38bdf8', fontWeight: 400 }}>(Auto-calculated from DOB)</span>
+                </label>
+                <input
+                  type="number"
+                  value={age}
+                  readOnly
+                  style={{ width: '100%', opacity: 0.7, cursor: 'not-allowed', background: 'rgba(255,255,255,0.04)' }}
+                />
+                {age && Number(age) < 18 && (
+                  <div style={{ fontSize: '0.74rem', color: '#f87171', marginTop: '3px' }}>⚠ Age must be at least 18 years.</div>
+                )}
               </div>
 
               <div>
@@ -911,16 +940,15 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
               <div>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
                   <Mail size={13} style={{ display: 'inline', marginRight: '4px' }} />
-                  Contact Email Address *
+                  Contact Email Address
                 </label>
                 <input
                   type="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="companion@example.com"
-                  required
-                  style={{ width: '100%' }}
+                  readOnly
+                  style={{ width: '100%', opacity: 0.7, cursor: 'not-allowed', background: 'rgba(255,255,255,0.04)' }}
                 />
+                <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Registered account email — contact support to change.</span>
               </div>
             </div>
 

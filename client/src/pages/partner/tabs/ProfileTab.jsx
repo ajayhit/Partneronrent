@@ -341,21 +341,16 @@ export default function ProfileTab({ partner, onUpdateProfile, onTabChange, show
 
             <div>
               <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
-                Age {formData.dob ? <span style={{ color: '#38bdf8', fontWeight: 400 }}>(Auto-calculated from DOB)</span> : ''} *
+                Age <span style={{ color: '#38bdf8', fontWeight: 400 }}>(Auto-calculated from DOB)</span>
               </label>
               <input
                 type="number"
-                min="18"
-                max="75"
                 value={formData.age}
-                onChange={e => setFormData({ ...formData, age: Number(e.target.value) })}
-                required
-                style={{ width: '100%' }}
+                readOnly
+                style={{ width: '100%', opacity: 0.7, cursor: 'not-allowed', background: 'rgba(255,255,255,0.04)' }}
               />
-              {formData.dob && Number(formData.age) < 18 && (
-                <div style={{ fontSize: '0.74rem', color: '#f87171', marginTop: '3px' }}>
-                  ⚠ Companion age must be at least 18 years.
-                </div>
+              {formData.age && Number(formData.age) < 18 && (
+                <div style={{ fontSize: '0.74rem', color: '#f87171', marginTop: '3px' }}>⚠ Companion age must be at least 18 years.</div>
               )}
             </div>
 
@@ -574,10 +569,10 @@ export default function ProfileTab({ partner, onUpdateProfile, onTabChange, show
               <input
                 type="email"
                 value={formData.email}
-                onChange={e => setFormData({ ...formData, email: e.target.value })}
-                style={{ width: '100%' }}
+                readOnly
+                style={{ width: '100%', opacity: 0.7, cursor: 'not-allowed', background: 'rgba(255,255,255,0.04)' }}
               />
-              <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Used for notifications and payout alerts.</span>
+              <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Registered account email — contact support to change.</span>
             </div>
           </div>
         </div>
