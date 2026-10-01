@@ -29,6 +29,8 @@ export default function Navbar({ activePage, setActivePage }) {
   const { isAuthenticated, currentRole, session, activeUser, activePartner, logout } = useAuth();
   const { openSOS, adminActiveTab, setAdminActiveTab } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isClientPanel = isAuthenticated && currentRole === 'client' && activePage.startsWith('client-');
+  const isClientUser = isAuthenticated && currentRole === 'client';
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const handleLogout = () => {
@@ -273,15 +275,28 @@ export default function Navbar({ activePage, setActivePage }) {
         ) : (
           /* ── PUBLIC & HIRER NAV LINKS ── */
           <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }} className="desktop-links">
-            <button
-              onClick={() => setActivePage('home')}
-              style={{
-                color: activePage === 'home' ? '#c084fc' : '#94a3b8',
-                fontWeight: 600, fontSize: '0.92rem'
-              }}
-            >
-              Home
-            </button>
+            {isClientUser ? (
+              <button
+                onClick={() => setActivePage('client-dashboard')}
+                style={{
+                  color: activePage.startsWith('client-') ? '#ec4899' : '#94a3b8',
+                  fontWeight: 600, fontSize: '0.92rem',
+                  display: 'flex', alignItems: 'center', gap: '6px'
+                }}
+              >
+                <LayoutDashboard size={16} /> Dashboard
+              </button>
+            ) : !isClientPanel && (
+              <button
+                onClick={() => setActivePage('home')}
+                style={{
+                  color: activePage === 'home' ? '#c084fc' : '#94a3b8',
+                  fontWeight: 600, fontSize: '0.92rem'
+                }}
+              >
+                Home
+              </button>
+            )}
 
             {/* ONLY SHOW "Find Partner" IF LOGGED IN AS CLIENT */}
             {isAuthenticated && currentRole === 'client' && (
@@ -335,31 +350,19 @@ export default function Navbar({ activePage, setActivePage }) {
               <MessageSquare size={16} /> Feedback
             </button>
 
-            {/* Client Portal Link */}
-            {isAuthenticated && currentRole === 'client' && (
+            {/* FAQs link */}
+            {!isClientUser && !isClientPanel && (
               <button
-                onClick={() => setActivePage('client-dashboard')}
+                onClick={() => setActivePage('faq')}
                 style={{
-                  color: activePage.startsWith('client-') ? '#ec4899' : '#94a3b8',
+                  color: activePage === 'faq' ? '#38bdf8' : '#94a3b8',
                   fontWeight: 600, fontSize: '0.92rem',
-                  display: 'flex', alignItems: 'center', gap: '6px'
+                  display: 'flex', alignItems: 'center', gap: '5px'
                 }}
               >
-                <User size={16} /> Hirer Portal
+                <HelpCircle size={15} /> FAQs
               </button>
             )}
-
-            {/* FAQs link */}
-            <button
-              onClick={() => setActivePage('faq')}
-              style={{
-                color: activePage === 'faq' ? '#38bdf8' : '#94a3b8',
-                fontWeight: 600, fontSize: '0.92rem',
-                display: 'flex', alignItems: 'center', gap: '5px'
-              }}
-            >
-              <HelpCircle size={15} /> FAQs
-            </button>
           </div>
         )}
 
@@ -633,7 +636,13 @@ export default function Navbar({ activePage, setActivePage }) {
           ) : (
             /* Non-Admin Mobile Drawer */
             <>
-              <button onClick={() => { setActivePage('home'); setMobileMenuOpen(false); }} style={{ color: '#fff', textAlign: 'left', fontWeight: 600 }}>Home</button>
+              {isClientUser ? (
+                <button onClick={() => { setActivePage('client-dashboard'); setMobileMenuOpen(false); }} style={{ color: '#ec4899', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <LayoutDashboard size={16} /> Dashboard
+                </button>
+              ) : !isClientPanel && (
+                <button onClick={() => { setActivePage('home'); setMobileMenuOpen(false); }} style={{ color: '#fff', textAlign: 'left', fontWeight: 600 }}>Home</button>
+              )}
               
               {/* Only show Find Partner if logged in as client */}
               {isAuthenticated && currentRole === 'client' && (
@@ -649,14 +658,15 @@ export default function Navbar({ activePage, setActivePage }) {
               <button onClick={() => { setActivePage('feedback'); setMobileMenuOpen(false); }} style={{ color: '#f472b6', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <MessageSquare size={16} /> Feedback & Reviews
               </button>
-              <button onClick={() => { setActivePage('faq'); setMobileMenuOpen(false); }} style={{ color: '#38bdf8', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <HelpCircle size={16} /> FAQs & Help
-              </button>
+              {!isClientUser && !isClientPanel && (
+                <button onClick={() => { setActivePage('faq'); setMobileMenuOpen(false); }} style={{ color: '#38bdf8', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <HelpCircle size={16} /> FAQs & Help
+                </button>
+              )}
 
               {isAuthenticated && currentRole === 'client' && (
                 <>
                   <div style={{ height: '1px', background: 'rgba(255,255,255,0.08)', margin: '4px 0' }} />
-                  <button onClick={() => { setActivePage('client-dashboard'); setMobileMenuOpen(false); }} style={{ color: '#ec4899', textAlign: 'left', fontWeight: 600 }}>Hirer Portal</button>
                   <button onClick={() => { setActivePage('client-wallet'); setMobileMenuOpen(false); }} style={{ color: '#cbd5e1', textAlign: 'left', fontWeight: 600 }}>My Wallet</button>
                 </>
               )}

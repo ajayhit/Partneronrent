@@ -228,7 +228,7 @@ export default function DashboardTab({
           <div>
             <div className="client-stat-label">Favorite Partners</div>
             <div className="client-stat-value" style={{ color: '#f43f5e' }}>
-              {favorites.length || 3}
+              {favorites.length}
             </div>
             <div className="client-stat-subtext">Click to view saved companions</div>
           </div>

@@ -12,21 +12,14 @@ import {
   RotateCcw
 } from 'lucide-react';
 
-const INITIAL_WALLET_TRANSACTIONS = [
-  { id: 'WLT-10492', type: 'credit', title: 'Top-up via UPI', amount: 2000, date: '2026-09-24 18:30', status: 'completed' },
-  { id: 'WLT-10450', type: 'debit', title: 'Booking #BK-10025 Payment', amount: 1500, date: '2026-09-28 14:30', status: 'completed' },
-  { id: 'WLT-10388', type: 'credit', title: 'Dispute Refund #CMP-8012', amount: 1800, date: '2026-09-02 16:45', status: 'completed' },
-  { id: 'WLT-10310', type: 'credit', title: 'Promotional Welcome Bonus', amount: 250, date: '2026-08-20 10:00', status: 'completed' }
-];
-
 export default function WalletTab({ client, onTopupWallet, showToast }) {
-  const [walletBalance, setWalletBalance] = useState(client?.walletBalance || 4500);
-  const promotionalCredits = 350;
-  const refundCredits = 1800;
+  const [walletBalance, setWalletBalance] = useState(0);
+  const promotionalCredits = client?.promotionalCredits ?? 0;
+  const refundCredits = client?.refundCredits ?? 0;
 
   const [topupAmount, setTopupAmount] = useState(1000);
   const [submitting, setSubmitting] = useState(false);
-  const [transactions, setTransactions] = useState(INITIAL_WALLET_TRANSACTIONS);
+  const [transactions, setTransactions] = useState([]);
 
   const handleTopup = (e) => {
     e.preventDefault();

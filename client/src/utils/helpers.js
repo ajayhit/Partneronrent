@@ -3,6 +3,16 @@ export function formatCurrency(amount) {
   return '₹' + Number(amount).toLocaleString('en-IN');
 }
 
+export function getStartingHourlyRate(partner) {
+  const serviceRates = (partner?.services || [])
+    .map(service => Number(service.ratePerHour))
+    .filter(rate => Number.isFinite(rate) && rate > 0);
+
+  return serviceRates.length > 0
+    ? Math.min(...serviceRates)
+    : Number(partner?.hourlyRate) || 500;
+}
+
 export function formatDate(dateString) {
   if (!dateString) return '';
   const date = new Date(dateString);

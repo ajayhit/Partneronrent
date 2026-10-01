@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { fetchPartners } from '../utils/api';
-import { formatCurrency } from '../utils/helpers';
+import { formatCurrency, getStartingHourlyRate } from '../utils/helpers';
+import { getClientFavorites, saveClientFavorites } from '../utils/clientFavorites';
 import SafetyBanner from '../components/SafetyBanner';
 import { 
   Search, 
@@ -17,8 +19,10 @@ import {
 } from 'lucide-react';
 
 export default function PartnerDirectory({ onSelectPartner, setActivePage }) {
-  const { services, settings, openBookingModal } = useApp();
+  const { services, settings, openBookingModal, showToast } = useApp();
+  const { activeUser } = useAuth();
   const [partners, setPartners] = useState([]);
+  const [favorites, setFavorites] = useState(() => getClientFavorites(activeUser?.id));
   const [loading, setLoading] = useState(true);
 
   // Filters
@@ -32,6 +36,25 @@ export default function PartnerDirectory({ onSelectPartner, setActivePage }) {
   useEffect(() => {
     loadPartners();
   }, [cityFilter, serviceFilter, genderFilter, searchQuery, maxRate, onlyOnline]);
+
+  useEffect(() => {
+    try {
+      saveClientFavorites(activeUser?.id, favorites);
+    } catch (error) {
+      console.error('Failed to save client favorites:', error);
+      showToast('Could not save this favorite. Please try again.', 'danger');
+    }
+  }, [activeUser?.id, favorites]);
+
+  const toggleFavorite = (partner) => {
+    const isFavorite = favorites.includes(partner.id);
+    const updatedFavorites = isFavorite
+      ? favorites.filter(id => id !== partner.id)
+      : [...favorites, partner.id];
+
+    setFavorites(updatedFavorites);
+    showToast(isFavorite ? 'Removed from favorites' : 'Added to favorites');
+  };
 
   const loadPartners = async () => {
     setLoading(true);
@@ -272,7 +295,7 @@ export default function PartnerDirectory({ onSelectPartner, setActivePage }) {
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '0.72rem', color: '#cbd5e1' }}>Starting at</div>
                     <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#ec4899' }}>
-                      {formatCurrency(partner.hourlyRate)}<span style={{ fontSize: '0.75rem', fontWeight: 400 }}>/hr</span>
+                      {formatCurrency(getStartingHourlyRate(partner))}<span style={{ fontSize: '0.75rem', fontWeight: 400 }}>/hr</span>
                     </div>
                   </div>
                 </div>
@@ -335,21 +358,41 @@ export default function PartnerDirectory({ onSelectPartner, setActivePage }) {
                   </div>
 
                   {/* Action Buttons */}
-                  <div style={{ display: 'flex', gap: '10px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => toggleFavorite(partner)}
+                      aria-pressed={favorites.includes(partner.id)}
+                      title={favorites.includes(partner.id) ? 'Remove from favorites' : 'Add to favorites'}
+                      style={{
+                        padding: '10px 4px',
+                        fontSize: '0.78rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        whiteSpace: 'nowrap',
+                        color: favorites.includes(partner.id) ? '#f43f5e' : undefined
+                      }}
+                    >
+                      <Heart size={16} fill={favorites.includes(partner.id) ? '#f43f5e' : 'none'} />
+                      Favorite
+                    </button>
                     <button 
                       className="btn-secondary"
                       onClick={() => {
                         if (onSelectPartner) onSelectPartner(partner);
                         setActivePage('partner-detail');
                       }}
-                      style={{ flex: 1, padding: '10px', fontSize: '0.85rem' }}
+                      style={{ padding: '10px 4px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
                     >
                       View Profile
                     </button>
                     <button 
                       className="btn-primary"
                       onClick={() => openBookingModal(partner)}
-                      style={{ flex: 1, padding: '10px', fontSize: '0.85rem' }}
+                      style={{ padding: '10px 4px', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
                     >
                       Hire Hourly
                     </button>

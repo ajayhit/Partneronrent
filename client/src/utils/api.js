@@ -46,6 +46,47 @@ export async function submitPartnerKYC(id, kycData) {
   return res.json();
 }
 
+export async function fetchClientById(id) {
+  const res = await fetch(`${API_BASE}/clients/${id}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Failed to load hirer profile (HTTP ${res.status})`);
+  return res.json();
+}
+
+export async function updateClientProfile(id, profileData) {
+  const res = await fetch(`${API_BASE}/clients/${id}/profile`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(profileData)
+  });
+  const responseBody = await res.text();
+  let data;
+  try {
+    data = JSON.parse(responseBody);
+  } catch {
+    throw new Error(`Failed to save hirer profile (HTTP ${res.status}).`);
+  }
+  if (!res.ok) throw new Error(data.error || `Failed to save hirer profile (HTTP ${res.status})`);
+  return data;
+}
+
+export async function submitClientKYC(id, kycData) {
+  const res = await fetch(`${API_BASE}/clients/${id}/kyc`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(kycData)
+  });
+  const responseBody = await res.text();
+  let data;
+  try {
+    data = JSON.parse(responseBody);
+  } catch {
+    throw new Error(`Failed to submit hirer verification (HTTP ${res.status}). Restart the API server and try again.`);
+  }
+  if (!res.ok) throw new Error(data.error || `Failed to submit hirer verification (HTTP ${res.status})`);
+  return data;
+}
+
 export async function fetchBookings(params = {}) {
   const query = new URLSearchParams(params).toString();
   const res = await fetch(`${API_BASE}/bookings${query ? `?${query}` : ''}`);
@@ -194,6 +235,17 @@ export async function updatePartnerKYCAdmin(partnerId, status, notes, adminName)
     body: JSON.stringify({ status, notes, adminName })
   });
   return res.json();
+}
+
+export async function updateCustomerKYCAdmin(customerId, status, notes, adminName) {
+  const res = await fetch(`${API_BASE}/admin/customers/${customerId}/kyc`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, notes, adminName })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to update hirer KYC');
+  return data;
 }
 
 export async function fetchUsers() {
@@ -515,6 +567,3 @@ export async function fetchAdminAuditLogs() {
   const res = await fetch(`${API_BASE}/admin/audit-logs`);
   return res.json();
 }
-
-
-

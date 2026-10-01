@@ -33,6 +33,27 @@ function writeData(data) {
   }
 }
 
+const VERHOEFF_D = [[0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],[4,0,1,2,3,9,5,6,7,8],[5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],[8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0]];
+const VERHOEFF_P = [[0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],[9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]];
+
+function isValidAadhaar(value) {
+  if (!/^[2-9]\d{11}$/.test(value)) return false;
+  const reversed = value.split('').reverse().map(Number);
+  let checksum = 0;
+  for (let index = 0; index < reversed.length; index += 1) {
+    checksum = VERHOEFF_D[checksum][VERHOEFF_P[index % 8][reversed[index]]];
+  }
+  return checksum === 0;
+}
+
+function isValidDateOfBirth(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsedDate = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(parsedDate.getTime()) &&
+    parsedDate.toISOString().slice(0, 10) === value &&
+    parsedDate <= new Date();
+}
+
 // 1. Settings & Metadata
 app.get('/api/settings', (req, res) => {
   const db = readData();
@@ -270,6 +291,143 @@ app.post('/api/partners/:id/kyc', (req, res) => {
 
   writeData(db);
   res.json({ message: 'Profile and KYC submitted successfully for admin review', partner: db.partners[index] });
+});
+
+// Hirer KYC
+app.get('/api/clients/:id', (req, res) => {
+  const db = readData();
+  if (!db) return res.status(500).json({ error: 'Unable to load hirer profile' });
+  const user = (db.users || []).find(item =>
+    item.id === req.params.id && (item.role === 'client' || item.role === 'both')
+  );
+  if (!user) return res.json(null);
+
+  const { password, ...safeUser } = user;
+  res.json(safeUser);
+});
+
+app.put('/api/clients/:id/profile', (req, res) => {
+  const db = readData();
+  if (!db) return res.status(500).json({ error: 'Unable to save hirer profile' });
+
+  const user = (db.users || []).find(item =>
+    item.id === req.params.id && (item.role === 'client' || item.role === 'both')
+  );
+  if (!user) return res.status(404).json({ error: 'Hirer account not found' });
+
+  const { name, phone, city, avatar, dob, gender, address, emergencyContact, preferredLanguages } = req.body;
+  if (name !== undefined && !String(name).trim()) return res.status(400).json({ error: 'Full name is required' });
+  if (dob !== undefined && dob !== '' && !isValidDateOfBirth(dob)) {
+    return res.status(400).json({ error: 'Enter a valid date of birth that is not in the future' });
+  }
+
+  const profileUpdates = {};
+  if (name !== undefined) profileUpdates.name = String(name).trim();
+  if (phone !== undefined) profileUpdates.phone = String(phone).trim();
+  if (city !== undefined) profileUpdates.city = String(city).trim();
+  if (avatar !== undefined) profileUpdates.avatar = avatar;
+  if (dob !== undefined) profileUpdates.dob = dob;
+  if (gender !== undefined) profileUpdates.gender = gender;
+  if (address !== undefined) profileUpdates.address = address;
+  if (emergencyContact !== undefined) profileUpdates.emergencyContact = emergencyContact;
+  if (preferredLanguages !== undefined) {
+    profileUpdates.preferredLanguages = Array.isArray(preferredLanguages) ? preferredLanguages : [];
+  }
+
+  Object.assign(user, profileUpdates);
+  if (!writeData(db)) return res.status(500).json({ error: 'Unable to save hirer profile' });
+
+  const { password, ...safeUser } = user;
+  res.json({ user: safeUser });
+});
+
+app.post('/api/clients/:id/kyc', (req, res) => {
+  const db = readData();
+  if (!db) return res.status(500).json({ error: 'Unable to save hirer verification' });
+
+  const {
+    name, phone, email, city,
+    dob,
+    holderName, idType, idNumber, panNumber,
+    idFrontDoc, idBackDoc, panDoc, selfieDoc,
+    idFrontName, idBackName, panFileName, selfieFileName
+  } = req.body;
+  const normalizedIdNumber = String(idNumber || '').replace(/\D/g, '');
+  const normalizedPanNumber = String(panNumber || '').toUpperCase();
+  if (dob !== undefined && dob !== '' && !isValidDateOfBirth(dob)) {
+    return res.status(400).json({ error: 'Enter a valid date of birth that is not in the future' });
+  }
+  if (!String(name || '').trim()) return res.status(400).json({ error: 'Full name is required' });
+  if (!String(phone || '').trim()) return res.status(400).json({ error: 'Contact phone is required' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || '').trim())) {
+    return res.status(400).json({ error: 'A valid contact email is required' });
+  }
+  if (!String(city || '').trim()) return res.status(400).json({ error: 'City is required' });
+  if (!String(holderName || '').trim()) return res.status(400).json({ error: 'Legal name is required' });
+  if (!isValidAadhaar(normalizedIdNumber)) return res.status(400).json({ error: 'A valid 12-digit Aadhaar number is required' });
+  if (!/^[A-Z]{5}\d{4}[A-Z]$/.test(normalizedPanNumber)) return res.status(400).json({ error: 'A valid PAN number is required' });
+  if (!idFrontDoc || !panDoc || !selfieDoc) {
+    return res.status(400).json({ error: 'Aadhaar front, PAN card, and selfie documents are required' });
+  }
+
+  if (!Array.isArray(db.users)) db.users = [];
+  let user = db.users.find(item =>
+    item.id === req.params.id && (item.role === 'client' || item.role === 'both')
+  );
+  if (!user) {
+    user = {
+      id: req.params.id,
+      role: 'client',
+      name: String(name).trim(),
+      phone: String(phone).trim(),
+      email: String(email).trim(),
+      city: String(city).trim(),
+      avatar: '/default-avatar.jpg',
+      walletBalance: 0,
+      status: 'active'
+    };
+    db.users.push(user);
+  }
+
+  const submittedAt = new Date().toISOString();
+  const history = user.kycDocuments?.verificationHistory || [];
+  user.kycStatus = 'pending';
+  user.kycRejectionReason = null;
+  user.name = String(name).trim();
+  user.phone = String(phone).trim();
+  user.email = String(email).trim();
+  user.city = String(city).trim();
+  if (dob !== undefined) user.dob = dob;
+  if ((!user.avatar || user.avatar === '/default-avatar.jpg') && selfieDoc) user.avatar = selfieDoc;
+  user.kycDocuments = {
+    ...(user.kycDocuments || {}),
+    idType: idType || 'Aadhaar Card',
+    holderName: String(holderName).trim(),
+    idNumber: normalizedIdNumber,
+    panNumber: normalizedPanNumber,
+    idFrontDoc,
+    idBackDoc: idBackDoc || null,
+    panDoc,
+    selfieDoc,
+    idFrontName: idFrontName || 'aadhaar_front',
+    idBackName: idBackName || null,
+    panFileName: panFileName || 'pan_card',
+    selfieFileName: selfieFileName || 'selfie',
+    submittedAt,
+    rejectionReason: null,
+    verificationHistory: [
+      ...history,
+      {
+        date: submittedAt.replace('T', ' ').slice(0, 16),
+        status: 'Submitted',
+        note: 'Hirer identity documents submitted for compliance review.'
+      }
+    ]
+  };
+
+  if (!writeData(db)) return res.status(500).json({ error: 'Unable to save hirer verification' });
+  const { password, ...safeUser } = user;
+  res.json({ message: 'Hirer verification submitted successfully for admin review', user: safeUser });
 });
 
 // 4. Bookings
@@ -648,7 +806,7 @@ app.get('/api/admin/stats', (req, res) => {
   const bookings = db.bookings || [];
   const partners = db.partners || [];
   const users = db.users || [];
-  const clients = users.filter(u => u.role === 'client');
+  const clients = users.filter(u => u.role === 'client' || u.role === 'both');
   const complaints = db.complaints || [];
   const safetyIncidents = db.safetyIncidents || [];
   const transactions = db.transactions || [];
@@ -674,6 +832,10 @@ app.get('/api/admin/stats', (req, res) => {
     .reduce((sum, t) => sum + (t.refundAmount || 0), 0);
 
   const pendingKYC = partners.filter(p => p.kycStatus === 'pending' || p.kycStatus === 'under_review').length;
+  const pendingHirerKYC = clients.filter(user =>
+    (user.kycDocuments?.submittedAt || user.kycDocuments?.idFrontDoc) &&
+    (user.kycStatus === 'pending' || user.kycStatus === 'under_review')
+  ).length;
   const verifiedPartners = partners.filter(p => p.kycStatus === 'verified').length;
   const activePartners = partners.filter(p => p.isOnline || p.status === 'active' || p.status === 'verified').length;
   const pendingPayouts = (db.payouts || []).filter(p => p.status === 'pending').length;
@@ -721,6 +883,7 @@ app.get('/api/admin/stats', (req, res) => {
     totalPartners: partners.length,
     activePartners,
     pendingKYC,
+    pendingHirerKYC,
     verifiedPartners,
     totalCustomers: clients.length,
     pendingPayouts,
@@ -738,7 +901,7 @@ app.get('/api/admin/stats', (req, res) => {
 // Customer Management Endpoints
 app.get('/api/admin/customers', (req, res) => {
   const db = readData();
-  const clients = (db.users || []).filter(u => u.role === 'client');
+  const clients = (db.users || []).filter(u => u.role === 'client' || u.role === 'both');
   res.json(clients);
 });
 
@@ -757,6 +920,43 @@ app.put('/api/admin/customers/:id/status', (req, res) => {
   logAudit(db, req.body.adminName, 'Customer Status Update', 'Customer', user.id, oldStatus, newStatus, reason);
   writeData(db);
   res.json({ message: 'Customer status updated', user });
+});
+
+app.put('/api/admin/customers/:id/kyc', (req, res) => {
+  const db = readData();
+  if (!db) return res.status(500).json({ error: 'Unable to update hirer KYC' });
+  const user = (db.users || []).find(item =>
+    item.id === req.params.id && (item.role === 'client' || item.role === 'both')
+  );
+  if (!user) return res.status(404).json({ error: 'Hirer not found' });
+
+  const { status, notes, adminName } = req.body;
+  if (!['verified', 'rejected', 'under_review'].includes(status)) {
+    return res.status(400).json({ error: 'Invalid hirer KYC status' });
+  }
+  const previousStatus = user.kycStatus || 'not_submitted';
+  const submittedAt = new Date().toISOString();
+  const reviewNote = String(notes || '').trim();
+  user.kycStatus = status;
+  user.kycRejectionReason = status === 'rejected' ? reviewNote : null;
+  user.kycDocuments = {
+    ...(user.kycDocuments || {}),
+    rejectionReason: status === 'rejected' ? reviewNote : null,
+    reviewNotes: reviewNote,
+    verificationHistory: [
+      ...(user.kycDocuments?.verificationHistory || []),
+      {
+        date: submittedAt.replace('T', ' ').slice(0, 16),
+        status: status === 'verified' ? 'Verified' : status === 'rejected' ? 'Rejected' : 'Under Review',
+        note: reviewNote || `Status updated by ${adminName || 'Admin'}.`
+      }
+    ]
+  };
+
+  logAudit(db, adminName, 'KYC Verification', 'Hirer', user.id, previousStatus, status, reviewNote);
+  if (!writeData(db)) return res.status(500).json({ error: 'Unable to update hirer KYC' });
+  const { password, ...safeUser } = user;
+  res.json({ message: `Hirer KYC marked ${status}`, user: safeUser });
 });
 
 app.post('/api/admin/customers/:id/notes', (req, res) => {
@@ -1345,4 +1545,3 @@ app.get('/api/auth/admin/info', (req, res) => {
 app.listen(PORT, () => {
   console.log(`PartnerOnRent backend running on http://localhost:${PORT}`);
 });
-

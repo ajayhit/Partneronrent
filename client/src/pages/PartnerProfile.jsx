@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { fetchPartnerById } from '../utils/api';
-import { formatCurrency } from '../utils/helpers';
+import { formatCurrency, getStartingHourlyRate } from '../utils/helpers';
 import SafetyBanner from '../components/SafetyBanner';
 import { 
   MapPin, 
@@ -56,6 +56,8 @@ export default function PartnerProfile({ partnerId, partnerObj, onBack, setActiv
       </div>
     );
   }
+
+  const startingHourlyRate = getStartingHourlyRate(partner);
 
   return (
     <div className="container" style={{ paddingBottom: '70px' }}>
@@ -145,7 +147,7 @@ export default function PartnerProfile({ partnerId, partnerObj, onBack, setActiv
               onClick={() => openBookingModal(partner)}
               style={{ padding: '14px 28px', fontSize: '1rem' }}
             >
-              Hire Hourly from {formatCurrency(partner.hourlyRate)}/hr
+              Hire Hourly from {formatCurrency(startingHourlyRate)}/hr
             </button>
 
           </div>
@@ -308,10 +310,10 @@ export default function PartnerProfile({ partnerId, partnerObj, onBack, setActiv
           {/* Booking Card */}
           <div className="glass-panel" style={{ padding: '24px', position: 'sticky', top: '90px' }}>
             <div style={{ fontSize: '0.8rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700, marginBottom: '4px' }}>
-              Platonic Hourly Hire
+              Starting at
             </div>
             <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#fff', marginBottom: '14px' }}>
-              {formatCurrency(partner.hourlyRate)}<span style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 400 }}> / hour</span>
+              {formatCurrency(startingHourlyRate)}<span style={{ fontSize: '0.9rem', color: '#94a3b8', fontWeight: 400 }}> / hour</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px', fontSize: '0.84rem', color: '#cbd5e1' }}>

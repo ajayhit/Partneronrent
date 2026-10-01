@@ -29,7 +29,7 @@ const NAV_GROUPS = [
     title: 'Overview',
     items: [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { id: 'notifications', label: 'Notifications', icon: Bell, badge: 5 }
+      { id: 'notifications', label: 'Notifications', icon: Bell }
     ]
   },
   {
@@ -43,7 +43,7 @@ const NAV_GROUPS = [
     title: 'Bookings & Messages',
     items: [
       { id: 'bookings', label: 'My Bookings', icon: Calendar },
-      { id: 'messages', label: 'Messages', icon: MessageCircle, badge: 2 },
+      { id: 'messages', label: 'Messages', icon: MessageCircle },
       { id: 'reviews', label: 'My Reviews', icon: Star }
     ]
   },
@@ -67,6 +67,7 @@ const NAV_GROUPS = [
     title: 'Account',
     items: [
       { id: 'profile', label: 'My Profile', icon: User },
+      { id: 'kyc', label: 'Verification / KYC', icon: ShieldCheck },
       { id: 'saved-locations', label: 'Saved Locations', icon: MapPin },
       { id: 'settings', label: 'Settings', icon: Settings }
     ]
@@ -181,6 +182,16 @@ export default function ClientSidebar({ activeTab, onTabChange, client, onLogout
             {group.items.map(item => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
+              const kycStatus = client?.kycStatus || 'not_submitted';
+              const badge = item.id === 'kyc'
+                ? kycStatus === 'verified'
+                  ? 'Verified'
+                  : kycStatus === 'pending' || kycStatus === 'under_review'
+                    ? 'Pending'
+                    : kycStatus === 'rejected'
+                      ? 'Rejected'
+                      : 'Verify'
+                : item.badge;
               return (
                 <button
                   key={item.id}
@@ -214,7 +225,7 @@ export default function ClientSidebar({ activeTab, onTabChange, client, onLogout
                       </span>
                     )}
                   </div>
-                  {!collapsed && item.badge && (
+                  {!collapsed && badge && (
                     <span style={{
                       background: 'linear-gradient(90deg,#ec4899,#a855f7)',
                       color: '#fff',
@@ -225,10 +236,10 @@ export default function ClientSidebar({ activeTab, onTabChange, client, onLogout
                       minWidth: '18px',
                       textAlign: 'center'
                     }}>
-                      {item.badge}
+                      {badge}
                     </span>
                   )}
-                  {collapsed && item.badge && (
+                  {collapsed && badge && (
                     <span style={{
                       position: 'absolute',
                       top: '4px',
@@ -244,7 +255,7 @@ export default function ClientSidebar({ activeTab, onTabChange, client, onLogout
                       alignItems: 'center',
                       justifyContent: 'center'
                     }}>
-                      {item.badge}
+                      {badge === 'Verified' ? '✓' : '!'}
                     </span>
                   )}
                 </button>

@@ -15,15 +15,13 @@ import {
 export default function FavoritesTab({
   favorites = [],
   recentlyViewed = [],
+  preferredPartners = [],
   onRemoveFavorite,
   onViewProfile,
   onBookPartner,
   onTabChange
 }) {
   const [activeSubTab, setActiveSubTab] = useState('favorites'); // 'favorites', 'recent', 'preferred'
-
-  // Preferred companions (companions booked multiple times)
-  const preferredPartners = favorites.filter((_, i) => i % 2 === 0);
 
   const displayedList = activeSubTab === 'favorites'
     ? favorites
@@ -44,7 +42,7 @@ export default function FavoritesTab({
         </div>
 
         <button
-          onClick={() => onTabChange('find')}
+          onClick={() => onTabChange('find-companion')}
           className="btn-primary"
           style={{ background: 'linear-gradient(135deg, #ec4899 0%, #7c3aed 100%)' }}
         >
@@ -64,13 +62,13 @@ export default function FavoritesTab({
           className={`client-subtab-btn ${activeSubTab === 'recent' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('recent')}
         >
-          <Clock size={15} /> Recently Viewed ({recentlyViewed.length || 2})
+          <Clock size={15} /> Recently Viewed ({recentlyViewed.length})
         </button>
         <button
           className={`client-subtab-btn ${activeSubTab === 'preferred' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('preferred')}
         >
-          <Sparkles size={15} /> Preferred Companions ({preferredPartners.length || 1})
+          <Sparkles size={15} /> Preferred Companions ({preferredPartners.length})
         </button>
       </div>
 
@@ -78,12 +76,22 @@ export default function FavoritesTab({
       {displayedList.length === 0 ? (
         <div className="client-panel" style={{ textAlign: 'center', padding: '60px 20px', color: '#64748b' }}>
           <Heart size={42} style={{ margin: '0 auto 12px', opacity: 0.4 }} />
-          <h4 style={{ color: '#94a3b8', fontSize: '1.1rem', margin: '0 0 6px' }}>No saved companions in this list</h4>
+          <h4 style={{ color: '#94a3b8', fontSize: '1.1rem', margin: '0 0 6px' }}>
+            {activeSubTab === 'recent'
+              ? 'No recently viewed companions'
+              : activeSubTab === 'preferred'
+                ? 'No preferred companions yet'
+                : 'No saved companions in this list'}
+          </h4>
           <p style={{ fontSize: '0.86rem', margin: '0 0 16px' }}>
-            Tap the heart icon on any companion profile to save them to your favorites for instant 1-click booking.
+            {activeSubTab === 'recent'
+              ? 'Companion profiles you view will appear here.'
+              : activeSubTab === 'preferred'
+                ? 'Companions with at least two completed bookings will appear here.'
+                : 'Tap the heart icon on any companion profile to save them to your favorites for instant 1-click booking.'}
           </p>
           <button
-            onClick={() => onTabChange('find')}
+            onClick={() => onTabChange('find-companion')}
             className="btn-secondary btn-sm"
           >
             Explore Directory

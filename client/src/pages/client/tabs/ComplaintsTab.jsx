@@ -12,35 +12,8 @@ import {
   HelpCircle
 } from 'lucide-react';
 
-const INITIAL_HIRER_COMPLAINTS = [
-  {
-    id: 'CMP-8012',
-    bookingId: 'BK-09941',
-    partnerName: 'Kabir Mathur',
-    category: 'Partner No-Show',
-    requestedRefund: true,
-    amount: 1800,
-    status: 'Resolved', // 'Open', 'Under Review', 'Waiting for Response', 'Resolved', 'Closed'
-    date: '2026-09-02',
-    description: 'Waited at Starbucks Bandra for 40 minutes. Companion was unreachable by phone.',
-    resolution: 'Full refund of ₹1,800 credited to Hirer Wallet. Companion penalized.'
-  },
-  {
-    id: 'CMP-7940',
-    bookingId: 'BK-09812',
-    partnerName: 'Vikram M.',
-    category: 'Partner Late Arrival',
-    requestedRefund: false,
-    amount: 0,
-    status: 'Closed',
-    date: '2026-08-14',
-    description: 'Companion arrived 25 minutes late for cinema premiere.',
-    resolution: 'Dispute closed with warning issued to companion.'
-  }
-];
-
 export default function ComplaintsTab({ bookings = [], showToast }) {
-  const [complaints, setComplaints] = useState(INITIAL_HIRER_COMPLAINTS);
+  const [complaints, setComplaints] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(bookings[0]?.id || 'BK-10025');
   const [category, setCategory] = useState('Partner No-show');
@@ -145,7 +118,17 @@ export default function ComplaintsTab({ bookings = [], showToast }) {
 
       {/* Complaints List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {complaints.map(c => (
+        {complaints.length === 0 ? (
+          <div className="client-panel" style={{ textAlign: 'center', padding: '40px 20px', color: '#64748b' }}>
+            <FileText size={32} style={{ margin: '0 auto 8px', opacity: 0.45 }} />
+            <h3 style={{ color: '#cbd5e1', fontSize: '1.05rem', margin: '0 0 8px' }}>
+              No complaints or refund disputes
+            </h3>
+            <p style={{ fontSize: '0.86rem', margin: 0 }}>
+              Any complaints you file will appear here.
+            </p>
+          </div>
+        ) : complaints.map(c => (
           <div key={c.id} className="client-panel" style={{ marginBottom: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '10px' }}>
               <div>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
-import { fetchBookings, fetchPartners } from '../../utils/api';
+import { getClientFavorites, saveClientFavorites } from '../../utils/clientFavorites';
+import { fetchBookings, fetchClientById, fetchPartners, submitClientKYC, updateClientProfile } from '../../utils/api';
 import './client.css';
 
 // Sidebar
@@ -24,42 +25,80 @@ import SavedLocationsTab from './tabs/SavedLocationsTab';
 import WalletTab from './tabs/WalletTab';
 import HelpSupportTab from './tabs/HelpSupportTab';
 import SettingsTab from './tabs/SettingsTab';
+import HirerKycTab from './tabs/HirerKycTab';
 
 // Modals
 import PartnerDetailModal from './modals/PartnerDetailModal';
 import BookingDetailModal from './modals/BookingDetailModal';
 
 export default function ClientDashboard({ initialTab = 'dashboard', setActivePage }) {
-  const { activeUser, logout } = useAuth();
+  const { activeUser, logout, updateSession } = useAuth();
   const { openChat, openSOS, openReview, showToast } = useApp();
 
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const [activeTab, setActiveTab] = useState(() =>
+    (activeUser?.kycStatus || 'not_submitted') === 'verified' ? initialTab : 'kyc'
+  );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Data state
   const [bookings, setBookings] = useState([]);
   const [partners, setPartners] = useState([]);
-  const [favorites, setFavorites] = useState([]);
+  const [clientProfile, setClientProfile] = useState(activeUser || null);
+  const [favorites, setFavorites] = useState(() => getClientFavorites(activeUser?.id));
   const [loading, setLoading] = useState(true);
 
   // Modal state
   const [selectedPartner, setSelectedPartner] = useState(null);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const isKycVerified = (clientProfile?.kycStatus || activeUser?.kycStatus || 'not_submitted') === 'verified';
 
   // Load data on mount
   useEffect(() => {
     loadData();
   }, [activeUser?.id]);
 
+  useEffect(() => {
+    if (!isKycVerified && activeTab !== 'kyc') {
+      setActiveTab('kyc');
+    }
+  }, [isKycVerified, activeTab]);
+
+  useEffect(() => {
+    try {
+      saveClientFavorites(activeUser?.id, favorites);
+    } catch (err) {
+      console.error('Failed to save client favorites:', err);
+      showToast('Could not save your favorites. Please try again.', 'danger');
+    }
+  }, [activeUser?.id, favorites]);
+
+  const handleTabChange = (tabId) => {
+    if (!isKycVerified && tabId !== 'kyc' && tabId !== 'settings') {
+      showToast('Please complete hirer KYC verification to access the panel.', 'warning');
+      setActiveTab('kyc');
+      return;
+    }
+    if (tabId === 'find-companion') {
+      setActivePage?.('directory');
+      return;
+    }
+    setActiveTab(tabId);
+  };
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const [bookingsData, partnersData] = await Promise.all([
+      const [bookingsData, partnersData, clientData] = await Promise.all([
         fetchBookings({ clientId: activeUser?.id }),
-        fetchPartners()
+        fetchPartners(),
+        activeUser?.id ? fetchClientById(activeUser.id) : Promise.resolve(null)
       ]);
       setBookings(Array.isArray(bookingsData) ? bookingsData : []);
       setPartners(Array.isArray(partnersData) ? partnersData : []);
+      if (clientData && !clientData.error) {
+        setClientProfile(clientData);
+        updateSession?.({ ...activeUser, ...clientData });
+      }
     } catch (err) {
       console.error('Failed to load client data:', err);
     } finally {
@@ -68,14 +107,17 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
   };
 
   const handleToggleFavorite = (partnerId) => {
+    const id = typeof partnerId === 'object' ? partnerId?.id : partnerId;
+    if (id == null) return;
+
     setFavorites(prev => {
-      const exists = prev.includes(partnerId);
+      const exists = prev.some(favorite => favorite === id);
       if (exists) {
         showToast && showToast('Removed from favorites');
-        return prev.filter(id => id !== partnerId);
+        return prev.filter(favorite => favorite !== id);
       } else {
         showToast && showToast('Added to favorites');
-        return [...prev, partnerId];
+        return [...prev, id];
       }
     });
   };
@@ -99,17 +141,44 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
     if (setActivePage) setActivePage('home');
   };
 
+  const handleSubmitKYC = async (kycData) => {
+    const response = await submitClientKYC(activeUser?.id, kycData);
+    if (response.error) throw new Error(response.error);
+    if (!response.user) throw new Error('The server did not return the updated verification status.');
+    setClientProfile(response.user);
+    updateSession?.({ ...activeUser, ...response.user });
+  };
+
+  const handleUpdateProfile = async (profileData) => {
+    const response = await updateClientProfile(activeUser?.id, profileData);
+    if (!response.user) throw new Error('The server did not return the updated profile.');
+    setClientProfile(response.user);
+    updateSession?.({ ...activeUser, ...response.user });
+  };
+
   // Client info
   const clientInfo = {
-    id: activeUser?.id,
-    name: activeUser?.name || '',
-    email: activeUser?.email || '',
-    phone: activeUser?.phone || '',
-    avatar: activeUser?.avatar || null,
-    walletBalance: activeUser?.walletBalance || 0,
-    city: activeUser?.city || '',
-    verified: true
+    ...(clientProfile || activeUser || {}),
+    id: clientProfile?.id || activeUser?.id,
+    name: clientProfile?.name || activeUser?.name || '',
+    email: clientProfile?.email || activeUser?.email || '',
+    phone: clientProfile?.phone || activeUser?.phone || '',
+    avatar: clientProfile?.avatar || activeUser?.avatar || null,
+    walletBalance: clientProfile?.walletBalance || activeUser?.walletBalance || 0,
+    city: clientProfile?.city || activeUser?.city || '',
+    verified: (clientProfile?.kycStatus || activeUser?.kycStatus) === 'verified',
+    kycStatus: clientProfile?.kycStatus || activeUser?.kycStatus || 'not_submitted',
+    kycDocuments: clientProfile?.kycDocuments || activeUser?.kycDocuments || {},
+    kycRejectionReason: clientProfile?.kycRejectionReason || activeUser?.kycRejectionReason || null
   };
+  const favoritePartners = partners.filter(partner => favorites.includes(partner.id));
+  const completedBookingsByPartner = bookings.reduce((counts, booking) => {
+    if (booking.status === 'completed' && booking.partnerId) {
+      counts[booking.partnerId] = (counts[booking.partnerId] || 0) + 1;
+    }
+    return counts;
+  }, {});
+  const preferredPartners = partners.filter(partner => completedBookingsByPartner[partner.id] >= 2);
 
   const renderTab = () => {
     switch (activeTab) {
@@ -118,15 +187,15 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
           <DashboardTab
             client={clientInfo}
             bookings={bookings}
-            favorites={favorites}
+            favorites={favoritePartners}
             reviews={[]}
             notifications={[]}
-            onTabChange={setActiveTab}
+            onTabChange={handleTabChange}
             onSelectBooking={handleSelectBooking}
             openChat={openChat}
             openSOS={openSOS}
             openReview={openReview}
-            onFindCompanion={() => setActiveTab('find-companion')}
+            onFindCompanion={() => handleTabChange('find-companion')}
           />
         );
 
@@ -145,12 +214,13 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
       case 'favorites':
         return (
           <FavoritesTab
-            favorites={partners.filter(p => favorites.includes(p.id))}
+            favorites={favoritePartners}
             recentlyViewed={[]}
+            preferredPartners={preferredPartners}
             onRemoveFavorite={(p) => handleToggleFavorite(p.id || p)}
             onViewProfile={handleViewPartnerProfile}
             onBookPartner={handleBookPartner}
-            onTabChange={setActiveTab}
+            onTabChange={handleTabChange}
           />
         );
 
@@ -175,9 +245,7 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
         );
 
       case 'coupons':
-        return (
-          <CouponsTab showToast={showToast} />
-        );
+        return <CouponsTab />;
 
       case 'messages':
         return (
@@ -223,6 +291,16 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
         return (
           <ProfileTab
             client={clientInfo}
+            onUpdateProfile={handleUpdateProfile}
+            showToast={showToast}
+          />
+        );
+
+      case 'kyc':
+        return (
+          <HirerKycTab
+            client={clientInfo}
+            onSubmitKYC={handleSubmitKYC}
             showToast={showToast}
           />
         );
@@ -258,15 +336,15 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
           <DashboardTab
             client={clientInfo}
             bookings={bookings}
-            favorites={favorites}
+            favorites={favoritePartners}
             reviews={[]}
             notifications={[]}
-            onTabChange={setActiveTab}
+            onTabChange={handleTabChange}
             onSelectBooking={handleSelectBooking}
             openChat={openChat}
             openSOS={openSOS}
             openReview={openReview}
-            onFindCompanion={() => setActiveTab('find-companion')}
+            onFindCompanion={() => handleTabChange('find-companion')}
           />
         );
     }
@@ -277,7 +355,7 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
       {/* Sidebar */}
       <ClientSidebar
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         client={clientInfo}
         onLogout={handleLogout}
         collapsed={sidebarCollapsed}
@@ -350,7 +428,7 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
           openReview={openReview}
           onRaiseDispute={() => {
             setSelectedBooking(null);
-            setActiveTab('complaints');
+            handleTabChange('complaints');
           }}
         />
       )}

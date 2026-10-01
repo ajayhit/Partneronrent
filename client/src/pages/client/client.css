@@ -223,6 +223,114 @@
   gap: 8px;
 }
 
+.hirer-kyc-form label {
+  display: block;
+}
+
+.hirer-kyc-input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 7px;
+  padding: 10px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.45);
+  color: #f1f5f9;
+  font: inherit;
+}
+
+.hirer-kyc-input:focus {
+  outline: 2px solid rgba(236, 72, 153, 0.45);
+  border-color: #ec4899;
+}
+
+.hirer-kyc-input[aria-invalid="true"] {
+  border-color: #ef4444;
+}
+
+.hirer-kyc-error {
+  display: block;
+  margin-top: 5px;
+  color: #f87171;
+  font-size: 0.74rem;
+}
+
+.hirer-kyc-steps {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 6px 0 18px;
+}
+
+.hirer-kyc-step {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.hirer-kyc-step-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(100, 116, 139, 0.3);
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.hirer-kyc-step-icon.active {
+  background: #f59e0b;
+  color: #fff;
+}
+
+.hirer-kyc-step-icon.done {
+  background: #10b981;
+  color: #fff;
+}
+
+.hirer-kyc-step-icon.danger {
+  background: #ef4444;
+  color: #fff;
+}
+
+.hirer-kyc-step-label {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.hirer-kyc-step-label.active {
+  color: #fbbf24;
+}
+
+.hirer-kyc-step-label.done {
+  color: #34d399;
+}
+
+.hirer-kyc-step-label.danger {
+  color: #f87171;
+}
+
+.hirer-kyc-step-line {
+  width: 24px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hirer-kyc-step-line.done {
+  background: #10b981;
+}
+
+.hirer-kyc-file {
+  padding: 8px;
+  font-size: 0.78rem;
+}
+
 /* Status tabs row */
 .client-tabs-row {
   display: flex;

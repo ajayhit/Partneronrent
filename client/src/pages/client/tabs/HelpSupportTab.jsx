@@ -42,10 +42,7 @@ export default function HelpSupportTab({ showToast }) {
   const [ticketCategory, setTicketCategory] = useState('Booking Question');
   const [ticketMessage, setTicketMessage] = useState('');
 
-  const [supportTickets, setSupportTickets] = useState([
-    { id: 'TCK-4019', category: 'Booking Reschedule', subject: 'Change movie venue for BK-10025', status: 'In Progress', date: '2026-09-27' },
-    { id: 'TCK-3810', category: 'Payment Query', subject: 'Invoice download for August sessions', status: 'Resolved', date: '2026-08-30' }
-  ]);
+  const [supportTickets, setSupportTickets] = useState([]);
 
   const handleCreateTicket = (e) => {
     e.preventDefault();
@@ -111,7 +108,13 @@ export default function HelpSupportTab({ showToast }) {
               </tr>
             </thead>
             <tbody>
-              {supportTickets.map(tck => (
+              {supportTickets.length === 0 ? (
+                <tr>
+                  <td colSpan="5" style={{ textAlign: 'center', color: '#94a3b8', padding: '24px' }}>
+                    No support tickets yet.
+                  </td>
+                </tr>
+              ) : supportTickets.map(tck => (
                 <tr key={tck.id}>
                   <td><strong style={{ color: '#38bdf8' }}>#{tck.id}</strong></td>
                   <td>{tck.category}</td>

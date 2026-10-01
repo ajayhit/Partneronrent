@@ -69,8 +69,9 @@ function DocumentPreviewModal({ doc, onClose }) {
           <div>
             <div style={{ fontSize: '1rem', fontWeight: 700, color: '#fff' }}>{doc.title}</div>
             <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
-              Partner: {doc.partnerName} • {doc.fileName || (isPDF ? 'PDF Document' : 'Image Document')}
+              {doc.entityLabel || 'Partner'}: {doc.partnerName} • {doc.fileName || (isPDF ? 'PDF Document' : 'Image Document')}
             </div>
+
           </div>
           <button
             onClick={onClose}
@@ -185,7 +186,7 @@ function DocumentPreviewModal({ doc, onClose }) {
 }
 
 // ── Reject Action Modal ───────────────────────────────────────────────────
-function RejectModal({ partner, onClose, onConfirm }) {
+function RejectModal({ partner, entityLabel = 'Partner', onClose, onConfirm }) {
   const [reason, setReason] = useState('');
   const presets = [
     'Aadhaar Card photo is blurred or unreadable. Please upload high-resolution scan.',
@@ -224,7 +225,7 @@ function RejectModal({ partner, onClose, onConfirm }) {
             </div>
             <div>
               <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#fff' }}>Reject Verification</div>
-              <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Partner: {partner?.name} (ID: {partner?.id})</div>
+              <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{entityLabel}: {partner?.name} (ID: {partner?.id})</div>
             </div>
           </div>
           <button onClick={onClose} style={{ color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -234,7 +235,7 @@ function RejectModal({ partner, onClose, onConfirm }) {
 
         <div style={{ padding: '20px 24px' }}>
           <div style={{ fontSize: '0.82rem', color: '#cbd5e1', marginBottom: '12px' }}>
-            Select quick reasons or type customized feedback. <strong>This reason will be directly shown on the partner's panel</strong> so they can correct their submission.
+            Select quick reasons or type customized feedback. <strong>This reason will be directly shown on the {entityLabel.toLowerCase()}'s panel</strong> so they can correct their submission.
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '14px' }}>
@@ -261,7 +262,7 @@ function RejectModal({ partner, onClose, onConfirm }) {
             rows="4"
             value={reason}
             onChange={e => setReason(e.target.value)}
-            placeholder="Explain specifically what needs to be corrected by the partner (e.g., Aadhaar photo blurred, re-upload clear photo)..."
+            placeholder={`Explain specifically what needs to be corrected by the ${entityLabel.toLowerCase()} (e.g., Aadhaar photo blurred, re-upload clear photo)...`}
             style={{ width: '100%', resize: 'vertical' }}
             required
           />
@@ -278,7 +279,7 @@ function RejectModal({ partner, onClose, onConfirm }) {
           <button
             type="button"
             onClick={() => {
-              if (!reason.trim()) { alert('Please provide a rejection reason for the partner.'); return; }
+              if (!reason.trim()) { alert(`Please provide a rejection reason for the ${entityLabel.toLowerCase()}.`); return; }
               onConfirm(reason.trim());
             }}
             className="btn-admin-action btn-admin-danger"
@@ -293,7 +294,7 @@ function RejectModal({ partner, onClose, onConfirm }) {
 }
 
 // ── Approve Action Modal ──────────────────────────────────────────────────
-function ApproveModal({ partner, onClose, onConfirm }) {
+function ApproveModal({ partner, entityLabel = 'Partner', onClose, onConfirm }) {
   const [remarks, setRemarks] = useState('All government documents verified & background check cleared.');
 
   return (
@@ -321,7 +322,7 @@ function ApproveModal({ partner, onClose, onConfirm }) {
             </div>
             <div>
               <div style={{ fontWeight: 800, fontSize: '1.1rem', color: '#fff' }}>Approve Verification</div>
-              <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Partner: {partner?.name} (ID: {partner?.id})</div>
+              <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{entityLabel}: {partner?.name} (ID: {partner?.id})</div>
             </div>
           </div>
           <button onClick={onClose} style={{ color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -331,7 +332,9 @@ function ApproveModal({ partner, onClose, onConfirm }) {
 
         <div style={{ padding: '20px 24px' }}>
           <div style={{ fontSize: '0.84rem', color: '#cbd5e1', marginBottom: '14px', lineHeight: '1.5' }}>
-            Approving will award this companion the <strong>Green Verified Badge</strong>, allow them to toggle <strong>ONLINE</strong> status, and activate them in client search.
+            {entityLabel === 'Partner'
+              ? <>Approving will award this companion the <strong>Green Verified Badge</strong>, allow them to toggle <strong>ONLINE</strong> status, and activate them in client search.</>
+              : <>Approving confirms this hirer's identity and marks their account as verified.</>}
           </div>
 
           <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#34d399', marginBottom: '6px' }}>
@@ -365,16 +368,26 @@ function ApproveModal({ partner, onClose, onConfirm }) {
 
 // ── Main Admin KycTab Component ───────────────────────────────────────────
 export default function KycTab({
+  entity = 'partner',
   partners = [],
+  clients = [],
   subFilter = 'pending',
   setSubFilter,
   onSelectPartner,
-  onUpdateKYC
+  onUpdateKYC,
+  onUpdateClientKYC
 }) {
   const [search, setSearch] = useState('');
   const [previewDoc, setPreviewDoc] = useState(null);
   const [rejectingPartner, setRejectingPartner] = useState(null);
   const [approvingPartner, setApprovingPartner] = useState(null);
+  const [rejectingClient, setRejectingClient] = useState(null);
+  const [approvingClient, setApprovingClient] = useState(null);
+  const submittedClients = clients.filter(client =>
+    client.kycDocuments?.submittedAt || client.kycDocuments?.idFrontDoc
+  );
+  const isPartnerKyc = entity === 'partner';
+  const queueItems = isPartnerKyc ? partners : submittedClients;
 
   const filteredPartners = partners.filter(p => {
     if (subFilter === 'pending' && p.kycStatus !== 'pending' && p.kycStatus !== 'under_review') return false;
@@ -394,6 +407,21 @@ export default function KycTab({
     }
     return true;
   });
+  const filteredClients = submittedClients.filter(client => {
+    if (subFilter === 'pending' && client.kycStatus !== 'pending' && client.kycStatus !== 'under_review') return false;
+    if (subFilter === 'verified' && client.kycStatus !== 'verified') return false;
+    if (subFilter === 'rejected' && client.kycStatus !== 'rejected') return false;
+    if (search.trim()) {
+      const query = search.toLowerCase();
+      return client.name?.toLowerCase().includes(query) ||
+        client.city?.toLowerCase().includes(query) ||
+        client.phone?.toLowerCase().includes(query) ||
+        client.email?.toLowerCase().includes(query) ||
+        client.kycDocuments?.idNumber?.toLowerCase().includes(query) ||
+        client.kycDocuments?.panNumber?.toLowerCase().includes(query);
+    }
+    return true;
+  });
 
   const handleConfirmReject = (reason) => {
     if (rejectingPartner) {
@@ -406,6 +434,18 @@ export default function KycTab({
     if (approvingPartner) {
       onUpdateKYC(approvingPartner.id, 'verified', remarks);
       setApprovingPartner(null);
+    }
+  };
+  const handleConfirmClientReject = (reason) => {
+    if (rejectingClient) {
+      onUpdateClientKYC(rejectingClient.id, 'rejected', reason);
+      setRejectingClient(null);
+    }
+  };
+  const handleConfirmClientApprove = (remarks) => {
+    if (approvingClient) {
+      onUpdateClientKYC(approvingClient.id, 'verified', remarks);
+      setApprovingClient(null);
     }
   };
 
@@ -431,6 +471,22 @@ export default function KycTab({
           onConfirm={handleConfirmApprove}
         />
       )}
+      {rejectingClient && (
+        <RejectModal
+          partner={rejectingClient}
+          entityLabel="Hirer"
+          onClose={() => setRejectingClient(null)}
+          onConfirm={handleConfirmClientReject}
+        />
+      )}
+      {approvingClient && (
+        <ApproveModal
+          partner={approvingClient}
+          entityLabel="Hirer"
+          onClose={() => setApprovingClient(null)}
+          onConfirm={handleConfirmClientApprove}
+        />
+      )}
 
       {/* Header Tabs */}
       <div className="admin-card-header">
@@ -439,25 +495,25 @@ export default function KycTab({
             className={`admin-filter-btn ${subFilter === 'pending' ? 'active' : ''}`}
             onClick={() => setSubFilter('pending')}
           >
-            Pending Verification ({partners.filter(p => p.kycStatus === 'pending' || p.kycStatus === 'under_review').length})
+            Pending Verification ({queueItems.filter(item => item.kycStatus === 'pending' || item.kycStatus === 'under_review').length})
           </button>
           <button
             className={`admin-filter-btn ${subFilter === 'verified' ? 'active' : ''}`}
             onClick={() => setSubFilter('verified')}
           >
-            Approved &amp; Verified ({partners.filter(p => p.kycStatus === 'verified').length})
+            Approved &amp; Verified ({queueItems.filter(item => item.kycStatus === 'verified').length})
           </button>
           <button
             className={`admin-filter-btn ${subFilter === 'rejected' ? 'active' : ''}`}
             onClick={() => setSubFilter('rejected')}
           >
-            Rejected ({partners.filter(p => p.kycStatus === 'rejected').length})
+            Rejected ({queueItems.filter(item => item.kycStatus === 'rejected').length})
           </button>
           <button
             className={`admin-filter-btn ${subFilter === 'all' ? 'active' : ''}`}
             onClick={() => setSubFilter('all')}
           >
-            All Verification History ({partners.length})
+            All Verification History ({queueItems.length})
           </button>
         </div>
 
@@ -472,7 +528,9 @@ export default function KycTab({
         </div>
       </div>
 
-      {/* KYC Applications Grid */}
+      {isPartnerKyc && (
+      <>
+      {/* Partner KYC Applications */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(520px, 1fr))', gap: '20px' }}>
         {filteredPartners.length === 0 ? (
           <div className="admin-card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '50px 20px', color: '#64748b' }}>
@@ -662,6 +720,81 @@ export default function KycTab({
           })
         )}
       </div>
+      </>
+      )}
+
+      {!isPartnerKyc && (
+      <>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '24px 0 14px', color: '#fff' }}>
+        <ShieldCheck size={18} color="#ec4899" />
+        <h3 style={{ margin: 0, fontSize: '1rem' }}>Hirer Verification Applications ({filteredClients.length})</h3>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16 }}>
+        {filteredClients.length === 0 ? (
+          <div className="admin-card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '28px 20px', color: '#64748b' }}>
+            No hirer applications match this filter.
+          </div>
+        ) : filteredClients.map(client => {
+          const kd = client.kycDocuments || {};
+          const docs = [
+            { label: 'Aadhaar Front', url: kd.idFrontDoc, name: kd.idFrontName },
+            { label: 'Aadhaar Back', url: kd.idBackDoc, name: kd.idBackName },
+            { label: 'PAN Card', url: kd.panDoc, name: kd.panFileName },
+            { label: 'Selfie with ID', url: kd.selfieDoc, name: kd.selfieFileName }
+          ];
+          const rejectionReason = client.kycRejectionReason || kd.rejectionReason || '';
+          return (
+            <div key={client.id} className="admin-card" style={{ padding: 18, margin: 0 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ color: '#fff', fontWeight: 800 }}>{client.name || kd.holderName}</div>
+                  <div style={{ color: '#94a3b8', fontSize: '.78rem', marginTop: 3 }}>{client.email} · {client.phone}</div>
+                  <div style={{ color: '#94a3b8', fontSize: '.76rem', marginTop: 3 }}>ID: {client.id}</div>
+                </div>
+                <span className={`admin-badge ${client.kycStatus === 'verified' ? 'admin-badge-emerald' : client.kycStatus === 'rejected' ? 'admin-badge-rose' : 'admin-badge-amber'}`}>
+                  {(client.kycStatus || 'not_submitted').replace('_', ' ').toUpperCase()}
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, margin: '14px 0', color: '#cbd5e1', fontSize: '.82rem' }}>
+                <div><span style={{ color: '#64748b' }}>City</span><br />{client.city || '—'}</div>
+                <div><span style={{ color: '#64748b' }}>Legal name</span><br />{kd.holderName || '—'}</div>
+                <div><span style={{ color: '#64748b' }}>Aadhaar</span><br />{kd.idNumber || '—'}</div>
+                <div><span style={{ color: '#64748b' }}>PAN</span><br />{kd.panNumber || '—'}</div>
+                <div><span style={{ color: '#64748b' }}>Submitted</span><br />{kd.submittedAt ? new Date(kd.submittedAt).toLocaleString() : '—'}</div>
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 14 }}>
+                {docs.map(doc => (
+                  <button
+                    key={doc.label}
+                    type="button"
+                    disabled={!doc.url}
+                    onClick={() => doc.url && setPreviewDoc({ ...doc, title: `${doc.label} Proof`, entityLabel: 'Hirer', partnerName: client.name || kd.holderName, fileName: doc.name })}
+                    className="btn-admin-action btn-admin-secondary"
+                    style={{ fontSize: '.74rem', padding: '6px 9px' }}
+                  >
+                    <Eye size={13} /> {doc.label}
+                  </button>
+                ))}
+              </div>
+              {rejectionReason && <div style={{ color: '#fca5a5', fontSize: '.8rem', marginBottom: 12 }}>Rejection note: {rejectionReason}</div>}
+              {client.kycStatus !== 'verified' && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                  {client.kycStatus !== 'rejected' && (
+                    <button onClick={() => setRejectingClient(client)} className="btn-admin-action btn-admin-danger" style={{ fontSize: '.78rem', padding: '6px 12px' }}>
+                      <XCircle size={13} /> Reject
+                    </button>
+                  )}
+                  <button onClick={() => setApprovingClient(client)} className="btn-admin-action btn-admin-success" style={{ fontSize: '.78rem', padding: '6px 12px' }}>
+                    <CheckCircle2 size={13} /> Approve KYC
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      </>
+      )}
     </div>
   );
 }

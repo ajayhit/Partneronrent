@@ -81,16 +81,29 @@ export default function AdminSidebar({
           ]
         },
         {
-          id: 'kyc',
-          label: 'KYC & Verification',
+          id: 'partner-kyc',
+          label: 'Pending Partner KYC',
           icon: <ShieldCheck size={18} />,
           badge: stats?.pendingKYC > 0 ? stats.pendingKYC : null,
           badgeColor: 'amber',
           subItems: [
             { id: 'pending', label: 'Pending Review' },
-            { id: 'verified', label: 'Verified KYC' },
+            { id: 'verified', label: 'Verified Partners' },
             { id: 'rejected', label: 'Rejected Applications' },
-            { id: 'history', label: 'Verification History' }
+            { id: 'all', label: 'Verification History' }
+          ]
+        },
+        {
+          id: 'hirer-kyc',
+          label: 'Pending Hirer KYC',
+          icon: <ShieldCheck size={18} />,
+          badge: stats?.pendingHirerKYC > 0 ? stats.pendingHirerKYC : null,
+          badgeColor: 'amber',
+          subItems: [
+            { id: 'pending', label: 'Pending Review' },
+            { id: 'verified', label: 'Verified Hirers' },
+            { id: 'rejected', label: 'Rejected Applications' },
+            { id: 'all', label: 'Verification History' }
           ]
         },
         {

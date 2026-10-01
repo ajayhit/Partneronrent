@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { formatCurrency } from '../../../utils/helpers';
+import { formatCurrency, getStartingHourlyRate } from '../../../utils/helpers';
 import {
   Search,
   MapPin,
@@ -76,7 +76,7 @@ export default function FindCompanionTab({
     }
 
     // Max Price
-    if (p.hourlyRate && p.hourlyRate > maxPrice) return false;
+    if (getStartingHourlyRate(p) > maxPrice) return false;
 
     // Gender
     if (gender !== 'all' && p.gender?.toLowerCase() !== gender.toLowerCase()) return false;
@@ -358,8 +358,8 @@ export default function FindCompanionTab({
           </div>
         ) : (
           filteredPartners.map(partner => {
-            const isFav = favorites.some(f => f.id === partner.id);
-            const rate = partner.hourlyRate || 500;
+            const isFav = favorites.includes(partner.id);
+            const rate = getStartingHourlyRate(partner);
             const rating = partner.rating || 4.8;
             const reviewCount = partner.reviewCount || 126;
 
@@ -493,7 +493,7 @@ export default function FindCompanionTab({
                     {/* Hourly Price */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '12px', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '10px' }}>
                       <span style={{ fontSize: '0.74rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 700 }}>
-                        Hourly Rate
+                        Starting at
                       </span>
                       <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#34d399' }}>
                         {formatCurrency(rate)} <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 500 }}>/ hour</span>

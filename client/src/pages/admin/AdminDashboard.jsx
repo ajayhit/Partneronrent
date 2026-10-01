@@ -8,6 +8,7 @@ import {
   fetchAdminStats,
   fetchAdminCustomers,
   updateCustomerStatusAdmin,
+  updateCustomerKYCAdmin,
   addCustomerNoteAdmin,
   fetchAdminPartners,
   updatePartnerStatusAdmin,
@@ -214,6 +215,24 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleUpdateCustomerKYC = async (id, status, notes) => {
+    try {
+      await updateCustomerKYCAdmin(id, status, notes, session?.name || 'Super Admin');
+      showToast(`Hirer KYC marked ${status}`);
+      await loadAllData();
+      if (selectedCustomer?.id === id) {
+        setSelectedCustomer(previous => ({
+          ...previous,
+          kycStatus: status,
+          kycRejectionReason: status === 'rejected' ? notes : null
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to update hirer KYC:', err);
+      showToast(err.message || 'Failed to update hirer KYC', 'danger');
     }
   };
 
@@ -450,7 +469,7 @@ export default function AdminDashboard() {
 
   // Helper for quick nav jumps from cards
   const navigateTo = (tab, sub = 'all') => {
-    setAdminActiveTab(tab);
+    setAdminActiveTab(tab === 'kyc' ? 'partner-kyc' : tab);
     setSubFilter(sub);
   };
 
@@ -485,7 +504,8 @@ export default function AdminDashboard() {
               {activeTab === 'dashboard' && 'Executive Operations Dashboard'}
               {activeTab === 'customers' && 'Customer Management & Dossiers'}
               {activeTab === 'partners' && 'Companion Fleet Administration'}
-              {activeTab === 'kyc' && 'Partner Verification & KYC Desk'}
+              {activeTab === 'partner-kyc' && 'Partner KYC Verification'}
+              {activeTab === 'hirer-kyc' && 'Hirer KYC Verification'}
               {activeTab === 'bookings' && 'Booking Lifecycles & Oversight'}
               {activeTab === 'calendar' && 'Operational Calendar & Shift Schedule'}
               {activeTab === 'locations' && 'City & Geographic Territory Management'}
@@ -561,13 +581,16 @@ export default function AdminDashboard() {
           />
         )}
 
-        {activeTab === 'kyc' && (
+        {(activeTab === 'partner-kyc' || activeTab === 'hirer-kyc') && (
           <KycTab
+            entity={activeTab === 'hirer-kyc' ? 'hirer' : 'partner'}
             partners={partners}
+            clients={customers}
             subFilter={subFilter}
             setSubFilter={setSubFilter}
             onSelectPartner={setSelectedPartner}
             onUpdateKYC={handleUpdateKYC}
+            onUpdateClientKYC={handleUpdateCustomerKYC}
           />
         )}
 

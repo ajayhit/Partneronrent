@@ -1,5 +1,5 @@
 import React from 'react';
-import { formatCurrency } from '../../../utils/helpers';
+import { formatCurrency, getStartingHourlyRate } from '../../../utils/helpers';
 import {
   X,
   Star,
@@ -26,7 +26,7 @@ export default function PartnerDetailModal({
 }) {
   if (!isOpen || !partner) return null;
 
-  const rate = partner.hourlyRate || 500;
+  const rate = getStartingHourlyRate(partner);
   const rating = partner.rating || 4.8;
   const reviewCount = partner.reviewCount || 126;
   const completedHours = partner.completedHours || 128;
@@ -107,6 +107,7 @@ export default function PartnerDetailModal({
 
             {/* Price & Rating Capsule */}
             <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Starting at</div>
               <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#34d399' }}>
                 {formatCurrency(rate)} <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 500 }}>/ hour</span>
               </div>

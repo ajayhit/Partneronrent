@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   User,
   Camera,
@@ -13,11 +13,26 @@ import {
 } from 'lucide-react';
 
 const POPULAR_LANGUAGES = ['English', 'Hindi', 'Bengali', 'Marathi', 'Tamil', 'Telugu', 'Gujarati', 'Punjabi'];
+const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=250&q=80';
+
+function getProfileAvatar(client) {
+  if (client?.avatar && client.avatar !== '/default-avatar.jpg') return client.avatar;
+  return client?.kycDocuments?.selfieDoc || client?.avatar || DEFAULT_AVATAR;
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error(`Unable to read ${file.name}`));
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function ProfileTab({ client, onUpdateProfile, showToast }) {
   const [formData, setFormData] = useState({
     name: client?.name || '',
-    avatar: client?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=250&q=80',
+    avatar: getProfileAvatar(client),
     mobile: client?.phone || '',
     email: client?.email || '',
     dob: client?.dob || '',
@@ -30,6 +45,34 @@ export default function ProfileTab({ client, onUpdateProfile, showToast }) {
 
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    setFormData({
+      name: client?.name || '',
+      avatar: getProfileAvatar(client),
+      mobile: client?.phone || '',
+      email: client?.email || '',
+      dob: client?.dob || '',
+      gender: client?.gender || 'Male',
+      city: client?.city || 'Delhi NCR',
+      address: client?.address || '',
+      emergencyContact: client?.emergencyContact || '',
+      preferredLanguages: client?.preferredLanguages || ['English', 'Hindi']
+    });
+  }, [
+    client?.id,
+    client?.name,
+    client?.avatar,
+    client?.kycDocuments?.selfieDoc,
+    client?.phone,
+    client?.email,
+    client?.dob,
+    client?.gender,
+    client?.city,
+    client?.address,
+    client?.emergencyContact,
+    client?.preferredLanguages
+  ]);
+
   const toggleLanguage = (lang) => {
     setFormData(prev => {
       const exists = prev.preferredLanguages.includes(lang);
@@ -40,13 +83,52 @@ export default function ProfileTab({ client, onUpdateProfile, showToast }) {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handlePhotoChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast('Choose an image file for your profile photo.', 'warning');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Profile photos must be 5 MB or smaller.', 'warning');
+      event.target.value = '';
+      return;
+    }
+
+    try {
+      const avatar = await fileToDataUrl(file);
+      setFormData(prev => ({ ...prev, avatar }));
+    } catch (error) {
+      console.error('Failed to load profile photo:', error);
+      showToast(error.message, 'danger');
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      if (!onUpdateProfile) throw new Error('Profile saving is unavailable. Please try again later.');
+      await onUpdateProfile({
+        name: formData.name.trim(),
+        avatar: formData.avatar,
+        phone: formData.mobile.trim(),
+        dob: formData.dob,
+        gender: formData.gender,
+        city: formData.city,
+        address: formData.address,
+        emergencyContact: formData.emergencyContact,
+        preferredLanguages: formData.preferredLanguages
+      });
       showToast('Profile information successfully saved!');
-    }, 400);
+    } catch (error) {
+      console.error('Failed to save hirer profile:', error);
+      showToast(error.message || 'Failed to save profile. Please try again.', 'danger');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -109,17 +191,16 @@ export default function ProfileTab({ client, onUpdateProfile, showToast }) {
             />
             <div style={{ flex: 1, minWidth: '240px' }}>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '4px' }}>
-                Profile Photo URL
+                Upload a new profile photo
               </label>
               <input
-                type="url"
-                value={formData.avatar}
-                onChange={e => setFormData({ ...formData, avatar: e.target.value })}
-                placeholder="https://..."
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
                 style={{ width: '100%', fontSize: '0.86rem' }}
               />
               <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                A clear face photo helps your companion recognize you at public venues.
+                A clear face photo helps your companion recognize you. Maximum file size: 5 MB.
               </span>
             </div>
           </div>
@@ -166,10 +247,11 @@ export default function ProfileTab({ client, onUpdateProfile, showToast }) {
               <input
                 type="email"
                 value={formData.email}
-                onChange={e => setFormData({ ...formData, email: e.target.value })}
+                readOnly
                 required
                 style={{ width: '100%' }}
               />
+              <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Your registered account email cannot be changed here.</span>
             </div>
 
             <div>
@@ -180,6 +262,7 @@ export default function ProfileTab({ client, onUpdateProfile, showToast }) {
                 type="date"
                 value={formData.dob}
                 onChange={e => setFormData({ ...formData, dob: e.target.value })}
+                max={new Date().toISOString().slice(0, 10)}
                 required
                 style={{ width: '100%' }}
               />
