@@ -232,51 +232,59 @@ function DocumentPreviewModal({ doc, onClose }) {
 }
 
 // ── File Upload Box Component ─────────────────────────────────────────────
-function FileUploadBox({ label, color, accept, file, onChange, onRemove, onPreview, disabled }) {
+function FileUploadBox({ label, color, accept, file, onChange, onRemove, onPreview, disabled, error }) {
   const inputRef = useRef();
   return (
-    <div
-      style={{
-        border: `1px dashed ${file ? color : disabled ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)'}`,
-        borderRadius: '8px', padding: '12px', textAlign: 'center',
-        background: file ? 'rgba(16,185,129,0.07)' : 'rgba(15,23,42,0.4)',
-        cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
-        opacity: disabled ? 0.6 : 1
-      }}
-      onClick={() => !file && !disabled && inputRef.current.click()}
-    >
-      <input
-        ref={inputRef} type="file" accept={accept || 'image/*,.pdf'}
-        style={{ display: 'none' }} disabled={disabled}
-        onChange={e => { if (e.target.files[0]) onChange(e.target.files[0]); e.target.value = ''; }}
-      />
-      {file ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <Paperclip size={15} color={color} />
-          <span style={{ fontSize: '0.8rem', color: '#34d399', fontWeight: 600, wordBreak: 'break-all' }}>{file.name}</span>
-          {onPreview && (
-            <button
-              type="button"
-              onClick={e => { e.stopPropagation(); onPreview(); }}
-              title="Preview document"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#38bdf8' }}
-            >
-              <Eye size={15} />
-            </button>
-          )}
-          {!disabled && (
-            <button type="button" onClick={e => { e.stopPropagation(); onRemove(); }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#f87171' }}>
-              <Trash2 size={14} />
-            </button>
-          )}
+    <div>
+      <div
+        style={{
+          border: `1.5px dashed ${error ? '#ef4444' : file ? color : disabled ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)'}`,
+          borderRadius: '8px', padding: '12px', textAlign: 'center',
+          background: error ? 'rgba(239,68,68,0.06)' : file ? 'rgba(16,185,129,0.07)' : 'rgba(15,23,42,0.4)',
+          cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
+          opacity: disabled ? 0.6 : 1
+        }}
+        onClick={() => !file && !disabled && inputRef.current.click()}
+      >
+        <input
+          ref={inputRef} type="file" accept={accept || 'image/*,.pdf'}
+          style={{ display: 'none' }} disabled={disabled}
+          onChange={e => { if (e.target.files[0]) onChange(e.target.files[0]); e.target.value = ''; }}
+        />
+        {file ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <Paperclip size={15} color={color} />
+            <span style={{ fontSize: '0.8rem', color: '#34d399', fontWeight: 600, wordBreak: 'break-all' }}>{file.name}</span>
+            {onPreview && (
+              <button
+                type="button"
+                onClick={e => { e.stopPropagation(); onPreview(); }}
+                title="Preview document"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#38bdf8' }}
+              >
+                <Eye size={15} />
+              </button>
+            )}
+            {!disabled && (
+              <button type="button" onClick={e => { e.stopPropagation(); onRemove(); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#f87171' }}>
+                <Trash2 size={14} />
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            <Upload size={18} color={error ? '#f87171' : disabled ? '#475569' : color} style={{ margin: '0 auto 4px' }} />
+            <div style={{ fontSize: '0.8rem', color: error ? '#f87171' : disabled ? '#475569' : '#fff', fontWeight: 600 }}>{label}</div>
+            {!disabled && <div style={{ fontSize: '0.72rem', color: error ? '#fca5a5' : '#94a3b8', marginTop: '2px' }}>Click to browse (JPG, PNG, PDF)</div>}
+          </>
+        )}
+      </div>
+      {error && (
+        <div style={{ fontSize: '0.74rem', color: '#f87171', marginTop: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+          <AlertTriangle size={13} style={{ flexShrink: 0 }} />
+          <span>{error}</span>
         </div>
-      ) : (
-        <>
-          <Upload size={18} color={disabled ? '#475569' : color} style={{ margin: '0 auto 4px' }} />
-          <div style={{ fontSize: '0.8rem', color: disabled ? '#475569' : '#fff', fontWeight: 600 }}>{label}</div>
-          {!disabled && <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>Click to browse (JPG, PNG, PDF)</div>}
-        </>
       )}
     </div>
   );
@@ -472,6 +480,8 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
   const [panNumber, setPanNumber]     = useState(kd.panNumber || '');
   const [aadhaarError, setAadhaarError] = useState('');
   const [panError, setPanError]       = useState('');
+  const [docErrors, setDocErrors]     = useState({});
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const [idFrontFile, setIdFrontFile] = useState(null);
   const [idBackFile, setIdBackFile]   = useState(null);
   const [panFile, setPanFile]         = useState(null);
@@ -522,8 +532,12 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
   const handleAadhaarChange = (val) => {
     const digits = val.replace(/\D/g, '').slice(0, 12);
     setIdNumber(digits);
-    if (digits.length === 12) {
-      setAadhaarError(!validateAadhaar(digits) ? 'Invalid Aadhaar number. Please check digits.' : '');
+    if (digits.length === 0) {
+      setAadhaarError('Aadhaar number is required (12 digits).');
+    } else if (digits.length < 12) {
+      setAadhaarError(`Aadhaar number must be 12 digits (${digits.length}/12 entered).`);
+    } else if (!validateAadhaar(digits)) {
+      setAadhaarError('Aadhaar checksum is invalid. Please check digits.');
     } else {
       setAadhaarError('');
     }
@@ -532,8 +546,12 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
   const handlePANChange = (val) => {
     const upper = val.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
     setPanNumber(upper);
-    if (upper.length === 10) {
-      setPanError(!validatePAN(upper) ? 'Invalid PAN format. Expected: ABCDE1234F' : '');
+    if (upper.length === 0) {
+      setPanError('PAN number is required (10 characters).');
+    } else if (upper.length < 10) {
+      setPanError(`PAN card number must be 10 characters (${upper.length}/10 entered).`);
+    } else if (!validatePAN(upper)) {
+      setPanError('Invalid PAN format. Expected: ABCDE1234F (5 letters · 4 digits · 1 letter).');
     } else {
       setPanError('');
     }
@@ -557,8 +575,24 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
     });
   };
 
+  const handleFrontDocChange = (file) => {
+    setIdFrontFile(file);
+    if (file) setDocErrors(prev => ({ ...prev, front: '' }));
+  };
+
+  const handlePanDocChange = (file) => {
+    setPanFile(file);
+    if (file) setDocErrors(prev => ({ ...prev, pan: '' }));
+  };
+
+  const handleSelfieDocChange = (file) => {
+    setSelfieFile(file);
+    if (file) setDocErrors(prev => ({ ...prev, selfie: '' }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitAttempted(true);
 
     // 1. Profile Validation
     if (!name.trim())                  { showToast('Please enter your full profile name', 'warning'); return; }
@@ -569,19 +603,52 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
 
     // 2. KYC Validation
     if (!holderName.trim())            { showToast('Please enter your legal name as per Aadhaar', 'warning'); return; }
-    if (idNumber.length !== 12)        { showToast('Please enter a valid 12-digit Aadhaar number', 'warning'); return; }
-    if (!validateAadhaar(idNumber))    { showToast('Aadhaar checksum is invalid. Please check the digits.', 'warning'); return; }
-    if (panNumber.length !== 10)       { showToast('Please enter a valid 10-character PAN number', 'warning'); return; }
-    if (!validatePAN(panNumber))       { showToast('PAN format is invalid. Expected: ABCDE1234F', 'warning'); return; }
+    if (idNumber.length === 0) {
+      setAadhaarError('Aadhaar number is required (12 digits).');
+      showToast('Please enter your 12-digit Aadhaar number', 'warning');
+      return;
+    }
+    if (idNumber.length < 12) {
+      setAadhaarError(`Aadhaar number must be 12 digits (${idNumber.length}/12 entered).`);
+      showToast('Aadhaar number must be 12 digits', 'warning');
+      return;
+    }
+    if (!validateAadhaar(idNumber)) {
+      setAadhaarError('Aadhaar checksum is invalid. Please check the digits.');
+      showToast('Aadhaar checksum is invalid. Please check the digits.', 'warning');
+      return;
+    }
+    if (panNumber.length === 0) {
+      setPanError('PAN number is required (10 characters).');
+      showToast('Please enter your 10-character PAN number', 'warning');
+      return;
+    }
+    if (panNumber.length < 10) {
+      setPanError(`PAN card number must be 10 characters (${panNumber.length}/10 entered).`);
+      showToast('PAN card number must be 10 characters', 'warning');
+      return;
+    }
+    if (!validatePAN(panNumber)) {
+      setPanError('Invalid PAN format. Expected: ABCDE1234F (5 letters · 4 digits · 1 letter).');
+      showToast('PAN format is invalid. Expected: ABCDE1234F', 'warning');
+      return;
+    }
 
     // For documents: if re-submitting after rejection, existing docs are preserved unless replaced
     const hasFront = idFrontFile || kd.idFrontDoc;
     const hasPan = panFile || kd.panDoc;
     const hasSelfie = selfieFile || kd.selfieDoc;
 
-    if (!hasFront)                     { showToast('Please upload front of your Aadhaar card', 'warning'); return; }
-    if (!hasPan)                       { showToast('Please upload your PAN card photo', 'warning'); return; }
-    if (!hasSelfie)                    { showToast('Please upload a selfie holding your Aadhaar card', 'warning'); return; }
+    const newDocErrors = {};
+    if (!hasFront) newDocErrors.front = 'Document not loaded. Front of Aadhaar card is required.';
+    if (!hasPan) newDocErrors.pan = 'Document not loaded. PAN card photo is required.';
+    if (!hasSelfie) newDocErrors.selfie = 'Document not loaded. Selfie with Aadhaar is required.';
+
+    if (Object.keys(newDocErrors).length > 0) {
+      setDocErrors(newDocErrors);
+      showToast('Please upload all required KYC documents.', 'warning');
+      return;
+    }
 
     if (!agreed && !isRejected) {
       showToast('Please confirm the accuracy declaration before submitting', 'warning');
@@ -1121,8 +1188,9 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
                   </div>
                   <FileUploadBox
                     label="Upload Front of Aadhaar *" color="#38bdf8"
-                    file={idFrontFile} onChange={setIdFrontFile} onRemove={() => setIdFrontFile(null)}
+                    file={idFrontFile} onChange={handleFrontDocChange} onRemove={() => setIdFrontFile(null)}
                     onPreview={() => handlePreviewFile(idFrontFile, 'Aadhaar Card Front', 'aadhaar')}
+                    error={docErrors.front || (submitAttempted && !idFrontFile && !kd.idFrontDoc ? 'Document not loaded. Aadhaar card front is required.' : '')}
                   />
                   <FileUploadBox
                     label="Upload Back of Aadhaar" color="#38bdf8"
@@ -1163,8 +1231,9 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
                   </div>
                   <FileUploadBox
                     label="Upload Photo of PAN Card *" color="#fbbf24"
-                    file={panFile} onChange={setPanFile} onRemove={() => setPanFile(null)}
+                    file={panFile} onChange={handlePanDocChange} onRemove={() => setPanFile(null)}
                     onPreview={() => handlePreviewFile(panFile, 'PAN Card Photo', 'pan')}
+                    error={docErrors.pan || (submitAttempted && !panFile && !kd.panDoc ? 'Document not loaded. PAN card photo is required.' : '')}
                   />
                   <div style={{
                     background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
@@ -1188,8 +1257,9 @@ export default function KycTab({ partner, onSubmitKYC, showToast }) {
                   </p>
                   <FileUploadBox
                     label="Upload Selfie with Aadhaar *" color="#c084fc" accept="image/*"
-                    file={selfieFile} onChange={setSelfieFile} onRemove={() => setSelfieFile(null)}
+                    file={selfieFile} onChange={handleSelfieDocChange} onRemove={() => setSelfieFile(null)}
                     onPreview={() => handlePreviewFile(selfieFile, 'Selfie with Aadhaar', 'selfie')}
+                    error={docErrors.selfie || (submitAttempted && !selfieFile && !kd.selfieDoc ? 'Document not loaded. Selfie with Aadhaar is required.' : '')}
                   />
                   <div style={{
                     background: 'rgba(192,132,252,0.08)', border: '1px solid rgba(192,132,252,0.2)',
