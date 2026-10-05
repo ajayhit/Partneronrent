@@ -5,8 +5,10 @@
   "scripts": {
     "server": "npm --prefix server start",
     "client": "npm --prefix client run dev",
+    "mobile": "npm --prefix mobile start",
+    "mobile:android": "npm --prefix mobile run android",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "install-all": "npm install && npm --prefix server install && npm --prefix client install"
+    "install-all": "npm install && npm --prefix server install && npm --prefix client install && npm --prefix mobile install"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
