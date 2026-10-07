@@ -567,3 +567,20 @@ export async function fetchAdminAuditLogs() {
   const res = await fetch(`${API_BASE}/admin/audit-logs`);
   return res.json();
 }
+
+// 16. Subscriptions (₹249 / 1 Year for Partner & Hirer)
+export async function fetchSubscriptionStatus(userId, role) {
+  const res = await fetch(`${API_BASE}/subscription/status/${userId}${role ? `?role=${role}` : ''}`);
+  return res.json();
+}
+
+export async function subscribeUser(userId, role, paymentMethod = 'instant') {
+  const res = await fetch(`${API_BASE}/subscription/subscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId, role, paymentMethod })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to process subscription');
+  return data;
+}

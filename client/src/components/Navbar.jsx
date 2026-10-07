@@ -338,17 +338,19 @@ export default function Navbar({ activePage, setActivePage }) {
               </>
             )}
 
-            {/* Community Feedback link */}
-            <button
-              onClick={() => setActivePage('feedback')}
-              style={{
-                color: activePage === 'feedback' ? '#f472b6' : '#94a3b8',
-                fontWeight: 600, fontSize: '0.92rem',
-                display: 'flex', alignItems: 'center', gap: '6px'
-              }}
-            >
-              <MessageSquare size={16} /> Feedback
-            </button>
+            {/* Community Feedback link — public only, hidden for logged-in users */}
+            {!isAuthenticated && (
+              <button
+                onClick={() => setActivePage('feedback')}
+                style={{
+                  color: activePage === 'feedback' ? '#f472b6' : '#94a3b8',
+                  fontWeight: 600, fontSize: '0.92rem',
+                  display: 'flex', alignItems: 'center', gap: '6px'
+                }}
+              >
+                <MessageSquare size={16} /> Feedback
+              </button>
+            )}
 
             {/* FAQs link */}
             {!isClientUser && !isClientPanel && (
@@ -655,9 +657,11 @@ export default function Navbar({ activePage, setActivePage }) {
               <button onClick={() => { setActivePage('safety'); setMobileMenuOpen(false); }} style={{ color: '#f87171', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ShieldCheck size={16} /> Safety Standards
               </button>
-              <button onClick={() => { setActivePage('feedback'); setMobileMenuOpen(false); }} style={{ color: '#f472b6', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MessageSquare size={16} /> Feedback & Reviews
-              </button>
+              {!isAuthenticated && (
+                <button onClick={() => { setActivePage('feedback'); setMobileMenuOpen(false); }} style={{ color: '#f472b6', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <MessageSquare size={16} /> Feedback & Reviews
+                </button>
+              )}
               {!isClientUser && !isClientPanel && (
                 <button onClick={() => { setActivePage('faq'); setMobileMenuOpen(false); }} style={{ color: '#38bdf8', textAlign: 'left', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <HelpCircle size={16} /> FAQs & Help

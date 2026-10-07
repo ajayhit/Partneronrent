@@ -21,7 +21,8 @@ import {
   LogOut,
   ShieldCheck,
   Menu,
-  X
+  X,
+  Crown
 } from 'lucide-react';
 
 const NAV_GROUPS = [
@@ -50,6 +51,7 @@ const NAV_GROUPS = [
   {
     title: 'Payments & Rewards',
     items: [
+      { id: 'subscription', label: 'Annual Membership', icon: Crown, badge: '₹249/yr', highlight: true },
       { id: 'payments', label: 'Payments', icon: CreditCard },
       { id: 'wallet', label: 'Wallet & Credits', icon: Wallet },
       { id: 'coupons', label: 'Coupons & Offers', icon: Tag }
@@ -217,18 +219,20 @@ export default function ClientSidebar({ activeTab, onTabChange, client, onLogout
                   <div style={{ display: 'flex', alignItems: 'center', gap: collapsed ? 0 : '10px' }}>
                     <Icon
                       size={17}
-                      color={isActive ? '#ec4899' : item.highlight ? '#ec4899' : '#94a3b8'}
+                      color={isActive ? '#ec4899' : item.id === 'subscription' ? '#facc15' : item.highlight ? '#ec4899' : '#94a3b8'}
                     />
                     {!collapsed && (
-                      <span style={{ color: isActive ? '#f1f5f9' : item.highlight ? '#ec4899' : '#94a3b8' }}>
+                      <span style={{ color: isActive ? '#f1f5f9' : item.id === 'subscription' ? '#facc15' : item.highlight ? '#ec4899' : '#94a3b8' }}>
                         {item.label}
                       </span>
                     )}
                   </div>
                   {!collapsed && badge && (
                     <span style={{
-                      background: 'linear-gradient(90deg,#ec4899,#a855f7)',
-                      color: '#fff',
+                      background: item.id === 'subscription'
+                        ? 'linear-gradient(90deg,#f59e0b,#d97706)'
+                        : 'linear-gradient(90deg,#ec4899,#a855f7)',
+                      color: item.id === 'subscription' ? '#0f172a' : '#fff',
                       fontSize: '0.65rem',
                       fontWeight: 800,
                       borderRadius: '10px',

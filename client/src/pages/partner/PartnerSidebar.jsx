@@ -20,6 +20,7 @@ import {
   Settings,
   LogOut,
   Power,
+  Crown,
   X
 } from 'lucide-react';
 
@@ -36,6 +37,11 @@ export default function PartnerSidebar({
   onClose
 }) {
   const isVerified = partner?.kycStatus === 'verified';
+  const isSubscribed = Boolean(
+    partner?.isSubscribed &&
+    partner?.subscriptionExpiresAt &&
+    new Date(partner?.subscriptionExpiresAt) > new Date()
+  );
 
   const navGroups = [
     {
@@ -43,7 +49,8 @@ export default function PartnerSidebar({
       items: [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'profile', label: 'My Profile', icon: User },
-        { id: 'kyc', label: 'Verification / KYC', icon: ShieldCheck, badge: isVerified ? 'Verified' : 'Pending', badgeClass: isVerified ? 'partner-badge-emerald' : 'partner-badge-amber' }
+        { id: 'kyc', label: 'Verification / KYC', icon: ShieldCheck, badge: isVerified ? 'Verified' : 'Pending', badgeClass: isVerified ? 'partner-badge-emerald' : 'partner-badge-amber' },
+        { id: 'subscription', label: 'Annual Membership', icon: Crown, badge: isSubscribed ? 'Active' : '₹249/yr', badgeClass: isSubscribed ? 'partner-badge-emerald' : 'partner-badge-amber' }
       ]
     },
     {

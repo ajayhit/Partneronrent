@@ -90,14 +90,14 @@ function getInitialPage() {
 function MainLayout() {
   const [activePage, setActivePage] = useState(getInitialPage);
   const [selectedPartner, setSelectedPartner] = useState(null);
-  const { isAuthenticated, currentRole, logout } = useAuth();
+  const { isAuthenticated, currentRole, logout, activeUser } = useAuth();
   const { toast } = useApp();
 
   // Keep a ref to the latest auth state so callbacks/timers in children never read stale closures
-  const authRef = React.useRef({ isAuthenticated, currentRole });
+  const authRef = React.useRef({ isAuthenticated, currentRole, activeUser });
   useEffect(() => {
-    authRef.current = { isAuthenticated, currentRole };
-  }, [isAuthenticated, currentRole]);
+    authRef.current = { isAuthenticated, currentRole, activeUser };
+  }, [isAuthenticated, currentRole, activeUser]);
 
   // ── Sync active page to localStorage ───────────────────────────────────────
   useEffect(() => {
@@ -109,13 +109,32 @@ function MainLayout() {
   // ── Route guard: redirect to auth when accessing protected pages ──────────
   const safeguardedSetPage = (page) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    const { isAuthenticated: isAuth, currentRole: role } = authRef.current;
+    const { isAuthenticated: isAuth, currentRole: role, activeUser: user } = authRef.current;
 
     // Prevent authenticated user from viewing the public home page — send to dashboard
     if (isAuth && page === 'home') {
       if (role === 'client') { setActivePage('client-dashboard'); return; }
       if (role === 'partner' || role === 'both') { setActivePage('partner-dashboard'); return; }
       if (role === 'admin') { setActivePage('admin-dashboard'); return; }
+    }
+
+    // ── Client subscription + KYC gate for directory / partner-detail ──────
+    if (isAuth && role === 'client' && (page === 'directory' || page === 'partner-detail')) {
+      // Gate 1: Must be subscribed first
+      const subActive = Boolean(
+        user?.isSubscribed &&
+        user?.subscriptionExpiresAt &&
+        new Date(user.subscriptionExpiresAt) > new Date()
+      );
+      if (!subActive) {
+        setActivePage('client-dashboard'); // auto-redirects to 'subscription' tab
+        return;
+      }
+      // Gate 2: Must have KYC verified
+      if ((user?.kycStatus || 'not_submitted') !== 'verified') {
+        setActivePage('client-dashboard'); // auto-redirects to 'kyc' tab
+        return;
+      }
     }
 
     if (PROTECTED_PAGES.has(page)) {
