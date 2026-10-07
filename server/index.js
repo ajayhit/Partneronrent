@@ -133,7 +133,7 @@ app.put('/api/partners/:id', (req, res) => {
   res.json(db.partners[index]);
 });
 
-// Toggle Online Status - ONLY ALLOW IF KYC IS VERIFIED
+// Toggle Online Status - ONLY ALLOW IF KYC IS VERIFIED & ANNUAL SUBSCRIPTION ACTIVE
 app.post('/api/partners/:id/toggle-online', (req, res) => {
   const db = readData();
   const index = db.partners.findIndex(p => p.id === req.params.id);
@@ -145,6 +145,18 @@ app.post('/api/partners/:id/toggle-online', (req, res) => {
     writeData(db);
     return res.status(400).json({
       error: 'KYC verification is pending. You can only go online after your KYC is verified.',
+      isOnline: false
+    });
+  }
+
+  // If subscription is not active, they cannot go online!
+  const p = db.partners[index];
+  const isSubscribed = Boolean(p.isSubscribed && p.subscriptionExpiresAt && new Date(p.subscriptionExpiresAt) > new Date());
+  if (!isSubscribed) {
+    p.isOnline = false;
+    writeData(db);
+    return res.status(400).json({
+      error: 'Active Annual Subscription (₹249/year) is required before going online. Please subscribe first to unlock companion services.',
       isOnline: false
     });
   }
@@ -468,6 +480,20 @@ app.post('/api/bookings', (req, res) => {
   const partner = db.partners.find(p => p.id === partnerId);
   if (!partner) return res.status(404).json({ error: 'Partner not found' });
 
+  // Enforce hirer annual subscription (₹249/year)
+  const clientUser = db.users.find(u => u.id === clientId);
+  const isHirerSubscribed = Boolean(
+    clientUser &&
+    clientUser.isSubscribed &&
+    clientUser.subscriptionExpiresAt &&
+    new Date(clientUser.subscriptionExpiresAt) > new Date()
+  );
+  if (!isHirerSubscribed) {
+    return res.status(403).json({
+      error: 'Active Annual Subscription (₹249/year) is required to book companion services. Please subscribe first to unlock bookings.'
+    });
+  }
+
   const service = db.services.find(s => s.id === serviceId);
   const serviceRate = partner.services.find(s => s.serviceId === serviceId)?.ratePerHour || partner.hourlyRate;
 
@@ -664,6 +690,110 @@ app.post('/api/wallet/topup', (req, res) => {
   user.walletBalance = (user.walletBalance || 0) + Number(amount);
   writeData(db);
   res.json({ message: 'Wallet topped up successfully', walletBalance: user.walletBalance });
+});
+
+// 6b. Annual Subscription (₹249 / 1 Year for Partner & Hirer)
+app.get('/api/subscription/status/:userId', (req, res) => {
+  const db = readData();
+  const { userId } = req.params;
+  const user = db.users.find(u => u.id === userId);
+  const partner = db.partners.find(p => p.id === userId || (user && user.email && p.email && p.email.toLowerCase() === user.email.toLowerCase()));
+  const target = partner || user;
+
+  if (!target) return res.status(404).json({ error: 'User / Partner not found' });
+
+  const expiresAt = target.subscriptionExpiresAt ? new Date(target.subscriptionExpiresAt) : null;
+  const now = new Date();
+  const isActive = Boolean(target.isSubscribed && expiresAt && expiresAt > now);
+  const remainingDays = isActive && expiresAt ? Math.max(0, Math.ceil((expiresAt - now) / (1000 * 60 * 60 * 24))) : 0;
+
+  res.json({
+    isSubscribed: isActive,
+    status: isActive ? 'active' : target.isSubscribed ? 'expired' : 'inactive',
+    plan: target.subscriptionPlan || 'annual_249',
+    fee: target.subscriptionFee || 249,
+    subscribedAt: target.subscribedAt || null,
+    expiresAt: target.subscriptionExpiresAt || null,
+    remainingDays,
+    autoRenew: target.subscriptionAutoRenew ?? true
+  });
+});
+
+app.post('/api/subscription/subscribe', (req, res) => {
+  const db = readData();
+  if (!db) return res.status(500).json({ error: 'Database read failed' });
+
+  const { userId, role, paymentMethod = 'instant' } = req.body;
+  if (!userId) return res.status(400).json({ error: 'User ID is required' });
+
+  const subscriptionFee = 249;
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+
+  let user = db.users.find(u => u.id === userId);
+  let partner = db.partners.find(p => p.id === userId || (user && user.email && p.email && p.email.toLowerCase() === user.email.toLowerCase()));
+
+  if (!user && !partner) {
+    return res.status(404).json({ error: 'User / Partner profile not found' });
+  }
+
+  // Handle wallet deduction if selected
+  if (paymentMethod === 'wallet') {
+    const currentBalance = user?.walletBalance ?? partner?.walletBalance ?? 0;
+    if (currentBalance < subscriptionFee) {
+      return res.status(400).json({
+        error: `Insufficient wallet balance. Total fee is ₹${subscriptionFee}, available balance is ₹${currentBalance}. Please top up your wallet or choose Instant Payment.`
+      });
+    }
+    if (user) user.walletBalance -= subscriptionFee;
+    if (partner) partner.walletBalance = Math.max(0, (partner.walletBalance || 0) - subscriptionFee);
+  }
+
+  const subData = {
+    isSubscribed: true,
+    subscriptionPlan: 'annual_249',
+    subscriptionFee,
+    subscribedAt: now.toISOString(),
+    subscriptionExpiresAt: expiresAt.toISOString(),
+    subscriptionAutoRenew: true
+  };
+
+  if (user) {
+    Object.assign(user, subData);
+  }
+  if (partner) {
+    Object.assign(partner, subData);
+  }
+
+  // Record transaction
+  if (!Array.isArray(db.transactions)) db.transactions = [];
+  const invoiceNumber = `INV-POR-${Date.now().toString().slice(-6)}`;
+  db.transactions.push({
+    id: `TXN-${Date.now().toString().slice(-6)}`,
+    invoiceNumber,
+    userId,
+    userName: user?.name || partner?.name || 'Member',
+    userRole: role || user?.role || (partner ? 'partner' : 'client'),
+    type: 'subscription',
+    description: 'PartnerOnRent Prime Annual Membership (1 Year)',
+    amount: subscriptionFee,
+    paymentMethod: paymentMethod === 'wallet' ? 'Wallet Balance' : 'Instant Payment (UPI / Card)',
+    status: 'completed',
+    createdAt: now.toISOString(),
+    expiresAt: expiresAt.toISOString()
+  });
+
+  writeData(db);
+
+  const safeUser = user ? (({ password, ...rest }) => rest)(user) : null;
+  res.json({
+    success: true,
+    message: 'Annual subscription activated successfully for 1 year!',
+    subscription: subData,
+    invoiceNumber,
+    user: safeUser,
+    partner
+  });
 });
 
 app.get('/api/payouts', (req, res) => {
@@ -1483,6 +1613,10 @@ app.post('/api/auth/login', (req, res) => {
       safeUser.kycStatus = partner.kycStatus || safeUser.kycStatus || 'not_submitted';
       safeUser.kycRejectionReason = partner.kycRejectionReason || partner.kycDocuments?.rejectionReason || null;
       safeUser.kycDocuments = partner.kycDocuments || safeUser.kycDocuments || {};
+      safeUser.isSubscribed = partner.isSubscribed ?? safeUser.isSubscribed ?? false;
+      safeUser.subscriptionExpiresAt = partner.subscriptionExpiresAt || safeUser.subscriptionExpiresAt || null;
+      safeUser.subscriptionPlan = partner.subscriptionPlan || safeUser.subscriptionPlan || 'annual_249';
+      safeUser.subscribedAt = partner.subscribedAt || safeUser.subscribedAt || null;
     }
   }
   res.json({

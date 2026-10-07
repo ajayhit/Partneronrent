@@ -36,6 +36,7 @@ import ComplaintsTab from './tabs/ComplaintsTab';
 import NotificationsTab from './tabs/NotificationsTab';
 import GuidelinesTab from './tabs/GuidelinesTab';
 import SettingsTab from './tabs/SettingsTab';
+import SubscriptionTab from '../../components/SubscriptionTab';
 
 // Icons
 import {
@@ -51,9 +52,14 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
   const { activePartner, logout, updateSession } = useAuth();
   const { openChat, openSOS, showToast } = useApp();
 
-  // Navigation State - if partner KYC is not verified, default to kyc tab
+  // Navigation State: Priority → Subscription → KYC → Dashboard
   const [activeTab, setActiveTab] = useState(() => {
-    // Redirect to KYC tab if kycStatus is anything other than 'verified'
+    const subActive = Boolean(
+      activePartner?.isSubscribed &&
+      activePartner?.subscriptionExpiresAt &&
+      new Date(activePartner.subscriptionExpiresAt) > new Date()
+    );
+    if (!subActive) return 'subscription';
     if (!activePartner?.kycStatus || activePartner.kycStatus !== 'verified') return 'kyc';
     return initialTab;
   });
@@ -94,8 +100,15 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
             kycRejectionReason: partnerData.kycRejectionReason
           });
         }
-        // If partner's KYC is not verified, redirect to kyc tab
-        if (!partnerData.kycStatus || partnerData.kycStatus !== 'verified') {
+        // Redirect priority: Subscription → KYC → stay
+        const subActive = Boolean(
+          partnerData.isSubscribed &&
+          partnerData.subscriptionExpiresAt &&
+          new Date(partnerData.subscriptionExpiresAt) > new Date()
+        );
+        if (!subActive) {
+          setActiveTab(prev => prev === 'subscription' ? prev : 'subscription');
+        } else if (!partnerData.kycStatus || partnerData.kycStatus !== 'verified') {
           setActiveTab('kyc');
         }
       }
@@ -108,18 +121,44 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
     }
   };
 
-  // Guard tab switching: if KYC is not verified, redirect to KYC tab
+  // Guard tab switching: Subscription gate (highest) → KYC gate → allow
   const handleTabChange = (tabId) => {
-    if ((!partner?.kycStatus || partner.kycStatus !== 'verified') && tabId !== 'kyc' && tabId !== 'guidelines' && tabId !== 'settings') {
-      showToast('Profile & KYC verification required. Please complete verification first.', 'warning');
+    const freeTabsAlways = ['subscription', 'kyc', 'guidelines', 'settings'];
+
+    // Gate 1: Subscription (must subscribe first)
+    const isSubActive = Boolean(
+      partner?.isSubscribed &&
+      partner?.subscriptionExpiresAt &&
+      new Date(partner.subscriptionExpiresAt) > new Date()
+    );
+    if (!isSubActive && !freeTabsAlways.includes(tabId)) {
+      showToast('Please subscribe to Annual Membership (₹249/yr) to access this section.', 'warning');
+      setActiveTab('subscription');
+      return;
+    }
+
+    // Gate 2: KYC (after subscribing)
+    if (isSubActive && (!partner?.kycStatus || partner.kycStatus !== 'verified') && !freeTabsAlways.includes(tabId)) {
+      showToast('KYC verification is required to access this section.', 'warning');
       setActiveTab('kyc');
       return;
     }
+
     setActiveTab(tabId);
   };
 
   // 1. Online / Offline toggle
   const handleToggleOnline = async () => {
+    const isSubActive = Boolean(
+      partner?.isSubscribed &&
+      partner?.subscriptionExpiresAt &&
+      new Date(partner.subscriptionExpiresAt) > new Date()
+    );
+    if (!isSubActive) {
+      showToast('Annual Membership subscription is required before going online.', 'warning');
+      setActiveTab('subscription');
+      return;
+    }
     if (partner?.kycStatus !== 'verified') {
       showToast('KYC verification is required before going online.', 'warning');
       setActiveTab('kyc');
@@ -349,7 +388,7 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
 
             {/* Notifications Shortcut */}
             <button
-              onClick={() => setActiveTab('notifications')}
+              onClick={() => handleTabChange('notifications')}
               style={{
                 width: '38px',
                 height: '38px',
@@ -404,7 +443,7 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
             partner={partner}
             bookings={bookings}
             onToggleOnline={handleToggleOnline}
-            onTabChange={setActiveTab}
+            onTabChange={handleTabChange}
             onAcceptBooking={handleAcceptBooking}
             onDeclineBooking={handleDeclineBooking}
             onStartSession={handleStartSession}
@@ -421,7 +460,7 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
           <ProfileTab
             partner={partner}
             onUpdateProfile={handleUpdateProfile}
-            onTabChange={setActiveTab}
+            onTabChange={handleTabChange}
             showToast={showToast}
           />
         )}
@@ -445,7 +484,7 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
         {activeTab === 'pricing' && (
           <PricingTab
             partner={partner}
-            onTabChange={setActiveTab}
+            onTabChange={handleTabChange}
             showToast={showToast}
           />
         )}
@@ -487,7 +526,7 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
             partner={partner}
             payouts={payouts}
             bookings={bookings}
-            onTabChange={setActiveTab}
+            onTabChange={handleTabChange}
             showToast={showToast}
           />
         )}
@@ -547,6 +586,18 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
             partner={partner}
             onLogout={handleLogout}
             showToast={showToast}
+          />
+        )}
+
+        {activeTab === 'subscription' && (
+          <SubscriptionTab
+            user={partner}
+            role="partner"
+            showToast={showToast}
+            onSubscribed={(updatedPartner) => {
+              setPartner(prev => ({ ...prev, ...updatedPartner }));
+              if (updateSession) updateSession({ ...activePartner, ...updatedPartner });
+            }}
           />
         )}
       </main>

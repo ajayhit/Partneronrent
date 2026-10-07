@@ -1,813 +1,1240 @@
-import React, { useEffect, useState } from 'react';
-import { AlertTriangle, CheckCircle2, Clock, FileText, ShieldCheck, User, XCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  ShieldCheck, Clock, AlertTriangle, FileText,
+  Upload, CheckCircle2, XCircle, Camera,
+  CreditCard, History, Paperclip, Trash2, Lock,
+  Eye, X, Download, User, Phone, Mail,
+  AlertOctagon, Check
+} from 'lucide-react';
 
-const CITIES = [
-  'Delhi NCR', 'Mumbai', 'Bangalore', 'Hyderabad', 'Chennai',
-  'Pune', 'Kolkata', 'Jaipur', 'Ahmedabad', 'Lucknow'
-];
+// ── Aadhaar Verhoeff Validation ───────────────────────────────────────────
+const _d = [[0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],[4,0,1,2,3,9,5,6,7,8],[5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],[8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0]];
+const _p = [[0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],[9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]];
 
-const VERHOEFF_D = [[0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],[4,0,1,2,3,9,5,6,7,8],[5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],[8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0]];
-const VERHOEFF_P = [[0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],[9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]];
-
-function isValidAadhaar(value) {
-  if (!/^[2-9]\d{11}$/.test(value)) return false;
-  const reversed = value.split('').reverse().map(Number);
-  let checksum = 0;
-  for (let index = 0; index < reversed.length; index += 1) {
-    checksum = VERHOEFF_D[checksum][VERHOEFF_P[index % 8][reversed[index]]];
-  }
-  return checksum === 0;
+function validateAadhaar(num) {
+  const digits = String(num || '').replace(/\s|-/g, '');
+  if (!/^\d{12}$/.test(digits)) return false;
+  if (digits[0] === '0' || digits[0] === '1') return false;
+  let c = 0;
+  const rev = digits.split('').reverse().map(Number);
+  for (let i = 0; i < rev.length; i++) c = _d[c][_p[i % 8][rev[i]]];
+  return c === 0;
 }
 
-function isValidPAN(value) {
-  return /^[A-Z]{5}\d{4}[A-Z]$/.test(value);
+// ── PAN Format Validation ─────────────────────────────────────────────────
+function validatePAN(pan) {
+  return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan);
 }
 
+// ── Helper to convert File to Data URL ────────────────────────────────────
 function fileToDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    if (!file) {
-      resolve(null);
-      return;
-    }
-
+  return new Promise((resolve) => {
+    if (!file) { resolve(null); return; }
     const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error(`Unable to read ${file.name}`));
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = () => resolve(null);
     reader.readAsDataURL(file);
   });
 }
 
-const DOCUMENTS = [
-  { key: 'idFrontDoc', nameKey: 'idFrontName', label: 'Aadhaar front', required: true },
-  { key: 'idBackDoc', nameKey: 'idBackName', label: 'Aadhaar back' },
-  { key: 'panDoc', nameKey: 'panFileName', label: 'PAN card', required: true },
-  { key: 'selfieDoc', nameKey: 'selfieFileName', label: 'Selfie with ID', required: true }
+const CITIES = [
+  'Delhi NCR', 'Mumbai', 'Bangalore', 'Hyderabad', 'Chennai',
+  'Pune', 'Kolkata', 'Jaipur', 'Ahmedabad', 'Lucknow', 'Chandigarh'
 ];
 
+// ── Document Preview Modal ────────────────────────────────────────────────
+function DocumentPreviewModal({ doc, onClose }) {
+  if (!doc) return null;
+  const isPDF = Boolean(
+    doc.url && (
+      doc.url.startsWith('data:application/pdf') ||
+      doc.url.includes('application/pdf') ||
+      (doc.fileName && doc.fileName.toLowerCase().endsWith('.pdf'))
+    )
+  );
+
+  const isImage = Boolean(
+    doc.url && !isPDF && (
+      doc.url.startsWith('data:image/') ||
+      doc.url.startsWith('blob:') ||
+      /^https?:\/\//.test(doc.url) ||
+      (doc.fileName && /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(doc.fileName))
+    )
+  );
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'rgba(0, 0, 0, 0.88)', backdropFilter: 'blur(10px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: '#0b1329', border: '1px solid rgba(255, 255, 255, 0.12)',
+          borderRadius: '16px', maxWidth: '750px', width: '100%',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.95)',
+          overflow: 'hidden', maxHeight: '92vh', display: 'flex', flexDirection: 'column'
+        }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div style={{
+          padding: '16px 20px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'rgba(255, 255, 255, 0.02)', flexShrink: 0
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              width: '38px', height: '38px', borderRadius: '10px',
+              background: doc.type === 'pan' ? 'rgba(251,191,36,0.15)' : doc.type === 'selfie' ? 'rgba(192,132,252,0.15)' : 'rgba(56,189,248,0.15)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: doc.type === 'pan' ? '#fbbf24' : doc.type === 'selfie' ? '#c084fc' : '#38bdf8'
+            }}>
+              <FileText size={18} />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.98rem', fontWeight: 700, color: '#fff' }}>{doc.title}</div>
+              <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+                {doc.fileName || (isPDF ? 'Uploaded PDF Document' : 'Uploaded Image Document')}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'rgba(255,255,255,0.06)', border: 'none',
+              borderRadius: '8px', width: '32px', height: '32px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#94a3b8', cursor: 'pointer'
+            }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
+          {isImage ? (
+            <div style={{
+              borderRadius: '12px', overflow: 'hidden',
+              border: '1px solid rgba(255,255,255,0.12)',
+              background: '#020617', display: 'flex',
+              justifyContent: 'center', alignItems: 'center',
+              padding: '16px', minHeight: '260px'
+            }}>
+              <img
+                src={doc.url}
+                alt={doc.title}
+                style={{
+                  maxWidth: '100%', maxHeight: '62vh',
+                  objectFit: 'contain', display: 'block',
+                  borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
+                }}
+                onError={e => {
+                  e.target.style.display = 'none';
+                  if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+              <div style={{ display: 'none', flexDirection: 'column', alignItems: 'center', gap: '10px', color: '#64748b', padding: '40px' }}>
+                <FileText size={40} />
+                <span style={{ fontSize: '0.85rem' }}>Unable to render image preview</span>
+              </div>
+            </div>
+          ) : isPDF ? (
+            <div style={{
+              borderRadius: '12px', overflow: 'hidden',
+              border: '1px solid rgba(255,255,255,0.12)',
+              background: '#0f172a', display: 'flex', flexDirection: 'column'
+            }}>
+              <object
+                data={doc.url}
+                type="application/pdf"
+                style={{ width: '100%', height: '58vh', border: 'none', background: '#fff', borderRadius: '8px' }}
+              >
+                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
+                  <FileText size={48} color="#38bdf8" style={{ margin: '0 auto 12px' }} />
+                  <div style={{ color: '#fff', fontWeight: 700, fontSize: '1rem', marginBottom: '6px' }}>
+                    {doc.fileName || 'Uploaded PDF Document'}
+                  </div>
+                  <div style={{ fontSize: '0.84rem', color: '#94a3b8', marginBottom: '16px' }}>
+                    Inline PDF rendering is limited by the browser. You can download and open the original PDF below.
+                  </div>
+                  <a
+                    href={doc.url}
+                    download={doc.fileName || 'document.pdf'}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '8px',
+                      padding: '10px 22px', borderRadius: '8px',
+                      background: '#38bdf8', color: '#0f172a', fontWeight: 700,
+                      textDecoration: 'none', fontSize: '0.86rem'
+                    }}
+                  >
+                    <Download size={16} /> Download &amp; View PDF
+                  </a>
+                </div>
+              </object>
+            </div>
+          ) : (
+            <div style={{
+              background: 'rgba(255,255,255,0.03)', border: '1px dashed rgba(255,255,255,0.12)',
+              borderRadius: '12px', padding: '40px 24px', textAlign: 'center'
+            }}>
+              <FileText size={40} color="#38bdf8" style={{ margin: '0 auto 12px' }} />
+              <div style={{ fontSize: '1rem', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>{doc.title}</div>
+              <div style={{ fontSize: '0.84rem', color: '#94a3b8' }}>
+                {doc.fileName ? `File: ${doc.fileName} — submitted successfully` : 'Document submitted securely'}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          padding: '14px 20px', borderTop: '1px solid rgba(255,255,255,0.08)',
+          display: 'flex', justifyContent: 'flex-end', gap: '10px',
+          background: 'rgba(255,255,255,0.02)', flexShrink: 0
+        }}>
+          {(isImage || isPDF) && (
+            <a
+              href={doc.url}
+              download={doc.fileName || (isPDF ? `${doc.type || 'document'}.pdf` : `${doc.type || 'document'}.jpg`)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '6px',
+                padding: '8px 18px', borderRadius: '8px',
+                background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.4)',
+                color: '#38bdf8', fontSize: '0.84rem', fontWeight: 700, textDecoration: 'none'
+              }}
+            >
+              <Download size={14} /> Download Document
+            </a>
+          )}
+          <button
+            type="button" onClick={onClose}
+            style={{
+              padding: '8px 22px', borderRadius: '8px',
+              background: '#38bdf8', border: 'none', color: '#0f172a',
+              fontSize: '0.84rem', fontWeight: 700, cursor: 'pointer'
+            }}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── File Upload Box Component ─────────────────────────────────────────────
+function FileUploadBox({ label, color, accept, file, onChange, onRemove, onPreview, disabled, error }) {
+  const inputRef = useRef();
+  return (
+    <div>
+      <div
+        style={{
+          border: `1.5px dashed ${error ? '#ef4444' : file ? color : disabled ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)'}`,
+          borderRadius: '8px', padding: '12px', textAlign: 'center',
+          background: error ? 'rgba(239,68,68,0.06)' : file ? 'rgba(16,185,129,0.07)' : 'rgba(15,23,42,0.4)',
+          cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
+          opacity: disabled ? 0.6 : 1
+        }}
+        onClick={() => !file && !disabled && inputRef.current.click()}
+      >
+        <input
+          ref={inputRef} type="file" accept={accept || 'image/*,.pdf'}
+          style={{ display: 'none' }} disabled={disabled}
+          onChange={e => { if (e.target.files[0]) onChange(e.target.files[0]); e.target.value = ''; }}
+        />
+        {file ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <Paperclip size={15} color={color} />
+            <span style={{ fontSize: '0.8rem', color: '#34d399', fontWeight: 600, wordBreak: 'break-all' }}>{file.name}</span>
+            {onPreview && (
+              <button
+                type="button"
+                onClick={e => { e.stopPropagation(); onPreview(); }}
+                title="Preview document"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#38bdf8' }}
+              >
+                <Eye size={15} />
+              </button>
+            )}
+            {!disabled && (
+              <button type="button" onClick={e => { e.stopPropagation(); onRemove(); }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', color: '#f87171' }}>
+                <Trash2 size={14} />
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            <Upload size={18} color={error ? '#f87171' : disabled ? '#475569' : color} style={{ margin: '0 auto 4px' }} />
+            <div style={{ fontSize: '0.8rem', color: error ? '#f87171' : disabled ? '#475569' : '#fff', fontWeight: 600 }}>{label}</div>
+            {!disabled && <div style={{ fontSize: '0.72rem', color: error ? '#fca5a5' : '#94a3b8', marginTop: '2px' }}>Click to browse (JPG, PNG, PDF)</div>}
+          </>
+        )}
+      </div>
+      {error && (
+        <div style={{ fontSize: '0.74rem', color: '#f87171', marginTop: '5px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+          <AlertTriangle size={13} style={{ flexShrink: 0 }} />
+          <span>{error}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Submitted Summary Report (Joined Profile & KYC) ────────────────────────
+function SubmittedReport({ client, data, status }) {
+  const [previewDoc, setPreviewDoc] = useState(null);
+
+  const badge = status === 'verified'
+    ? { label: 'Verified', color: '#10b981', bg: 'rgba(16,185,129,0.15)' }
+    : status === 'rejected'
+    ? { label: 'Rejected', color: '#ef4444', bg: 'rgba(239,68,68,0.15)' }
+    : { label: 'Under Review', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)' };
+
+  const Row = ({ label, value }) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      <span style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 500 }}>{label}</span>
+      <span style={{ fontSize: '0.86rem', color: '#e2e8f0', fontWeight: 600, textAlign: 'right', maxWidth: '60%' }}>{value || '—'}</span>
+    </div>
+  );
+
+  const DocRow = ({ label, fileName, docUrl, docType, docTitle }) => {
+    const hasDoc = Boolean(fileName || docUrl || data.idNumber);
+    return (
+      <div style={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.06)'
+      }}>
+        <span style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: 500 }}>{label}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '0.84rem', color: hasDoc ? '#34d399' : '#64748b', fontWeight: 600 }}>
+            {fileName ? `✓ ${fileName}` : hasDoc ? '✓ Uploaded' : '— Not provided'}
+          </span>
+          {hasDoc && (
+            <button
+              type="button"
+              onClick={() => {
+                const isPdfUrl = docUrl && (docUrl.startsWith('data:application/pdf') || docUrl.includes('application/pdf'));
+                setPreviewDoc({
+                  title: docTitle || label,
+                  type: docType,
+                  url: docUrl,
+                  fileName: fileName || `${label.toLowerCase().replace(/[^a-z0-9]/g, '_')}.${isPdfUrl ? 'pdf' : 'jpg'}`,
+                  status
+                });
+              }}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '5px',
+                padding: '4px 11px', borderRadius: '6px',
+                background: 'rgba(56, 189, 248, 0.12)',
+                border: '1px solid rgba(56, 189, 248, 0.35)',
+                color: '#38bdf8', fontSize: '0.78rem', fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              <Eye size={13} /> View
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const maskedAadhaar = data.idNumber
+    ? data.idNumber.replace(/(\d{4})(\d{4})(\d{4})/, 'XXXX-XXXX-$3')
+    : '—';
+
+  return (
+    <div className="client-panel" style={{ marginBottom: '24px' }}>
+      <DocumentPreviewModal doc={previewDoc} onClose={() => setPreviewDoc(null)} />
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <div className="client-panel-title" style={{ margin: 0 }}>
+          <FileText size={18} color="#38bdf8" />
+          <span>Submitted Hirer Profile &amp; KYC Application Dossier</span>
+        </div>
+        <span style={{
+          fontSize: '0.78rem', fontWeight: 700, padding: '4px 12px',
+          borderRadius: '20px', background: badge.bg, color: badge.color,
+          border: `1px solid ${badge.color}`
+        }}>
+          {badge.label}
+        </span>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+        {/* Profile Summary Column */}
+        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#38bdf8', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <User size={16} /> Hirer Profile Details
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
+            <img
+              src={client?.avatar || '/default-avatar.jpg'}
+              alt={client?.name || 'Avatar'}
+              style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #38bdf8' }}
+              onError={e => { e.target.src = '/default-avatar.jpg'; }}
+            />
+            <div>
+              <div style={{ fontWeight: 700, color: '#fff', fontSize: '1rem' }}>{client?.name || '—'}</div>
+              <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Hirer Account • {client?.city || 'India'}</div>
+            </div>
+          </div>
+          <Row label="Date of Birth" value={client?.dob || '—'} />
+          <Row label="Primary City" value={client?.city} />
+          <Row label="Phone" value={client?.phone} />
+          <Row label="Email" value={client?.email} />
+          <Row label="Legal Name on ID" value={data.holderName || client?.name} />
+        </div>
+
+        {/* KYC Docs Column */}
+        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#34d399', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <ShieldCheck size={16} /> Government ID &amp; Proofs
+          </div>
+          <Row label="Legal Name on ID" value={data.holderName || client?.name} />
+          <Row label="Aadhaar Number" value={maskedAadhaar} />
+          <Row label="PAN Number" value={data.panNumber} />
+          <DocRow
+            label="Aadhaar Front"
+            fileName={data.idFrontName}
+            docUrl={data.idFrontDoc}
+            docType="aadhaar"
+            docTitle="Aadhaar Card (Front)"
+          />
+          {(data.idBackName || data.idBackDoc) && (
+            <DocRow
+              label="Aadhaar Back"
+              fileName={data.idBackName}
+              docUrl={data.idBackDoc}
+              docType="aadhaar"
+              docTitle="Aadhaar Card (Back)"
+            />
+          )}
+          <DocRow
+            label="PAN Card Photo"
+            fileName={data.panFileName}
+            docUrl={data.panDoc}
+            docType="pan"
+            docTitle="PAN Card Photo"
+          />
+          <DocRow
+            label="Selfie with ID"
+            fileName={data.selfieFileName}
+            docUrl={data.selfieDoc}
+            docType="selfie"
+            docTitle="Selfie with ID / Aadhaar"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main HirerKycTab Component ─────────────────────────────────────────────
 export default function HirerKycTab({ client, onSubmitKYC, showToast }) {
-  const documents = client?.kycDocuments || {};
-  const status = client?.kycStatus || 'not_submitted';
-  const verified = status === 'verified';
-  const underReview = status === 'pending' || status === 'under_review';
-  const rejected = status === 'rejected';
-  const locked = verified || underReview;
-  const rejectionReason = client?.kycRejectionReason || documents.rejectionReason || documents.reviewNotes || '';
+  const currentStatus  = client?.kycStatus || 'not_submitted';
+  const isVerified     = currentStatus === 'verified';
+  const isUnderReview  = currentStatus === 'under_review' || currentStatus === 'pending';
+  const isRejected     = currentStatus === 'rejected';
+  const isLocked       = isVerified || isUnderReview;
 
-  const [holderName, setHolderName] = useState(documents.holderName || client?.name || '');
-  const [name, setName] = useState(client?.name || '');
-  const [phone, setPhone] = useState(client?.phone || '');
-  const [email, setEmail] = useState(client?.email || '');
-  const [city, setCity] = useState(client?.city || '');
-  const [dob, setDob] = useState(client?.dob || '');
-  const [idNumber, setIdNumber] = useState(documents.idNumber || '');
-  const [panNumber, setPanNumber] = useState(documents.panNumber || '');
+  const kd = client?.kycDocuments || {};
+
+  // Rejection Reason from admin (stored on client object or inside kycDocuments)
+  const rejectionReason = client?.kycRejectionReason || kd?.rejectionReason || kd?.reviewNotes || '';
+
+  // ── Profile Fields State ─────────────────────────────────────────────────
+  const [name, setName]               = useState(client?.name || '');
+  const [dob, setDob]                 = useState(client?.dob || '');
+  const [age, setAge]                 = useState('');
+  const [gender, setGender]           = useState(client?.gender || 'Prefer not to say');
+  const [city, setCity]               = useState(client?.city || 'Delhi NCR');
+  const [phone, setPhone]             = useState(client?.phone || '');
+  const [email, setEmail]             = useState(client?.email || '');
+  const [avatar, setAvatar]           = useState(client?.avatar || '/default-avatar.jpg');
+  const [avatarFile, setAvatarFile]   = useState(null);
+
+  // ── KYC Document Fields State ────────────────────────────────────────────
+  const [holderName, setHolderName]   = useState(kd.holderName || client?.name || '');
+  const [idNumber, setIdNumber]       = useState(kd.idNumber?.replace(/\D/g, '').slice(0, 12) || '');
+  const [panNumber, setPanNumber]     = useState(kd.panNumber || '');
   const [aadhaarError, setAadhaarError] = useState('');
-  const [panError, setPanError] = useState('');
-  const [dobError, setDobError] = useState('');
-  const [aadhaarTouched, setAadhaarTouched] = useState(false);
-  const [panTouched, setPanTouched] = useState(false);
-  const [files, setFiles] = useState({});
-  const [fileErrors, setFileErrors] = useState({});
+  const [panError, setPanError]       = useState('');
+  const [dobError, setDobError]       = useState('');
+  const [docErrors, setDocErrors]     = useState({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
-  const [agreed, setAgreed] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [idFrontFile, setIdFrontFile] = useState(null);
+  const [idBackFile, setIdBackFile]   = useState(null);
+  const [panFile, setPanFile]         = useState(null);
+  const [selfieFile, setSelfieFile]   = useState(null);
+  const [agreed, setAgreed]           = useState(false);
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formPreviewDoc, setFormPreviewDoc] = useState(null);
+
+  // Calculate age helper
+  const calculateAgeFromDob = (dobVal) => {
+    if (!dobVal) return '';
+    const birth = new Date(dobVal);
+    const today = new Date();
+    let calculated = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) calculated--;
+    return calculated >= 0 ? String(calculated) : '';
+  };
+
+  // Keep state in sync if client data updates from parent
   useEffect(() => {
-    if (client?.name && !name) setName(client.name);
-    if (client?.phone && !phone) setPhone(client.phone);
-    if (client?.email && !email) setEmail(client.email);
-    if (client?.city && !city) setCity(client.city);
-    if (client?.dob && !dob) setDob(client.dob);
-    if (documents.holderName && !holderName) setHolderName(documents.holderName);
-    if (documents.idNumber && !idNumber) setIdNumber(documents.idNumber.replace(/\D/g, '').slice(0, 12));
-    if (documents.panNumber && !panNumber) setPanNumber(documents.panNumber);
-  }, [client?.id, client?.name, client?.phone, client?.email, client?.city, client?.dob, documents.holderName, documents.idNumber, documents.panNumber]);
+    if (client) {
+      if (client.name && !name) setName(client.name);
+      if (client.phone && !phone) setPhone(client.phone);
+      if (client.email && !email) setEmail(client.email);
+      if (client.city && !city) setCity(client.city);
+      if (client.dob) {
+        if (!dob) setDob(client.dob);
+        const calculated = calculateAgeFromDob(client.dob);
+        setAge(calculated);
+      }
+      if (client.avatar && (!avatar || avatar === '/default-avatar.jpg')) setAvatar(client.avatar);
+      if (kd.holderName && !holderName) setHolderName(kd.holderName);
+      if (kd.idNumber && !idNumber) setIdNumber(kd.idNumber.replace(/\D/g, '').slice(0, 12));
+      if (kd.panNumber && !panNumber) setPanNumber(kd.panNumber);
+    }
+  }, [client?.id]);
 
-  const handleDobChange = (value) => {
-    setDob(value);
-    if (!value) {
+  const handleDobChange = (newDob) => {
+    setDob(newDob);
+    if (!newDob) {
+      setAge('');
       setDobError('');
       return;
     }
-    const today = new Date();
-    const birth = new Date(value);
-    const age = today.getFullYear() - birth.getFullYear() -
-      ((today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) ? 1 : 0);
-    if (age < 18) {
-      setDobError(`You must be at least 18 years old. Current age: ${age} year${age === 1 ? '' : 's'}.`);
+    const calculated = calculateAgeFromDob(newDob);
+    setAge(calculated);
+    if (Number(calculated) < 18) {
+      setDobError(`You must be at least 18 years old. Current age: ${calculated || 0} years.`);
     } else {
       setDobError('');
     }
   };
 
-  const handleAadhaarChange = (value) => {
-    const digits = value.replace(/\D/g, '').slice(0, 12);
+  const handleAadhaarChange = (val) => {
+    const digits = val.replace(/\D/g, '').slice(0, 12);
     setIdNumber(digits);
-    setAadhaarTouched(true);
     if (digits.length === 0) {
       setAadhaarError('Aadhaar number is required (12 digits).');
     } else if (digits.length < 12) {
       setAadhaarError(`Aadhaar number must be 12 digits (${digits.length}/12 entered).`);
-    } else if (!isValidAadhaar(digits)) {
-      setAadhaarError('Aadhaar checksum is invalid. Please check the number.');
+    } else if (!validateAadhaar(digits)) {
+      setAadhaarError('Aadhaar checksum is invalid. Please check digits.');
     } else {
       setAadhaarError('');
     }
   };
 
-  const handlePANChange = (value) => {
-    const normalized = value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
-    setPanNumber(normalized);
-    setPanTouched(true);
-    if (normalized.length === 0) {
+  const handlePANChange = (val) => {
+    const upper = val.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+    setPanNumber(upper);
+    if (upper.length === 0) {
       setPanError('PAN number is required (10 characters).');
-    } else if (normalized.length < 10) {
-      setPanError(`PAN card number must be 10 characters (${normalized.length}/10 entered).`);
-    } else if (!isValidPAN(normalized)) {
+    } else if (upper.length < 10) {
+      setPanError(`PAN card number must be 10 characters (${upper.length}/10 entered).`);
+    } else if (!validatePAN(upper)) {
       setPanError('Invalid PAN format. Expected: ABCDE1234F (5 letters · 4 digits · 1 letter).');
     } else {
       setPanError('');
     }
   };
 
-  const handleFileChange = (docKey, file) => {
-    if (!file) {
-      setFiles(previous => ({ ...previous, [docKey]: null }));
-      return;
-    }
-    const MAX_SIZE = 5 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
-      setFileErrors(prev => ({ ...prev, [docKey]: 'File size exceeds 5MB limit. Please choose a smaller file.' }));
-      showToast('File size must be under 5MB.', 'warning');
-      return;
-    }
-    const validExtensions = /\.(jpg|jpeg|png|webp|pdf)$/i;
-    if (!validExtensions.test(file.name)) {
-      setFileErrors(prev => ({ ...prev, [docKey]: 'Invalid file format. Please upload JPG, PNG, or PDF.' }));
-      showToast('Only JPG, PNG, or PDF files are accepted.', 'warning');
-      return;
-    }
-    setFileErrors(prev => {
-      const next = { ...prev };
-      delete next[docKey];
-      return next;
-    });
-    setFiles(previous => ({ ...previous, [docKey]: file }));
+  const handleAvatarFileChange = async (file) => {
+    setAvatarFile(file);
+    const dataUrl = await fileToDataUrl(file);
+    if (dataUrl) setAvatar(dataUrl);
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handlePreviewFile = async (file, title, docType) => {
+    if (!file) return;
+    const url = await fileToDataUrl(file);
+    setFormPreviewDoc({
+      title,
+      type: docType,
+      url,
+      fileName: file.name,
+      status: 'pending'
+    });
+  };
+
+  const handleFrontDocChange = (file) => {
+    setIdFrontFile(file);
+    if (file) setDocErrors(prev => ({ ...prev, front: '' }));
+  };
+
+  const handlePanDocChange = (file) => {
+    setPanFile(file);
+    if (file) setDocErrors(prev => ({ ...prev, pan: '' }));
+  };
+
+  const handleSelfieDocChange = (file) => {
+    setSelfieFile(file);
+    if (file) setDocErrors(prev => ({ ...prev, selfie: '' }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setSubmitAttempted(true);
-    setAadhaarTouched(true);
-    setPanTouched(true);
 
-    const cleanId = idNumber.replace(/\D/g, '');
-    const cleanPan = panNumber.trim().toUpperCase();
+    // 1. Profile Validation
+    if (!name.trim())                  { showToast('Please enter your full profile name', 'warning'); return; }
+    if (!dob)                          { showToast('Please enter your date of birth', 'warning'); return; }
+    if (!age || Number(age) < 18)      { showToast('Hirer age must be at least 18 years', 'warning'); return; }
+    if (!phone.trim())                 { showToast('Please provide your contact phone number', 'warning'); return; }
+    if (!city.trim())                  { showToast('Please select your city', 'warning'); return; }
 
-    if (!name.trim()) {
-      showToast('Enter your full name.', 'warning');
-      return;
-    }
-    if (!phone.trim()) {
-      showToast('Enter your contact phone number.', 'warning');
-      return;
-    }
-    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      showToast('Enter a valid contact email address.', 'warning');
-      return;
-    }
-    if (!city.trim()) {
-      showToast('Enter your city.', 'warning');
-      return;
-    }
-    if (!dob) {
-      showToast('Enter your date of birth.', 'warning');
-      return;
-    }
-    const today = new Date();
-    const birthDate = new Date(dob);
-    const age = today.getFullYear() - birthDate.getFullYear() - (
-      (today.getMonth() < birthDate.getMonth() || (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) ? 1 : 0
-    );
-    if (age < 18) {
-      showToast('You must be at least 18 years old to register.', 'warning');
-      return;
-    }
-    if (!holderName.trim()) {
-      showToast('Enter your legal name as shown on your government ID.', 'warning');
-      return;
-    }
-    if (cleanId.length === 0) {
+    // 2. KYC Validation
+    if (!holderName.trim())            { showToast('Please enter your legal name as per government ID', 'warning'); return; }
+    if (idNumber.length === 0) {
       setAadhaarError('Aadhaar number is required (12 digits).');
-      showToast('Enter your 12-digit Aadhaar number.', 'warning');
+      showToast('Please enter your 12-digit Aadhaar number', 'warning');
       return;
     }
-    if (cleanId.length < 12) {
-      setAadhaarError(`Aadhaar number must be 12 digits (${cleanId.length}/12 entered).`);
-      showToast('Aadhaar number must be 12 digits.', 'warning');
+    if (idNumber.length < 12) {
+      setAadhaarError(`Aadhaar number must be 12 digits (${idNumber.length}/12 entered).`);
+      showToast('Aadhaar number must be 12 digits', 'warning');
       return;
     }
-    if (!isValidAadhaar(cleanId)) {
-      setAadhaarError('Aadhaar checksum is invalid. Please check the number.');
-      showToast('Enter a valid 12-digit Aadhaar number.', 'warning');
+    if (!validateAadhaar(idNumber)) {
+      setAadhaarError('Aadhaar checksum is invalid. Please check the digits.');
+      showToast('Aadhaar checksum is invalid. Please check the digits.', 'warning');
       return;
     }
-    if (cleanPan.length === 0) {
+    if (panNumber.length === 0) {
       setPanError('PAN number is required (10 characters).');
-      showToast('Enter your 10-character PAN number.', 'warning');
+      showToast('Please enter your 10-character PAN number', 'warning');
       return;
     }
-    if (cleanPan.length < 10) {
-      setPanError(`PAN card number must be 10 characters (${cleanPan.length}/10 entered).`);
-      showToast('PAN card number must be 10 characters.', 'warning');
+    if (panNumber.length < 10) {
+      setPanError(`PAN card number must be 10 characters (${panNumber.length}/10 entered).`);
+      showToast('PAN card number must be 10 characters', 'warning');
       return;
     }
-    if (!isValidPAN(cleanPan)) {
-      setPanError('Invalid PAN format. Expected: 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F).');
-      showToast('Enter a valid PAN number (for example, ABCDE1234F).', 'warning');
+    if (!validatePAN(panNumber)) {
+      setPanError('Invalid PAN format. Expected: ABCDE1234F (5 letters · 4 digits · 1 letter).');
+      showToast('PAN format is invalid. Expected: ABCDE1234F', 'warning');
       return;
     }
 
-    const missingDocErrors = {};
-    let hasMissingRequiredDoc = false;
-    for (const document of DOCUMENTS.filter(item => item.required)) {
-      if (!files[document.key] && !documents[document.key]) {
-        missingDocErrors[document.key] = `Document not loaded. ${document.label} is required.`;
-        hasMissingRequiredDoc = true;
-      }
-    }
-    if (hasMissingRequiredDoc) {
-      setFileErrors(prev => ({ ...prev, ...missingDocErrors }));
+    // For documents: if re-submitting after rejection, existing docs are preserved unless replaced
+    const hasFront = idFrontFile || kd.idFrontDoc;
+    const hasPan = panFile || kd.panDoc;
+    const hasSelfie = selfieFile || kd.selfieDoc;
+
+    const newDocErrors = {};
+    if (!hasFront) newDocErrors.front = 'Document not loaded. Front of Aadhaar card is required.';
+    if (!hasPan) newDocErrors.pan = 'Document not loaded. PAN card photo is required.';
+    if (!hasSelfie) newDocErrors.selfie = 'Document not loaded. Selfie with ID is required.';
+
+    if (Object.keys(newDocErrors).length > 0) {
+      setDocErrors(newDocErrors);
       showToast('Please upload all required KYC documents.', 'warning');
       return;
     }
 
-    if (!agreed && !rejected) {
-      showToast('Confirm that the submitted information is accurate.', 'warning');
+    if (!agreed && !isRejected) {
+      showToast('Please confirm the accuracy declaration before submitting', 'warning');
       return;
     }
 
-    setSubmitting(true);
+    setIsSubmitting(true);
     try {
-      const uploadedDocuments = await Promise.all(
-        DOCUMENTS.map(async document => {
-          const file = files[document.key];
-          try {
-            return {
-              [document.key]: file ? await fileToDataUrl(file) : documents[document.key] || null,
-              [document.nameKey]: file ? file.name : documents[document.nameKey] || null
-            };
-          } catch (readErr) {
-            setFileErrors(prev => ({ ...prev, [document.key]: `Failed to load document: ${readErr.message}` }));
-            throw readErr;
-          }
-        })
-      );
-      await onSubmitKYC({
+      const [idFrontDoc, idBackDoc, panDoc, selfieDoc, uploadedAvatar] = await Promise.all([
+        idFrontFile ? fileToDataUrl(idFrontFile) : Promise.resolve(kd.idFrontDoc),
+        idBackFile  ? fileToDataUrl(idBackFile)  : Promise.resolve(kd.idBackDoc),
+        panFile     ? fileToDataUrl(panFile)     : Promise.resolve(kd.panDoc),
+        selfieFile  ? fileToDataUrl(selfieFile)  : Promise.resolve(kd.selfieDoc),
+        avatarFile  ? fileToDataUrl(avatarFile)  : Promise.resolve(avatar),
+      ]);
+
+      const payload = {
+        // Profile fields
         name: name.trim(),
+        dob,
+        age: Number(age),
+        gender,
+        city: city.trim(),
         phone: phone.trim(),
         email: email.trim(),
-        city: city.trim(),
-        dob,
-        holderName: holderName.trim(),
+        avatar: uploadedAvatar || avatar || '/default-avatar.jpg',
+
+        // KYC fields
         idType: 'Aadhaar Card',
-        idNumber: cleanId,
-        panNumber: cleanPan,
-        ...Object.assign({}, ...uploadedDocuments)
-      });
-      showToast('Verification documents submitted for admin review.');
-    } catch (error) {
-      console.error('Failed to submit hirer KYC:', error);
-      showToast(error.message || 'Could not submit verification. Please try again.', 'danger');
+        idNumber,
+        holderName: holderName.trim(),
+        panNumber,
+        idFrontDoc,
+        idBackDoc,
+        panDoc,
+        selfieDoc,
+        idFrontName:   idFrontFile?.name || kd.idFrontName || 'aadhaar_front.jpg',
+        idBackName:    idBackFile?.name  || kd.idBackName || null,
+        panFileName:   panFile?.name     || kd.panFileName || 'pan_card.jpg',
+        selfieFileName: selfieFile?.name || kd.selfieFileName || 'selfie.jpg',
+      };
+
+      await onSubmitKYC(payload);
+      showToast('Hirer profile & KYC submitted successfully! Under admin review.');
+    } catch (err) {
+      showToast(err.message || 'Failed to submit verification. Please check network and try again.', 'danger');
     } finally {
-      setSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
-  const statusMessage = verified
-    ? 'Your identity has been verified.'
-    : underReview
-      ? 'Your documents are being reviewed by our compliance team.'
-      : rejected
-        ? 'Your verification was rejected. Update the information or documents and submit again.'
-        : 'Complete your profile and verify your identity to open all hirer panel features.';
   const steps = [
-    { label: 'Not Submitted', active: status === 'not_submitted', done: false },
-    { label: 'Under Review', active: underReview, done: verified },
-    { label: 'Verified', active: verified, done: verified },
-    { label: 'Rejected', active: rejected, done: false, danger: rejected }
+    { label: 'Not Submitted', active: currentStatus === 'not_submitted', done: false },
+    { label: 'Under Review',  active: isUnderReview, done: isVerified },
+    { label: 'Verified',      active: isVerified,    done: isVerified },
+    { label: 'Rejected',      active: isRejected,    done: false, danger: isRejected },
   ];
 
   return (
     <div>
-      <header style={{ marginBottom: 22 }}>
-        <h2 style={{ color: '#fff', fontSize: '1.55rem', fontWeight: 800, margin: 0 }}>
-          Verification / KYC
+      {/* Page Header */}
+      <div style={{ marginBottom: '24px' }}>
+        <h2 style={{ fontSize: '1.55rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+          👤 Hirer Profile &amp; KYC Verification
         </h2>
-        <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '6px 0 0' }}>
-          Submit your identity details and documents for secure account verification.
+        <p style={{ color: '#94a3b8', fontSize: '0.88rem', margin: '4px 0 0' }}>
+          Complete your personal profile details and submit identity proof documents together.
+          Our compliance administration team inspects all details before unlocking full booking access.
         </p>
-      </header>
+      </div>
 
-      <section className="client-panel" style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-          <ShieldCheck size={20} color={verified ? '#34d399' : rejected ? '#f87171' : '#fbbf24'} />
-          <h3 style={{ color: '#fff', margin: 0, fontSize: '1.05rem' }}>Verification &amp; Approval Status</h3>
-          <span className={`client-badge ${verified ? 'client-badge-emerald' : rejected ? 'client-badge-rose' : 'client-badge-amber'}`}>
-            {status.replace('_', ' ').toUpperCase()}
-          </span>
+      {/* Status Tracker Panel */}
+      <div className="client-panel">
+        <div className="client-panel-title" style={{ marginBottom: '18px' }}>
+          <ShieldCheck size={20} color={isVerified ? '#34d399' : isRejected ? '#ef4444' : '#fbbf24'} />
+          <span>Verification &amp; Approval Status</span>
         </div>
-        <div className="hirer-kyc-steps">
-          {steps.map((step, index) => (
-            <div key={step.label} className="hirer-kyc-step">
-              <span className={`hirer-kyc-step-icon${step.done ? ' done' : ''}${step.active ? ' active' : ''}${step.danger ? ' danger' : ''}`}>
-                {step.done ? '✓' : step.danger ? '×' : index + 1}
+
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', padding: '6px 0', marginBottom: '18px' }}>
+          {steps.map((st, idx) => (
+            <div key={st.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{
+                width: '32px', height: '32px', borderRadius: '50%',
+                background: st.done ? '#10b981' : st.danger ? '#ef4444' : st.active ? '#f59e0b' : 'rgba(100,116,139,0.3)',
+                color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 700, fontSize: '0.85rem'
+              }}>
+                {st.done ? '✓' : st.danger ? '✕' : idx + 1}
+              </div>
+              <span style={{
+                fontSize: '0.86rem', fontWeight: 600,
+                color: st.done ? '#34d399' : st.danger ? '#f87171' : st.active ? '#fbbf24' : '#64748b'
+              }}>
+                {st.label}
               </span>
-              <span className={`hirer-kyc-step-label${step.done ? ' done' : ''}${step.active ? ' active' : ''}${step.danger ? ' danger' : ''}`}>
-                {step.label}
-              </span>
-              {index < steps.length - 1 && <span className={`hirer-kyc-step-line${step.done ? ' done' : ''}`} />}
+              {idx < steps.length - 1 && (
+                <div style={{ width: '30px', height: '2px', background: st.done ? '#10b981' : 'rgba(255,255,255,0.1)' }} />
+              )}
             </div>
           ))}
         </div>
+
+        {/* ── Prominent Status Callout ── */}
         <div style={{
-          display: 'flex', alignItems: 'flex-start', gap: 12, padding: 14, borderRadius: 10,
-          background: verified ? 'rgba(16,185,129,.1)' : rejected ? 'rgba(239,68,68,.1)' : underReview ? 'rgba(245,158,11,.1)' : 'rgba(56,189,248,.1)',
-          color: '#e2e8f0'
+          background: isVerified ? 'rgba(16,185,129,0.1)' : isUnderReview ? 'rgba(245,158,11,0.1)' : isRejected ? 'rgba(239,68,68,0.12)' : 'rgba(56,189,248,0.1)',
+          border: `1px solid ${isVerified ? '#10b981' : isUnderReview ? '#f59e0b' : isRejected ? '#ef4444' : '#38bdf8'}`,
+          borderRadius: '12px', padding: '16px 20px', display: 'flex', alignItems: 'flex-start', gap: '16px'
         }}>
-          {verified ? <CheckCircle2 color="#34d399" /> : underReview ? <Clock color="#fbbf24" /> : rejected ? <XCircle color="#f87171" /> : <AlertTriangle color="#38bdf8" />}
-          <div>
-            <strong>{statusMessage}</strong>
-            {rejected && rejectionReason && <p style={{ color: '#fca5a5', margin: '8px 0 0' }}>Review note: {rejectionReason}</p>}
+          {isVerified
+            ? <CheckCircle2 size={32} color="#10b981" style={{ flexShrink: 0, marginTop: '2px' }} />
+            : isUnderReview
+            ? <Clock size={32} color="#f59e0b" style={{ flexShrink: 0, marginTop: '2px' }} />
+            : isRejected
+            ? <XCircle size={32} color="#ef4444" style={{ flexShrink: 0, marginTop: '2px' }} />
+            : <AlertTriangle size={32} color="#38bdf8" style={{ flexShrink: 0, marginTop: '2px' }} />}
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: '1.02rem', color: '#fff' }}>
+              {isVerified
+                ? 'Account Verified & Background Cleared'
+                : isUnderReview
+                ? 'Application & Documents Under Admin Review'
+                : isRejected
+                ? 'Verification Application Rejected by Admin'
+                : 'Complete Your Profile & KYC Submission'}
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#cbd5e1', marginTop: '4px', lineHeight: '1.5' }}>
+              {isVerified
+                ? 'Congratulations! Your identity has been verified and approved by administration. You can now book companions freely across all cities.'
+                : isUnderReview
+                ? 'Your hirer profile details and KYC documents have been submitted to the admin compliance team for inspection. Verification typically takes 6–12 hours.'
+                : isRejected
+                ? 'The administration team reviewed your application and rejected it. Please review the specific rejection reason below, correct your information or document uploads, and re-submit.'
+                : 'Please complete your personal details and upload valid government-issued ID proofs (Aadhaar, PAN, and selfie with ID) below to activate your account.'}
+            </div>
+
+            {/* ── PROMINENT REJECTION REASON BOX ── */}
+            {isRejected && (
+              <div style={{
+                marginTop: '14px',
+                padding: '14px 18px',
+                background: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid rgba(239, 68, 68, 0.45)',
+                borderRadius: '10px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fca5a5', fontWeight: 800, fontSize: '0.88rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  <AlertOctagon size={16} color="#ef4444" />
+                  Admin Rejection Reason &amp; Feedback:
+                </div>
+                <div style={{
+                  color: '#ffffff',
+                  fontSize: '0.94rem',
+                  fontWeight: 600,
+                  marginTop: '8px',
+                  lineHeight: '1.5',
+                  padding: '8px 12px',
+                  background: 'rgba(0, 0, 0, 0.25)',
+                  borderRadius: '6px',
+                  borderLeft: '3px solid #ef4444'
+                }}>
+                  "{rejectionReason || 'Document photos were unclear or details mismatched. Please check and re-submit.'}"
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#fca5a5', marginTop: '8px' }}>
+                  ℹ️ Scroll down to the form below to update the indicated details or re-upload clear photos, then click <strong>"Re-Submit Corrected Profile &amp; KYC Application"</strong>.
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </section>
+      </div>
 
-      {underReview && (
-        <section className="client-panel" style={{ textAlign: 'center', padding: '32px 20px', marginBottom: 20 }}>
-          <Clock size={40} color="#fbbf24" style={{ margin: '0 auto 12px' }} />
-          <h3 style={{ color: '#fbbf24', margin: '0 0 8px' }}>Application Locked for Administrative Review</h3>
-          <p style={{ color: '#94a3b8', fontSize: '.9rem', maxWidth: 520, margin: '0 auto', lineHeight: 1.6 }}>
-            Your profile and identity documents are being reviewed. Other hirer panel features will unlock after approval.
+      {/* Submitted Report Summary — shown when under review, rejected, or verified */}
+      {(isUnderReview || isVerified || isRejected) && (kd.holderName || kd.idNumber || client?.name) && (
+        <SubmittedReport client={client} data={{ ...kd, holderName: kd.holderName || client?.name || '' }} status={currentStatus} />
+      )}
+
+      {/* Locked message during review */}
+      {isUnderReview && (
+        <div className="client-panel" style={{ textAlign: 'center', padding: '36px 20px' }}>
+          <Lock size={42} color="#f59e0b" style={{ margin: '0 auto 14px' }} />
+          <h3 style={{ color: '#fbbf24', fontWeight: 700, margin: '0 0 8px' }}>Application Locked for Administrative Inspection</h3>
+          <p style={{ color: '#94a3b8', fontSize: '0.9rem', maxWidth: 520, margin: '0 auto', lineHeight: '1.6' }}>
+            Your profile details and identification proofs are currently in the administrator review queue.
+            You will be notified immediately once approved or if any corrections are needed.
           </p>
-        </section>
+        </div>
       )}
 
-      {(underReview || verified) && (
-        <section className="client-panel" style={{ marginBottom: 20 }}>
-          <h3 style={{ color: '#fff', margin: '0 0 12px', fontSize: '1.05rem' }}>Submitted profile and documents</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 14, color: '#cbd5e1', fontSize: '.84rem' }}>
-            <div>Name: {client?.name || '—'}</div>
-            <div>Phone: {client?.phone || '—'}</div>
-            <div>Email: {client?.email || '—'}</div>
-            <div>City: {client?.city || '—'}</div>
-            <div>Legal name: {documents.holderName || '—'}</div>
-            <div>Aadhaar: {documents.idNumber || '—'}</div>
-            <div>PAN: {documents.panNumber || '—'}</div>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10 }}>
-            {DOCUMENTS.filter(document => documents[document.key]).map(document => (
-              <a
-                key={document.key}
-                href={documents[document.key]}
-                target="_blank"
-                rel="noreferrer"
-                style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#cbd5e1', textDecoration: 'none', padding: 12, borderRadius: 8, background: 'rgba(255,255,255,.04)' }}
-              >
-                <FileText size={17} color="#38bdf8" />
-                <span>{document.label}: {documents[document.nameKey] || 'View document'}</span>
-              </a>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {!locked && (
-        <form className="hirer-kyc-form" onSubmit={handleSubmit}>
-          <section className="client-panel">
-            <div className="client-panel-title" style={{ marginBottom: 18 }}>
+      {/* ── Unified Profile & KYC Form (Active when not_submitted OR rejected) ── */}
+      {!isVerified && !isUnderReview && (
+        <form onSubmit={handleSubmit}>
+          {/* SECTION 1: HIRER PROFILE INFORMATION */}
+          <div className="client-panel">
+            <div className="client-panel-title" style={{ marginBottom: '18px' }}>
               <User size={18} color="#38bdf8" />
               <span>Step 1: Hirer Profile Information</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
-              <label style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>
-                Full name
-                <input className="hirer-kyc-input" value={name} onChange={event => setName(event.target.value)} disabled={submitting} autoComplete="name" required />
-              </label>
-              <label style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>
-                Contact phone
-                <input className="hirer-kyc-input" type="tel" value={phone} onChange={event => setPhone(event.target.value)} disabled={submitting} autoComplete="tel" required />
-              </label>
-              <label style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>
-                Email address
-                <input className="hirer-kyc-input" type="email" value={email} readOnly disabled={submitting} autoComplete="email" required />
-                <span style={{ display: 'block', color: '#64748b', fontSize: '.72rem', marginTop: 5 }}>Registered account email.</span>
-              </label>
-              <label style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>
-                City
-                <select
-                  className="hirer-kyc-input"
-                  value={city}
-                  onChange={event => setCity(event.target.value)}
-                  disabled={submitting}
+
+            {/* Avatar & Photo */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', alignItems: 'center', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <img
+                  src={avatar || '/default-avatar.jpg'}
+                  alt="Avatar Preview"
+                  style={{
+                    width: '84px', height: '84px', borderRadius: '50%',
+                    objectFit: 'cover', border: '3px solid #38bdf8', flexShrink: 0
+                  }}
+                  onError={e => { e.target.src = '/default-avatar.jpg'; }}
+                />
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                    Profile Photo / Avatar
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => e.target.files[0] && handleAvatarFileChange(e.target.files[0])}
+                    style={{ fontSize: '0.82rem', width: '100%' }}
+                  />
+                  <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px' }}>
+                    Upload a clear profile photo (JPG or PNG).
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                  Full Display Name *
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  placeholder="Your full name"
                   required
-                  style={{ cursor: submitting ? 'wait' : 'pointer' }}
+                  style={{
+                    width: '100%', padding: '10px 14px', borderRadius: '8px',
+                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)',
+                    color: '#fff', fontSize: '0.9rem'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Profile Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                  📅 Date of Birth *
+                </label>
+                <input
+                  type="date"
+                  value={dob}
+                  onChange={e => handleDobChange(e.target.value)}
+                  max={(() => { const d = new Date(); d.setFullYear(d.getFullYear() - 18); return d.toISOString().split('T')[0]; })()}
+                  min="1920-01-01"
+                  disabled={isLocked}
+                  required
+                  style={{
+                    width: '100%', padding: '10px 14px', borderRadius: '8px',
+                    background: 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${dobError ? '#ef4444' : dob && !dobError ? '#10b981' : 'rgba(255,255,255,0.12)'}`,
+                    color: '#fff', fontSize: '0.9rem'
+                  }}
+                />
+                {dobError ? (
+                  <div style={{ fontSize: '0.74rem', color: '#f87171', marginTop: '4px' }}>⚠ {dobError}</div>
+                ) : dob ? (
+                  <div style={{ fontSize: '0.74rem', color: '#34d399', marginTop: '4px' }}>✓ Age verified — 18+ confirmed</div>
+                ) : null}
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                  Age <span style={{ color: '#38bdf8', fontWeight: 400 }}>(Auto-calculated from DOB)</span>
+                </label>
+                <input
+                  type="text"
+                  value={age ? `${age} years` : ''}
+                  readOnly
+                  placeholder="Calculated automatically"
+                  style={{
+                    width: '100%', padding: '10px 14px', borderRadius: '8px',
+                    background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)',
+                    color: '#94a3b8', fontSize: '0.9rem', cursor: 'not-allowed'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                  Gender
+                </label>
+                <select
+                  value={gender}
+                  onChange={e => setGender(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 14px', borderRadius: '8px',
+                    background: '#0b1329', border: '1px solid rgba(255,255,255,0.12)',
+                    color: '#fff', fontSize: '0.9rem'
+                  }}
                 >
-                  <option value="">— Select city —</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Non-Binary">Non-Binary</option>
+                  <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                  Primary City *
+                </label>
+                <select
+                  value={city}
+                  onChange={e => setCity(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 14px', borderRadius: '8px',
+                    background: '#0b1329', border: '1px solid rgba(255,255,255,0.12)',
+                    color: '#fff', fontSize: '0.9rem'
+                  }}
+                >
                   {CITIES.map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
-              </label>
-              <label style={{ color: '#cbd5e1', fontSize: '0.85rem' }}>
-                Date of birth *
-                <input
-                  className="hirer-kyc-input"
-                  type="date"
-                  value={dob}
-                  onChange={event => handleDobChange(event.target.value)}
-                  max={(() => { const d = new Date(); d.setFullYear(d.getFullYear() - 18); return d.toISOString().slice(0, 10); })()}
-                  min="1900-01-01"
-                  disabled={submitting}
-                  required
-                  style={{ borderColor: dobError ? '#f87171' : dob && !dobError ? '#34d399' : undefined }}
-                />
-                {dobError
-                  ? <span className="hirer-kyc-error" style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 5 }}>⚠ {dobError}</span>
-                  : dob
-                    ? <span style={{ display: 'block', color: '#34d399', fontSize: '.72rem', marginTop: 5 }}>✓ Age verified — 18+ confirmed.</span>
-                    : <span style={{ display: 'block', color: '#64748b', fontSize: '.72rem', marginTop: 5 }}>Must be at least 18 years old.</span>
-                }
-              </label>
-            </div>
-          </section>
-
-          {/* Step 2: Identity Verification / KYC — Redesigned */}
-          <section style={{
-            background: 'linear-gradient(135deg, rgba(16,185,129,0.06) 0%, rgba(124,58,237,0.08) 100%)',
-            border: '1px solid rgba(52,211,153,0.18)',
-            borderRadius: 18,
-            padding: '28px 24px',
-            marginBottom: 0,
-            position: 'relative',
-            overflow: 'hidden'
-          }}>
-            {/* Decorative glow */}
-            <div style={{
-              position: 'absolute', top: -40, right: -40, width: 160, height: 160,
-              borderRadius: '50%', background: 'radial-gradient(circle, rgba(52,211,153,0.12), transparent 70%)',
-              pointerEvents: 'none'
-            }} />
-
-            {/* Section Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-              <div style={{
-                width: 38, height: 38, borderRadius: 10,
-                background: 'linear-gradient(135deg, #10b981, #059669)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 14px rgba(16,185,129,0.35)'
-              }}>
-                <ShieldCheck size={20} color="#fff" />
               </div>
+
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ color: '#fff', fontWeight: 800, fontSize: '1.05rem' }}>Step 2: Identity Verification / KYC</span>
-                  <span style={{
-                    fontSize: '0.68rem', fontWeight: 700, padding: '2px 8px', borderRadius: 20,
-                    background: 'rgba(52,211,153,0.15)', color: '#34d399', border: '1px solid rgba(52,211,153,0.3)',
-                    letterSpacing: '0.04em'
-                  }}>GOVT ID REQUIRED</span>
-                </div>
-                <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: '2px 0 0' }}>
-                  Upload your Aadhaar, PAN, and a selfie with ID for identity verification.
-                </p>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                  <Phone size={13} style={{ display: 'inline', marginRight: '4px' }} />
+                  Contact Phone Number *
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  required
+                  style={{
+                    width: '100%', padding: '10px 14px', borderRadius: '8px',
+                    background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)',
+                    color: '#fff', fontSize: '0.9rem'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', marginBottom: '6px' }}>
+                  <Mail size={13} style={{ display: 'inline', marginRight: '4px' }} />
+                  Contact Email Address
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  readOnly
+                  style={{
+                    width: '100%', padding: '10px 14px', borderRadius: '8px',
+                    background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.08)',
+                    color: '#94a3b8', fontSize: '0.9rem', cursor: 'not-allowed'
+                  }}
+                />
+                <span style={{ fontSize: '0.72rem', color: '#64748b' }}>Registered account email — contact support to change.</span>
               </div>
             </div>
+          </div>
 
-            {/* Info Banner */}
-            <div style={{
-              display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px',
-              borderRadius: 10, background: 'rgba(56,189,248,0.07)', border: '1px solid rgba(56,189,248,0.15)',
-              marginTop: 18, marginBottom: 24
-            }}>
-              <span style={{ fontSize: '1rem', marginTop: 1 }}>🔒</span>
-              <span style={{ color: '#7dd3fc', fontSize: '0.8rem', lineHeight: 1.6 }}>
-                Your documents are encrypted and stored securely. They are only accessed by verified compliance staff.
-                Aadhaar front, PAN card, and selfie with ID are <strong>required</strong>. Aadhaar back is optional.
+          {/* SECTION 2: GOVERNMENT ID & KYC DOCUMENTS */}
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldCheck size={20} color="#10b981" />
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffffff', margin: 0 }}>
+                Step 2: Government Identity Documents (KYC)
+              </h3>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+
+              {/* 1. Aadhaar Card */}
+              <div className="client-panel" style={{ marginBottom: 0 }}>
+                <div className="client-panel-title" style={{ marginBottom: '14px' }}>
+                  <FileText size={18} color="#38bdf8" />
+                  <span>1. Aadhaar Card</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                      Legal Name as per Aadhaar *
+                    </label>
+                    <input
+                      type="text"
+                      value={holderName}
+                      onChange={e => setHolderName(e.target.value)}
+                      placeholder="Enter legal name printed on ID"
+                      style={{
+                        width: '100%', padding: '10px 14px', borderRadius: '8px',
+                        background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.12)',
+                        color: '#fff', fontSize: '0.9rem'
+                      }}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                      Aadhaar Number * <span style={{ color: '#64748b', fontWeight: 400 }}>(12 digits)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={idNumber}
+                      onChange={e => handleAadhaarChange(e.target.value)}
+                      placeholder="XXXXXXXXXXXX"
+                      maxLength={12}
+                      style={{
+                        width: '100%', padding: '10px 14px', borderRadius: '8px',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${aadhaarError ? '#ef4444' : idNumber.length === 12 && !aadhaarError ? '#10b981' : 'rgba(255,255,255,0.12)'}`,
+                        color: '#fff', fontSize: '0.9rem',
+                        letterSpacing: '0.15em', fontWeight: 700
+                      }}
+                      required
+                    />
+                    {aadhaarError ? (
+                      <div style={{ fontSize: '0.76rem', color: '#f87171', marginTop: '4px' }}>⚠ {aadhaarError}</div>
+                    ) : idNumber.length === 12 ? (
+                      <div style={{ fontSize: '0.76rem', color: '#34d399', marginTop: '4px' }}>✓ Valid Aadhaar number</div>
+                    ) : null}
+                  </div>
+                  <FileUploadBox
+                    label="Upload Front of Aadhaar *" color="#38bdf8"
+                    file={idFrontFile} onChange={handleFrontDocChange} onRemove={() => setIdFrontFile(null)}
+                    onPreview={() => handlePreviewFile(idFrontFile, 'Aadhaar Card Front', 'aadhaar')}
+                    error={docErrors.front || (submitAttempted && !idFrontFile && !kd.idFrontDoc ? 'Document not loaded. Aadhaar card front is required.' : '')}
+                  />
+                  <FileUploadBox
+                    label="Upload Back of Aadhaar" color="#38bdf8"
+                    file={idBackFile} onChange={setIdBackFile} onRemove={() => setIdBackFile(null)}
+                    onPreview={() => handlePreviewFile(idBackFile, 'Aadhaar Card Back', 'aadhaar')}
+                  />
+                </div>
+              </div>
+
+              {/* 2. PAN Card */}
+              <div className="client-panel" style={{ marginBottom: 0 }}>
+                <div className="client-panel-title" style={{ marginBottom: '14px' }}>
+                  <CreditCard size={18} color="#fbbf24" />
+                  <span>2. PAN Card</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: '#cbd5e1', marginBottom: '6px' }}>
+                      PAN Number * <span style={{ color: '#64748b', fontWeight: 400 }}>(e.g. ABCDE1234F)</span>
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={10}
+                      value={panNumber}
+                      onChange={e => handlePANChange(e.target.value)}
+                      placeholder="ABCDE1234F"
+                      style={{
+                        width: '100%', padding: '10px 14px', borderRadius: '8px',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${panError ? '#ef4444' : panNumber.length === 10 && !panError ? '#10b981' : 'rgba(255,255,255,0.12)'}`,
+                        color: '#fff', fontSize: '0.9rem',
+                        textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700
+                      }}
+                      required
+                    />
+                    {panError ? (
+                      <div style={{ fontSize: '0.76rem', color: '#f87171', marginTop: '4px' }}>⚠ {panError}</div>
+                    ) : panNumber.length === 10 ? (
+                      <div style={{ fontSize: '0.76rem', color: '#34d399', marginTop: '4px' }}>✓ Valid PAN format</div>
+                    ) : null}
+                  </div>
+                  <FileUploadBox
+                    label="Upload Photo of PAN Card *" color="#fbbf24"
+                    file={panFile} onChange={handlePanDocChange} onRemove={() => setPanFile(null)}
+                    onPreview={() => handlePreviewFile(panFile, 'PAN Card Photo', 'pan')}
+                    error={docErrors.pan || (submitAttempted && !panFile && !kd.panDoc ? 'Document not loaded. PAN card photo is required.' : '')}
+                  />
+                  <div style={{
+                    background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)',
+                    borderRadius: '8px', padding: '10px 14px', fontSize: '0.78rem', color: '#cbd5e1'
+                  }}>
+                    ℹ️ Legal name on PAN must match Aadhaar card.
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Selfie with ID */}
+              <div className="client-panel" style={{ marginBottom: 0 }}>
+                <div className="client-panel-title" style={{ marginBottom: '14px' }}>
+                  <Camera size={18} color="#c084fc" />
+                  <span>3. Selfie with ID / Aadhaar</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: 0 }}>
+                    Upload a clear photo of yourself holding your government ID card.
+                    Both your face and the document details must be visible.
+                  </p>
+                  <FileUploadBox
+                    label="Upload Selfie with ID *" color="#c084fc" accept="image/*"
+                    file={selfieFile} onChange={handleSelfieDocChange} onRemove={() => setSelfieFile(null)}
+                    onPreview={() => handlePreviewFile(selfieFile, 'Selfie with ID', 'selfie')}
+                    error={docErrors.selfie || (submitAttempted && !selfieFile && !kd.selfieDoc ? 'Document not loaded. Selfie with ID is required.' : '')}
+                  />
+                  <div style={{
+                    background: 'rgba(192,132,252,0.08)', border: '1px solid rgba(192,132,252,0.2)',
+                    borderRadius: '8px', padding: '10px 14px', fontSize: '0.78rem', color: '#cbd5e1'
+                  }}>
+                    📸 Ensure ample lighting, neutral expression, and avoid sunglasses or masks.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Declaration Checkbox */}
+          <div className="client-panel" style={{ marginBottom: '24px' }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={e => setAgreed(e.target.checked)}
+                style={{ marginTop: '3px' }}
+                required={!isRejected}
+              />
+              <span style={{ fontSize: '0.84rem', color: '#cbd5e1', lineHeight: '1.5' }}>
+                I confirm that all profile information and government identity documents uploaded above are accurate, valid, and belong to me.
+                I understand that PartnerOnRent compliance administration conducts verification checks, and false submissions will result in immediate account suspension.
               </span>
-            </div>
+            </label>
+          </div>
 
-            {/* ID Details Grid */}
-            <div style={{
-              background: 'rgba(15,23,42,0.5)', borderRadius: 12, padding: '20px',
-              border: '1px solid rgba(255,255,255,0.06)', marginBottom: 22
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 16 }}>
-                <div style={{ width: 4, height: 18, borderRadius: 2, background: 'linear-gradient(180deg,#34d399,#10b981)' }} />
-                <span style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.03em' }}>Government ID Details</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
-                <div>
-                  <label style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
-                    Legal Name on ID
-                  </label>
-                  <input
-                    className="hirer-kyc-input"
-                    placeholder="As printed on Aadhaar / PAN"
-                    value={holderName}
-                    onChange={event => setHolderName(event.target.value)}
-                    disabled={submitting}
-                    autoComplete="name"
-                    required
-                    style={{ background: 'rgba(255,255,255,0.04)' }}
-                  />
-                </div>
-                {/* ── Aadhaar Number ── */}
-                <div>
-                  <label style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
-                    Aadhaar Number
-                  </label>
-                  <input
-                    className="hirer-kyc-input"
-                    placeholder="12-digit Aadhaar"
-                    value={idNumber}
-                    onChange={event => handleAadhaarChange(event.target.value)}
-                    disabled={submitting}
-                    inputMode="numeric"
-                    maxLength={12}
-                    required
-                    aria-invalid={Boolean(aadhaarError)}
-                    style={{
-                      background: 'rgba(255,255,255,0.04)',
-                      borderColor: aadhaarError ? '#f87171' : (idNumber.length === 12 && !aadhaarError) ? '#34d399' : undefined,
-                      transition: 'border-color 0.2s'
-                    }}
-                  />
-                  {/* Progress bar while typing */}
-                  {aadhaarTouched && idNumber.length > 0 && idNumber.length < 12 && (
-                    <div style={{ marginTop: 7 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                        <span style={{ color: '#f87171', fontSize: '0.7rem', fontWeight: 600 }}>⌨ Incomplete Aadhaar</span>
-                        <span style={{ color: '#f87171', fontSize: '0.7rem', fontWeight: 700 }}>{idNumber.length} / 12 digits</span>
-                      </div>
-                      <div style={{ height: 4, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', borderRadius: 4, transition: 'width 0.2s', width: `${(idNumber.length / 12) * 100}%`, background: 'linear-gradient(90deg, #ef4444, #f87171)' }} />
-                      </div>
-                    </div>
-                  )}
-                  {/* Full bar on complete */}
-                  {idNumber.length === 12 && (
-                    <div style={{ marginTop: 7 }}>
-                      <div style={{ height: 4, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: '100%', borderRadius: 4, background: aadhaarError ? '#f87171' : 'linear-gradient(90deg, #10b981, #34d399)', transition: 'background 0.3s' }} />
-                      </div>
-                    </div>
-                  )}
-                  {/* Error message */}
-                  {aadhaarError && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, color: '#f87171', fontSize: '0.73rem', fontWeight: 700, background: 'rgba(248,113,113,0.08)', padding: '5px 8px', borderRadius: 6, border: '1px solid rgba(248,113,113,0.2)' }}>
-                      <AlertTriangle size={13} style={{ flexShrink: 0 }} /> {aadhaarError}
-                    </span>
-                  )}
-                  {/* Success message */}
-                  {idNumber.length === 12 && !aadhaarError && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, color: '#34d399', fontSize: '0.73rem', fontWeight: 700, background: 'rgba(52,211,153,0.08)', padding: '5px 8px', borderRadius: 6, border: '1px solid rgba(52,211,153,0.2)' }}>
-                      ✓ Valid Aadhaar — checksum verified
-                    </span>
-                  )}
-                </div>
-
-                {/* ── PAN Number ── */}
-                <div>
-                  <label style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
-                    PAN Number
-                  </label>
-                  <input
-                    className="hirer-kyc-input"
-                    placeholder="e.g. ABCDE1234F"
-                    value={panNumber}
-                    onChange={event => handlePANChange(event.target.value)}
-                    disabled={submitting}
-                    maxLength={10}
-                    required
-                    aria-invalid={Boolean(panError)}
-                    style={{
-                      background: 'rgba(255,255,255,0.04)',
-                      fontFamily: 'monospace', letterSpacing: '0.12em', fontSize: '1rem',
-                      borderColor: panError ? '#f87171' : (panNumber.length === 10 && !panError) ? '#34d399' : undefined,
-                      transition: 'border-color 0.2s'
-                    }}
-                  />
-                  {/* Progress bar while typing */}
-                  {panTouched && panNumber.length > 0 && panNumber.length < 10 && (
-                    <div style={{ marginTop: 7 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                        <span style={{ color: '#f87171', fontSize: '0.7rem', fontWeight: 600 }}>⌨ Incomplete PAN</span>
-                        <span style={{ color: '#f87171', fontSize: '0.7rem', fontWeight: 700 }}>{panNumber.length} / 10 characters</span>
-                      </div>
-                      <div style={{ height: 4, borderRadius: 4, background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', borderRadius: 4, transition: 'width 0.2s', width: `${(panNumber.length / 10) * 100}%`, background: 'linear-gradient(90deg, #ef4444, #f87171)' }} />
-                      </div>
-                    </div>
-                  )}
-                  {/* PAN format segment breakdown */}
-                  {panNumber.length > 0 && (
-                    <div style={{ marginTop: 7 }}>
-                      <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 5 }}>
-                        {[0,1,2,3,4].map(i => (
-                          <div key={i} style={{
-                            width: 18, height: 18, borderRadius: 4, fontSize: '0.6rem', fontWeight: 700,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: panNumber[i] ? (/[A-Z]/.test(panNumber[i]) ? 'rgba(52,211,153,0.2)' : 'rgba(248,113,113,0.2)') : 'rgba(255,255,255,0.06)',
-                            color: panNumber[i] ? (/[A-Z]/.test(panNumber[i]) ? '#34d399' : '#f87171') : '#475569',
-                            border: `1px solid ${panNumber[i] ? (/[A-Z]/.test(panNumber[i]) ? 'rgba(52,211,153,0.4)' : 'rgba(248,113,113,0.4)') : 'rgba(255,255,255,0.08)'}`
-                          }}>{panNumber[i] || 'A'}</div>
-                        ))}
-                        <span style={{ color: '#475569', fontSize: '0.62rem', margin: '0 2px' }}>·</span>
-                        {[5,6,7,8].map(i => (
-                          <div key={i} style={{
-                            width: 18, height: 18, borderRadius: 4, fontSize: '0.6rem', fontWeight: 700,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: panNumber[i] ? (/[0-9]/.test(panNumber[i]) ? 'rgba(56,189,248,0.2)' : 'rgba(248,113,113,0.2)') : 'rgba(255,255,255,0.06)',
-                            color: panNumber[i] ? (/[0-9]/.test(panNumber[i]) ? '#38bdf8' : '#f87171') : '#475569',
-                            border: `1px solid ${panNumber[i] ? (/[0-9]/.test(panNumber[i]) ? 'rgba(56,189,248,0.4)' : 'rgba(248,113,113,0.4)') : 'rgba(255,255,255,0.08)'}`
-                          }}>{panNumber[i] || '0'}</div>
-                        ))}
-                        <span style={{ color: '#475569', fontSize: '0.62rem', margin: '0 2px' }}>·</span>
-                        {[9].map(i => (
-                          <div key={i} style={{
-                            width: 18, height: 18, borderRadius: 4, fontSize: '0.6rem', fontWeight: 700,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: panNumber[i] ? (/[A-Z]/.test(panNumber[i]) ? 'rgba(52,211,153,0.2)' : 'rgba(248,113,113,0.2)') : 'rgba(255,255,255,0.06)',
-                            color: panNumber[i] ? (/[A-Z]/.test(panNumber[i]) ? '#34d399' : '#f87171') : '#475569',
-                            border: `1px solid ${panNumber[i] ? (/[A-Z]/.test(panNumber[i]) ? 'rgba(52,211,153,0.4)' : 'rgba(248,113,113,0.4)') : 'rgba(255,255,255,0.08)'}`
-                          }}>{panNumber[i] || 'A'}</div>
-                        ))}
-                      </div>
-                      <div style={{ display: 'flex', gap: 4, fontSize: '0.62rem', color: '#475569' }}>
-                        <span style={{ width: 100 }}>5 letters</span>
-                        <span style={{ width: 76 }}>4 digits</span>
-                        <span>1 letter</span>
-                      </div>
-                    </div>
-                  )}
-                  {/* Error message */}
-                  {panError && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, color: '#f87171', fontSize: '0.73rem', fontWeight: 700, background: 'rgba(248,113,113,0.08)', padding: '5px 8px', borderRadius: 6, border: '1px solid rgba(248,113,113,0.2)' }}>
-                      <AlertTriangle size={13} style={{ flexShrink: 0 }} /> {panError}
-                    </span>
-                  )}
-                  {/* Success message */}
-                  {panNumber.length === 10 && !panError && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 6, color: '#34d399', fontSize: '0.73rem', fontWeight: 700, background: 'rgba(52,211,153,0.08)', padding: '5px 8px', borderRadius: 6, border: '1px solid rgba(52,211,153,0.2)' }}>
-                      ✓ Valid PAN — format verified
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Document Upload Cards */}
-            <div style={{
-              background: 'rgba(15,23,42,0.5)', borderRadius: 12, padding: '20px',
-              border: '1px solid rgba(255,255,255,0.06)', marginBottom: 22
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 16 }}>
-                <div style={{ width: 4, height: 18, borderRadius: 2, background: 'linear-gradient(180deg,#7c3aed,#a855f7)' }} />
-                <span style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '0.88rem', letterSpacing: '0.03em' }}>Document Uploads</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
-                {DOCUMENTS.map(document => {
-                  const hasNew = Boolean(files[document.key]);
-                  const hasPrev = !hasNew && Boolean(documents[document.key]);
-                  const isLoaded = hasNew || hasPrev;
-                  const docError = fileErrors[document.key] || (submitAttempted && document.required && !isLoaded ? `Document not loaded. ${document.label} is required.` : '');
-                  const hasError = Boolean(docError);
-                  const docIcons = { idFrontDoc: '🪪', idBackDoc: '🔄', panDoc: '💳', selfieDoc: '🤳' };
-                  return (
-                    <div key={document.key} style={{
-                      borderRadius: 12,
-                      border: `1.5px dashed ${hasError ? '#f87171' : hasNew ? '#34d399' : hasPrev ? '#38bdf8' : 'rgba(255,255,255,0.12)'}`,
-                      background: hasError ? 'rgba(248,113,113,0.06)' : hasNew ? 'rgba(52,211,153,0.05)' : hasPrev ? 'rgba(56,189,248,0.05)' : 'rgba(255,255,255,0.02)',
-                      padding: '16px 14px',
-                      transition: 'all 0.2s',
-                      position: 'relative'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                        <span style={{ fontSize: '1.3rem' }}>{docIcons[document.key]}</span>
-                        <div>
-                          <div style={{ color: '#e2e8f0', fontWeight: 700, fontSize: '0.82rem' }}>
-                            {document.label}
-                            {document.required && <span style={{ color: '#f87171', marginLeft: 4 }}>*</span>}
-                          </div>
-                          <div style={{ color: '#64748b', fontSize: '0.7rem' }}>
-                            {document.required ? 'Required' : 'Optional'}
-                          </div>
-                        </div>
-                        {hasError ? (
-                          <span style={{
-                            marginLeft: 'auto', fontSize: '0.65rem', fontWeight: 700, padding: '2px 7px',
-                            borderRadius: 20, background: 'rgba(248,113,113,0.15)',
-                            color: '#f87171', border: '1px solid rgba(248,113,113,0.3)'
-                          }}>
-                            ⚠ NOT LOADED
-                          </span>
-                        ) : (hasNew || hasPrev) ? (
-                          <span style={{
-                            marginLeft: 'auto', fontSize: '0.65rem', fontWeight: 700, padding: '2px 7px',
-                            borderRadius: 20, background: hasNew ? 'rgba(52,211,153,0.15)' : 'rgba(56,189,248,0.15)',
-                            color: hasNew ? '#34d399' : '#38bdf8', border: `1px solid ${hasNew ? 'rgba(52,211,153,0.3)' : 'rgba(56,189,248,0.3)'}`
-                          }}>
-                            {hasNew ? '✓ NEW' : '✓ ON FILE'}
-                          </span>
-                        ) : null}
-                      </div>
-                      <label style={{ cursor: 'pointer', display: 'block' }}>
-                        <div style={{
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                          padding: '8px 12px', borderRadius: 8,
-                          background: hasError ? 'rgba(248,113,113,0.12)' : 'rgba(124,58,237,0.12)',
-                          border: `1px solid ${hasError ? 'rgba(248,113,113,0.3)' : 'rgba(124,58,237,0.25)'}`,
-                          color: hasError ? '#f87171' : '#a78bfa', fontSize: '0.78rem', fontWeight: 600,
-                          transition: 'all 0.15s'
-                        }}>
-                          📎 {hasNew ? 'Change file' : hasPrev ? 'Replace file' : 'Upload file'}
-                        </div>
-                        <input
-                          type="file"
-                          style={{ display: 'none' }}
-                          accept="image/*,application/pdf"
-                          disabled={submitting}
-                          onChange={event => handleFileChange(document.key, event.target.files?.[0] || null)}
-                        />
-                      </label>
-                      {hasNew && (
-                        <div style={{ marginTop: 8, color: '#94a3b8', fontSize: '0.72rem', wordBreak: 'break-all' }}>
-                          📄 {files[document.key].name}
-                        </div>
-                      )}
-                      {docError && (
-                        <div style={{
-                          marginTop: 8,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 5,
-                          color: '#f87171',
-                          fontSize: '0.72rem',
-                          fontWeight: 600,
-                          background: 'rgba(248,113,113,0.08)',
-                          padding: '5px 8px',
-                          borderRadius: 6,
-                          border: '1px solid rgba(248,113,113,0.2)'
-                        }}>
-                          <AlertTriangle size={12} style={{ flexShrink: 0 }} />
-                          <span>{docError}</span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <p style={{ color: '#475569', fontSize: '0.72rem', margin: '14px 0 0' }}>
-                Accepted formats: JPG, PNG, PDF. Max 5MB per file.
-              </p>
-            </div>
-
-            {/* Consent + Submit */}
-            {!rejected && (
-              <label style={{
-                display: 'flex', gap: 10, alignItems: 'flex-start', padding: '12px 14px',
-                borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-                color: '#cbd5e1', fontSize: '0.84rem', cursor: 'pointer', marginBottom: 20
-              }}>
-                <input type="checkbox" checked={agreed} onChange={event => setAgreed(event.target.checked)} disabled={submitting} style={{ marginTop: 2, accentColor: '#34d399' }} />
-                <span>I confirm that all submitted details and documents are accurate, genuine, and belong to me. I understand that false information may result in permanent account suspension.</span>
-              </label>
-            )}
-
+          {/* Submit Action Bar */}
+          <div style={{ textAlign: 'right', marginBottom: '40px' }}>
             <button
               type="submit"
-              disabled={submitting}
+              className="btn-primary"
+              disabled={isSubmitting || !!aadhaarError || !!panError}
               style={{
-                width: '100%', padding: '14px 20px', border: 0, borderRadius: 12, color: '#fff',
-                background: submitting ? 'rgba(100,116,139,0.5)' : 'linear-gradient(135deg, #ec4899 0%, #7c3aed 50%, #10b981 100%)',
-                backgroundSize: '200% auto',
-                fontWeight: 800, fontSize: '0.95rem', cursor: submitting ? 'wait' : 'pointer',
-                letterSpacing: '0.03em', boxShadow: submitting ? 'none' : '0 4px 20px rgba(124,58,237,0.4)',
-                transition: 'all 0.25s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8
+                background: isRejected ? 'linear-gradient(135deg, #38bdf8 0%, #2563eb 100%)' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                padding: '14px 36px', fontSize: '1rem', fontWeight: 700, borderRadius: '12px',
+                border: 'none', color: '#fff', cursor: isSubmitting ? 'wait' : 'pointer',
+                boxShadow: isRejected ? '0 4px 18px rgba(56, 189, 248, 0.3)' : '0 4px 18px rgba(16, 185, 129, 0.3)'
               }}
             >
-              {submitting ? (
-                <>⏳ Submitting…</>
-              ) : rejected ? (
-                <>🔄 Re-submit Profile &amp; KYC</>
-              ) : (
-                <><ShieldCheck size={17} /> Submit for Verification</>
-              )}
+              {isSubmitting
+                ? 'Submitting Application...'
+                : isRejected
+                ? 'Re-Submit Corrected Profile & KYC Application'
+                : 'Submit Complete Profile & KYC for Verification'}
             </button>
-          </section>
+          </div>
         </form>
       )}
+
+      {/* Verification Audit History */}
+      {client?.kycDocuments?.verificationHistory?.length > 0 && (
+        <div className="client-panel">
+          <div className="client-panel-title" style={{ marginBottom: '16px' }}>
+            <History size={18} color="#c084fc" />
+            <span>Verification Audit History</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {client.kycDocuments.verificationHistory.map((item, i) => (
+              <div key={i} style={{
+                display: 'flex', gap: '14px', alignItems: 'flex-start',
+                padding: '12px 16px', background: 'rgba(15,23,42,0.4)',
+                borderRadius: '10px',
+                borderLeft: `3px solid ${item.status === 'VERIFIED' ? '#10b981' : item.status === 'REJECTED' ? '#ef4444' : '#38bdf8'}`
+              }}>
+                <div style={{ minWidth: '130px', fontSize: '0.78rem', color: '#94a3b8' }}>{item.date}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{
+                    fontWeight: 700, fontSize: '0.88rem',
+                    color: item.status === 'VERIFIED' ? '#34d399' : item.status === 'REJECTED' ? '#f87171' : '#38bdf8',
+                    marginBottom: '2px'
+                  }}>
+                    {item.status}
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>{item.note}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Form Document Lightbox Preview Modal */}
+      <DocumentPreviewModal doc={formPreviewDoc} onClose={() => setFormPreviewDoc(null)} />
     </div>
   );
 }

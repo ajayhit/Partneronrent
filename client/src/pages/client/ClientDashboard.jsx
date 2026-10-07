@@ -26,6 +26,7 @@ import WalletTab from './tabs/WalletTab';
 import HelpSupportTab from './tabs/HelpSupportTab';
 import SettingsTab from './tabs/SettingsTab';
 import HirerKycTab from './tabs/HirerKycTab';
+import SubscriptionTab from '../../components/SubscriptionTab';
 
 // Modals
 import PartnerDetailModal from './modals/PartnerDetailModal';
@@ -35,9 +36,18 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
   const { activeUser, logout, updateSession } = useAuth();
   const { openChat, openSOS, openReview, showToast } = useApp();
 
-  const [activeTab, setActiveTab] = useState(() =>
-    (activeUser?.kycStatus || 'not_submitted') === 'verified' ? initialTab : 'kyc'
-  );
+  const [activeTab, setActiveTab] = useState(() => {
+    // Priority: Subscription gate → KYC gate → Dashboard
+    const subActive = Boolean(
+      activeUser?.isSubscribed &&
+      activeUser?.subscriptionExpiresAt &&
+      new Date(activeUser.subscriptionExpiresAt) > new Date()
+    );
+    if (!subActive) return 'subscription';
+    const kycStatus = activeUser?.kycStatus || 'not_submitted';
+    if (kycStatus !== 'verified') return 'kyc';
+    return initialTab;
+  });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // Data state
@@ -57,11 +67,21 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
     loadData();
   }, [activeUser?.id]);
 
+  const isSubscribed = Boolean(
+    (clientProfile?.isSubscribed || activeUser?.isSubscribed) &&
+    (clientProfile?.subscriptionExpiresAt || activeUser?.subscriptionExpiresAt) &&
+    new Date(clientProfile?.subscriptionExpiresAt || activeUser?.subscriptionExpiresAt) > new Date()
+  );
+
+  // Guard: Subscription gate (highest priority) → KYC gate
   useEffect(() => {
-    if (!isKycVerified && activeTab !== 'kyc') {
+    const freeTabsAlways = ['subscription', 'kyc', 'settings'];
+    if (!isSubscribed && !freeTabsAlways.includes(activeTab)) {
+      setActiveTab('subscription');
+    } else if (isSubscribed && !isKycVerified && activeTab !== 'kyc' && activeTab !== 'settings') {
       setActiveTab('kyc');
     }
-  }, [isKycVerified, activeTab]);
+  }, [isKycVerified, isSubscribed]);
 
   useEffect(() => {
     try {
@@ -73,11 +93,22 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
   }, [activeUser?.id, favorites]);
 
   const handleTabChange = (tabId) => {
-    if (!isKycVerified && tabId !== 'kyc' && tabId !== 'settings') {
-      showToast('Please complete hirer KYC verification to access the panel.', 'warning');
+    const freeTabsAlways = ['subscription', 'kyc', 'settings'];
+
+    // Gate 1: Subscription (highest priority - must subscribe first)
+    if (!isSubscribed && !freeTabsAlways.includes(tabId)) {
+      showToast('Please subscribe to Annual Membership (₹249/yr) to access this section.', 'warning');
+      setActiveTab('subscription');
+      return;
+    }
+
+    // Gate 2: KYC (after subscribing, must complete KYC)
+    if (isSubscribed && !isKycVerified && tabId !== 'kyc' && tabId !== 'settings' && tabId !== 'subscription') {
+      showToast('Please complete Hirer KYC verification to access this section.', 'warning');
       setActiveTab('kyc');
       return;
     }
+
     if (tabId === 'find-companion') {
       setActivePage?.('directory');
       return;
@@ -328,6 +359,19 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
           <SettingsTab
             client={clientInfo}
             onLogout={handleLogout}
+          />
+        );
+
+      case 'subscription':
+        return (
+          <SubscriptionTab
+            user={clientInfo}
+            role="client"
+            showToast={showToast}
+            onSubscribed={(updatedUser) => {
+              setClientProfile(prev => ({ ...prev, ...updatedUser }));
+              updateSession?.({ ...activeUser, ...updatedUser });
+            }}
           />
         );
 
