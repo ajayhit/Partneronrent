@@ -262,6 +262,23 @@ export function AuthProvider({ children }) {
     };
     const updatedUsers = [...users, newUser];
     saveMockUsers(updatedUsers);
+
+    // Sync to backend server so mobile app and web share all registered accounts
+    try {
+      fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+          role,
+          city: formData.city || 'Delhi NCR'
+        })
+      }).catch(() => {});
+    } catch {}
+
     const { password: _pw, ...safeUser } = newUser;
     setSession(safeUser);
     return { success: true, user: safeUser };

@@ -78,8 +78,12 @@ app.get('/api/partners', (req, res) => {
   const db = readData();
   let partners = db.partners;
 
-  // Strict Hirer visibility: only show partners who are ONLINE and KYC VERIFIED
-  partners = partners.filter(p => p.isOnline === true && p.kycStatus === 'verified');
+  // Strict Hirer visibility: only show partners who are ONLINE and KYC VERIFIED, or verified companions if includeOffline is set
+  if (req.query.includeOffline === 'true') {
+    partners = partners.filter(p => p.kycStatus === 'verified');
+  } else {
+    partners = partners.filter(p => p.isOnline === true && p.kycStatus === 'verified');
+  }
 
   const { city, service, gender, search, maxRate } = req.query;
 
@@ -508,7 +512,6 @@ app.post('/api/bookings', (req, res) => {
   const platformRevenue = totalAmount - partnerShare;
 
   // Check wallet balance if paying via wallet
-  const clientUser = db.users.find(u => u.id === clientId);
   if (payViaWallet && clientUser) {
     if (clientUser.walletBalance < totalAmount) {
       return res.status(400).json({ error: 'Insufficient wallet balance' });
@@ -1583,26 +1586,88 @@ app.post('/api/auth/login', (req, res) => {
   const { email, password, role } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({ success: false, message: 'Email and password are required.' });
+    return res.status(400).json({ success: false, message: 'Email or phone number and password are required.' });
   }
 
-  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedInput = String(email).trim().toLowerCase();
+  const cleanInputPhone = normalizedInput.replace(/[\s\-\+\(\)]/g, '');
 
-  // Find user by email and role (with admin alias tolerance for .in / .com)
-  const user = db.users.find(u => {
-    const userEmail = (u.email || '').toLowerCase();
-    const roleMatches = !role || u.role === role;
+  // 1. Find in db.users by email OR phone
+  let user = (db.users || []).find(u => {
+    const userEmail = (u.email || '').toLowerCase().trim();
+    const cleanUserPhone = String(u.phone || '').replace(/[\s\-\+\(\)]/g, '');
+    const last10Input = cleanInputPhone.slice(-10);
+    const last10User = cleanUserPhone.slice(-10);
+    const phoneMatches = last10Input.length >= 10 && last10User.length >= 10 && last10Input === last10User;
+
+    const roleMatches =
+      !role ||
+      u.role === role ||
+      (u.role === 'both' && (role === 'client' || role === 'partner')) ||
+      (role === 'both' && (u.role === 'client' || u.role === 'partner'));
+
     const emailMatches =
-      userEmail === normalizedEmail ||
-      (u.role === 'admin' && (normalizedEmail === 'admin@partneronrent.in' || normalizedEmail === 'admin@partneronrent.com'));
+      userEmail === normalizedInput ||
+      phoneMatches ||
+      (cleanInputPhone.length >= 6 && cleanUserPhone.includes(cleanInputPhone)) ||
+      (u.role === 'admin' && (normalizedInput === 'admin@partneronrent.in' || normalizedInput === 'admin@partneronrent.com'));
 
     return roleMatches && emailMatches;
   });
 
+  // 2. If not found in db.users, check if they exist in db.partners
+  if (!user && Array.isArray(db.partners)) {
+    const partner = db.partners.find(p => {
+      const pEmail = (p.email || '').toLowerCase().trim();
+      const cleanPartnerPhone = String(p.phone || '').replace(/[\s\-\+\(\)]/g, '');
+      const last10Input = cleanInputPhone.slice(-10);
+      const last10Partner = cleanPartnerPhone.slice(-10);
+      const phoneMatches = last10Input.length >= 10 && last10Partner.length >= 10 && last10Input === last10Partner;
+
+      const emailMatches =
+        pEmail === normalizedInput ||
+        phoneMatches ||
+        (cleanInputPhone.length >= 6 && cleanPartnerPhone.includes(cleanInputPhone));
+      return emailMatches;
+    });
+
+    if (partner) {
+      // Find if user already exists for this partner
+      user = (db.users || []).find(u => u.id === partner.id || (partner.email && u.email && u.email.toLowerCase() === partner.email.toLowerCase()));
+      if (!user) {
+        // Create user record for this partner
+        user = {
+          id: partner.id,
+          name: partner.name || 'Partner',
+          email: partner.email || normalizedInput,
+          phone: partner.phone || '',
+          password: partner.password || password,
+          role: 'partner',
+          partnerProfileId: partner.id,
+          city: partner.city || 'Delhi NCR',
+          avatar: partner.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+          walletBalance: partner.walletBalance || 0,
+          kycStatus: partner.kycStatus || 'verified',
+          isSubscribed: partner.isSubscribed ?? false,
+          createdAt: new Date().toISOString()
+        };
+        if (!Array.isArray(db.users)) db.users = [];
+        db.users.push(user);
+        writeData(db);
+      }
+    }
+  }
+
+  // If user has no password yet (legacy/imported client), set it on login
+  if (user && !user.password && password) {
+    user.password = password;
+    writeData(db);
+  }
+
   if (!user || user.password !== password) {
     return res.status(401).json({
       success: false,
-      message: 'Invalid credentials. Please verify your email and password.'
+      message: 'Invalid credentials. Please verify your email or phone number and password.'
     });
   }
 
@@ -1622,6 +1687,46 @@ app.post('/api/auth/login', (req, res) => {
   res.json({
     success: true,
     message: 'Authentication successful.',
+    user: safeUser
+  });
+});
+
+app.post('/api/auth/register', (req, res) => {
+  const db = readData();
+  const { name, email, phone, password, role = 'client', city = 'Delhi NCR' } = req.body;
+  if (!name || !email || !password) {
+    return res.status(400).json({ success: false, message: 'Name, email, and password are required.' });
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  const existing = (db.users || []).find(u => (u.email || '').toLowerCase() === normalizedEmail);
+  if (existing) {
+    return res.status(400).json({ success: false, message: 'An account with this email already exists.' });
+  }
+
+  const newUser = {
+    id: `client-${Date.now()}`,
+    name: name.trim(),
+    email: normalizedEmail,
+    phone: phone ? String(phone).trim() : '+91 98765 43210',
+    password,
+    role: role || 'client',
+    city: city || 'Delhi NCR',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    walletBalance: 0,
+    isSubscribed: false,
+    kycStatus: 'not_submitted',
+    createdAt: new Date().toISOString()
+  };
+
+  if (!Array.isArray(db.users)) db.users = [];
+  db.users.push(newUser);
+  writeData(db);
+
+  const { password: _p, ...safeUser } = newUser;
+  res.status(201).json({
+    success: true,
+    message: 'Account registered successfully.',
     user: safeUser
   });
 });
