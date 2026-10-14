@@ -133,6 +133,24 @@ app.put('/api/partners/:id', (req, res) => {
   if (index === -1) return res.status(404).json({ error: 'Partner not found' });
 
   db.partners[index] = { ...db.partners[index], ...req.body };
+
+  // Sync with matching user in db.users if present
+  const partner = db.partners[index];
+  const userIdx = db.users.findIndex(u => u.id === req.params.id || u.partnerProfileId === req.params.id || (partner.email && u.email && u.email.toLowerCase() === partner.email.toLowerCase()));
+  if (userIdx !== -1) {
+    if (req.body.name) db.users[userIdx].name = req.body.name;
+    if (req.body.avatar) db.users[userIdx].avatar = req.body.avatar;
+    if (req.body.phone) db.users[userIdx].phone = req.body.phone;
+    if (req.body.mobile) db.users[userIdx].phone = req.body.mobile;
+    if (req.body.city) db.users[userIdx].city = req.body.city;
+    if (req.body.gender) db.users[userIdx].gender = req.body.gender;
+    if (req.body.dob) db.users[userIdx].dob = req.body.dob;
+    if (req.body.address !== undefined) db.users[userIdx].address = req.body.address;
+    if (req.body.emergencyContact !== undefined) db.users[userIdx].emergencyContact = req.body.emergencyContact;
+    if (req.body.preferredLanguages) db.users[userIdx].preferredLanguages = req.body.preferredLanguages;
+    if (req.body.languages) db.users[userIdx].languages = req.body.languages;
+  }
+
   writeData(db);
   res.json(db.partners[index]);
 });

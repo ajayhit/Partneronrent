@@ -77,8 +77,6 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
 
   useEffect(() => {
     loadAllData();
-    const interval = setInterval(loadAllData, 8000);
-    return () => clearInterval(interval);
   }, [activePartner?.id]);
 
   const loadAllData = async () => {
@@ -100,17 +98,20 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
             kycRejectionReason: partnerData.kycRejectionReason
           });
         }
-        // Redirect priority: Subscription → KYC → stay
+        // Redirect priority on initial load if not on an allowed tab
         const subActive = Boolean(
           partnerData.isSubscribed &&
           partnerData.subscriptionExpiresAt &&
           new Date(partnerData.subscriptionExpiresAt) > new Date()
         );
-        if (!subActive) {
-          setActiveTab(prev => prev === 'subscription' ? prev : 'subscription');
-        } else if (!partnerData.kycStatus || partnerData.kycStatus !== 'verified') {
-          setActiveTab('kyc');
-        }
+        const freeTabsAlways = ['subscription', 'kyc', 'guidelines', 'settings', 'profile'];
+        setActiveTab(prev => {
+          if (!subActive && !freeTabsAlways.includes(prev)) return 'subscription';
+          if ((!partnerData.kycStatus || partnerData.kycStatus !== 'verified') && !freeTabsAlways.includes(prev)) {
+            return 'kyc';
+          }
+          return prev;
+        });
       }
       if (bookingList && Array.isArray(bookingList)) setBookings(bookingList);
       if (payoutList && Array.isArray(payoutList)) setPayouts(payoutList);
@@ -123,7 +124,7 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
 
   // Guard tab switching: Subscription gate (highest) → KYC gate → allow
   const handleTabChange = (tabId) => {
-    const freeTabsAlways = ['subscription', 'kyc', 'guidelines', 'settings'];
+    const freeTabsAlways = ['subscription', 'kyc', 'guidelines', 'settings', 'profile'];
 
     // Gate 1: Subscription (must subscribe first)
     const isSubActive = Boolean(
@@ -181,7 +182,14 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
       updateSession({
         ...activePartner,
         name: updated.name || activePartner?.name,
-        city: updated.city || activePartner?.city
+        city: updated.city || activePartner?.city,
+        avatar: updated.avatar || activePartner?.avatar,
+        phone: updated.phone || updated.mobile || activePartner?.phone,
+        gender: updated.gender || activePartner?.gender,
+        dob: updated.dob || activePartner?.dob,
+        address: updated.address || activePartner?.address,
+        emergencyContact: updated.emergencyContact || activePartner?.emergencyContact,
+        preferredLanguages: updated.preferredLanguages || activePartner?.preferredLanguages
       });
     }
     return updated;
