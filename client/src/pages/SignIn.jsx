@@ -101,7 +101,7 @@ export default function SignIn({ setActivePage }) {
     }
     setLoading(true);
     await new Promise(r => setTimeout(r, 900));
-    const result = register({ name, email, phone, password, city }, registerAs);
+    const result = await register({ name, email, phone, password, city }, registerAs);
     setLoading(false);
     if (!result.success) {
       setError(result.message);

@@ -7,6 +7,7 @@ import './partner.css';
 import {
   fetchBookings,
   fetchPartnerById,
+  fetchWallet,
   togglePartnerOnline,
   updatePartnerProfile,
   submitPartnerKYC,
@@ -69,6 +70,7 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
   const [partner, setPartner] = useState(activePartner || null);
   const [bookings, setBookings] = useState([]);
   const [payouts, setPayouts] = useState([]);
+  const [walletTransactions, setWalletTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // OTP inputs for starting sessions
@@ -79,25 +81,55 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
     loadAllData();
   }, [activePartner?.id]);
 
-  const loadAllData = async () => {
-    const partnerId = activePartner?.id;
-    try {
-      const [partnerData, bookingList, payoutList] = await Promise.all([
-        fetchPartnerById(partnerId),
-        fetchBookings({ partnerId }),
-        fetchPayouts({ partnerId })
-      ]);
-      if (partnerData && !partnerData.error) {
-        setPartner(prev => ({ ...(prev || {}), ...partnerData }));
-        if (updateSession && (partnerData.kycStatus !== activePartner?.kycStatus || partnerData.kycRejectionReason !== activePartner?.kycRejectionReason)) {
-          updateSession({
-            ...activePartner,
-            name: partnerData.name || activePartner?.name,
-            city: partnerData.city || activePartner?.city,
-            kycStatus: partnerData.kycStatus,
-            kycRejectionReason: partnerData.kycRejectionReason
-          });
+  useEffect(() => {
+    if (!activePartner?.id || !['dashboard', 'earnings', 'payouts'].includes(activeTab)) return;
+
+    fetchWallet(activePartner.id)
+      .then(wallet => {
+        if (wallet && typeof wallet.balance === 'number') {
+          setPartner(prev => ({ ...(prev || activePartner), walletBalance: wallet.balance }));
+          if (Array.isArray(wallet.transactions)) {
+            setWalletTransactions(wallet.transactions);
+          }
+          updateSession?.({ walletBalance: wallet.balance });
         }
+      })
+      .catch(err => {
+        console.error('Failed to refresh partner wallet balance:', err);
+      });
+  }, [activeTab, activePartner?.id]);
+
+  const loadAllData = async () => {
+    const accountId = activePartner?.id;
+    const partnerId = activePartner?.partnerProfileId || accountId;
+    try {
+      const [partnerData, walletData, bookingList, payoutList] = await Promise.all([
+        fetchPartnerById(partnerId).catch(() => null),
+        fetchWallet(accountId).catch(() => null),
+        fetchBookings({ partnerId }).catch(() => []),
+        fetchPayouts({ partnerId }).catch(() => [])
+      ]);
+      const currentPartner = partnerData && !partnerData.error ? partnerData : {};
+      const balance = walletData?.balance ?? currentPartner.walletBalance ?? activePartner?.walletBalance ?? 0;
+      setPartner(prev => ({ ...(prev || {}), ...currentPartner, walletBalance: balance }));
+      if (walletData && Array.isArray(walletData.transactions)) {
+        setWalletTransactions(walletData.transactions);
+      }
+      if (updateSession && (
+        currentPartner.kycStatus !== activePartner?.kycStatus ||
+        currentPartner.kycRejectionReason !== activePartner?.kycRejectionReason ||
+        balance !== activePartner?.walletBalance
+      )) {
+        updateSession({
+          ...activePartner,
+          name: currentPartner.name || activePartner?.name,
+          city: currentPartner.city || activePartner?.city,
+          walletBalance: balance,
+          kycStatus: currentPartner.kycStatus || activePartner?.kycStatus,
+          kycRejectionReason: currentPartner.kycRejectionReason ?? activePartner?.kycRejectionReason
+        });
+      }
+      if (partnerData && !partnerData.error) {
         // Redirect priority on initial load if not on an allowed tab
         const subActive = Boolean(
           partnerData.isSubscribed &&
@@ -534,6 +566,7 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
             partner={partner}
             payouts={payouts}
             bookings={bookings}
+            walletTransactions={walletTransactions}
             onTabChange={handleTabChange}
             showToast={showToast}
           />
@@ -543,6 +576,7 @@ export default function PartnerDashboard({ initialTab = 'dashboard', setActivePa
           <BankDetailsTab
             partner={partner}
             payouts={payouts}
+            walletTransactions={walletTransactions}
             onRequestPayout={handleRequestPayout}
             onUpdateBankDetails={handleUpdateBankDetails}
             showToast={showToast}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart2, 
   TrendingUp, 
@@ -7,18 +7,47 @@ import {
   Users, 
   HeartHandshake, 
   MapPin,
-  ArrowUpRight
+  ArrowUpRight,
+  Wallet,
+  RefreshCw
 } from 'lucide-react';
-import { formatCurrency } from '../../../utils/helpers';
+import { formatCurrency, formatDateTime } from '../../../utils/helpers';
+import { fetchAdminTransactions } from '../../../utils/api';
 
 export default function ReportsTab({
   stats,
   partners = [],
-  bookings = []
+  bookings = [],
+  transactions = [],
+  onRefresh
 }) {
   const [reportView, setReportView] = useState('revenue');
+  const [localTransactions, setLocalTransactions] = useState([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const loadTransactions = async () => {
+    setIsRefreshing(true);
+    try {
+      const data = await fetchAdminTransactions();
+      if (Array.isArray(data)) setLocalTransactions(data);
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Failed to load report transactions:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    if (transactions.length === 0) {
+      loadTransactions();
+    }
+  }, [transactions.length]);
+
+  const effectiveTransactions = transactions.length > 0 ? transactions : localTransactions;
   const topPartnersByEarnings = [...partners].sort((a, b) => (b.totalEarnings || 0) - (a.totalEarnings || 0)).slice(0, 5);
+  const walletCredits = effectiveTransactions.filter(transaction => transaction.type === 'wallet_credit');
+  const totalWalletCredits = walletCredits.reduce((sum, transaction) => sum + (Number(transaction.amount) || 0), 0);
 
   const avgBookingValue = stats?.gmv && stats?.totalBookings ? Math.round(stats.gmv / stats.totalBookings) : 0;
   const netMargin = stats?.gmv > 0 ? `${Math.round(((stats.platformRevenue || 0) / stats.gmv) * 100)}%` : '0%';
@@ -31,24 +60,41 @@ export default function ReportsTab({
     <div>
       {/* Header Tabs */}
       <div className="admin-card-header">
-        <div className="admin-filter-tabs">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <div className="admin-filter-tabs">
+            <button
+              className={`admin-filter-btn ${reportView === 'revenue' ? 'active' : ''}`}
+              onClick={() => setReportView('revenue')}
+            >
+              Business & Revenue Reports
+            </button>
+            <button
+              className={`admin-filter-btn ${reportView === 'partners' ? 'active' : ''}`}
+              onClick={() => setReportView('partners')}
+            >
+              Partner Performance Reports
+            </button>
+            <button
+              className={`admin-filter-btn ${reportView === 'customers' ? 'active' : ''}`}
+              onClick={() => setReportView('customers')}
+            >
+              Customer Analytics
+            </button>
+            <button
+              className={`admin-filter-btn ${reportView === 'wallet-credits' ? 'active' : ''}`}
+              onClick={() => setReportView('wallet-credits')}
+            >
+              Wallet Credits ({walletCredits.length})
+            </button>
+          </div>
           <button
-            className={`admin-filter-btn ${reportView === 'revenue' ? 'active' : ''}`}
-            onClick={() => setReportView('revenue')}
+            type="button"
+            className="btn-admin-action btn-admin-secondary"
+            onClick={loadTransactions}
+            disabled={isRefreshing}
+            title="Refresh reports data"
           >
-            Business & Revenue Reports
-          </button>
-          <button
-            className={`admin-filter-btn ${reportView === 'partners' ? 'active' : ''}`}
-            onClick={() => setReportView('partners')}
-          >
-            Partner Performance Reports
-          </button>
-          <button
-            className={`admin-filter-btn ${reportView === 'customers' ? 'active' : ''}`}
-            onClick={() => setReportView('customers')}
-          >
-            Customer Analytics
+            <RefreshCw size={14} className={isRefreshing ? 'spin' : ''} /> Refresh
           </button>
         </div>
       </div>
@@ -86,12 +132,12 @@ export default function ReportsTab({
         </div>
 
         <div className="admin-stat-card">
-          <div className="admin-stat-label">Dispute Resolution Rate</div>
-          <div className="admin-stat-value" style={{ color: '#fbbf24' }}>
-            {stats?.openDisputes === 0 ? '100%' : 'In Progress'}
+          <div className="admin-stat-label">Wallet Credits Disbursed</div>
+          <div className="admin-stat-value" style={{ color: '#34d399' }}>
+            {formatCurrency(totalWalletCredits)}
           </div>
           <div className="admin-stat-footer" style={{ color: '#94a3b8' }}>
-            {stats?.openDisputes > 0 ? `${stats.openDisputes} disputes pending` : 'Zero open disputes'}
+            {walletCredits.length} credit transactions recorded
           </div>
         </div>
       </div>
@@ -240,6 +286,56 @@ export default function ReportsTab({
           </div>
         </div>
       )}
+
+      {/* Admin Wallet Credit Report (prominently displayed) */}
+      <div className="admin-card" style={{ marginTop: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '14px' }}>
+          <div>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Wallet size={18} color="#38bdf8" /> Admin Wallet Credit Report
+            </h3>
+            <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '4px' }}>
+              {walletCredits.length} credits · {formatCurrency(totalWalletCredits)} total disbursed
+            </div>
+          </div>
+        </div>
+        <div className="admin-table-wrapper">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Recipient</th>
+                <th>Account Type</th>
+                <th>Reason</th>
+                <th>Amount</th>
+                <th>Admin</th>
+              </tr>
+            </thead>
+            <tbody>
+              {walletCredits.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
+                    No admin wallet credits recorded.
+                  </td>
+                </tr>
+              ) : walletCredits.map(transaction => (
+                <tr key={transaction.id}>
+                  <td>{formatDateTime(transaction.date || transaction.createdAt)}</td>
+                  <td>{transaction.userName || transaction.customerName || transaction.partnerName || '—'}</td>
+                  <td>
+                    <span className={`admin-badge ${transaction.userRole === 'partner' ? 'admin-badge-purple' : 'admin-badge-emerald'}`}>
+                      {transaction.userRole === 'partner' ? 'Partner' : 'Customer'}
+                    </span>
+                  </td>
+                  <td>{transaction.description || '—'}</td>
+                  <td><strong style={{ color: '#34d399' }}>{formatCurrency(transaction.amount || 0)}</strong></td>
+                  <td>{transaction.adminName || 'Admin'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

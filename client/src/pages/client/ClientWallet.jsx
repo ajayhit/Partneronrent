@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import { topupWallet, fetchWallet } from '../../utils/api';
-import { formatCurrency } from '../../utils/helpers';
+import { formatCurrency, formatDateTime } from '../../utils/helpers';
 import { Wallet, PlusCircle, ArrowUpRight, ArrowDownLeft, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 export default function ClientWallet() {
@@ -11,6 +11,31 @@ export default function ClientWallet() {
   const [topupAmount, setTopupAmount] = useState(2000);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [transactions, setTransactions] = useState([]);
+  const [isLoadingWallet, setIsLoadingWallet] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadWallet = async () => {
+      try {
+        const wallet = await fetchWallet(activeUser?.id);
+        if (cancelled) return;
+        setActiveUser({ walletBalance: wallet.balance });
+        setTransactions(Array.isArray(wallet.transactions) ? wallet.transactions : []);
+      } catch (error) {
+        if (!cancelled) console.error('Failed to load customer wallet:', error);
+      } finally {
+        if (!cancelled) setIsLoadingWallet(false);
+      }
+    };
+
+    if (activeUser?.id) loadWallet();
+    else setIsLoadingWallet(false);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeUser?.id]);
 
   const handleTopup = async (e) => {
     e.preventDefault();
@@ -22,7 +47,13 @@ export default function ClientWallet() {
     setIsSubmitting(true);
     try {
       const res = await topupWallet(activeUser?.id, topupAmount);
-      setActiveUser(prev => ({ ...prev, walletBalance: res.walletBalance }));
+      setActiveUser({ walletBalance: res.walletBalance });
+      try {
+        const wallet = await fetchWallet(activeUser?.id);
+        setTransactions(Array.isArray(wallet.transactions) ? wallet.transactions : []);
+      } catch (error) {
+        console.error('Failed to refresh customer wallet activity:', error);
+      }
       showToast(`Wallet topped up by ${formatCurrency(topupAmount)} successfully!`);
       setSuccessMsg(`Added ${formatCurrency(topupAmount)} to your wallet!`);
       setTimeout(() => setSuccessMsg(''), 4000);
@@ -57,7 +88,7 @@ export default function ClientWallet() {
           Available Balance
         </div>
         <div style={{ fontSize: '3rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '14px' }}>
-          {formatCurrency(activeUser?.walletBalance || 0)}
+          {isLoadingWallet ? 'Loading...' : formatCurrency(activeUser?.walletBalance || 0)}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.84rem', opacity: 0.95 }}>
           <ShieldCheck size={18} /> Escrow Protection: Funds released only when you share OTP with your companion.
@@ -136,11 +167,31 @@ export default function ClientWallet() {
       {/* Recent Wallet Transactions Ledger */}
       <div className="glass-panel" style={{ padding: '24px' }}>
         <h3 style={{ fontSize: '1.2rem', marginBottom: '16px' }}>Recent Wallet Activity</h3>
+        {transactions.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '32px', color: '#64748b', fontSize: '0.9rem' }}>
-            No wallet transactions yet. Make your first top-up to get started!
+            No wallet transactions yet.
           </div>
-
-        </div>
+        ) : transactions.map(transaction => (
+          <div
+            key={transaction.id}
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '16px',
+              padding: '14px 0',
+              borderBottom: '1px solid var(--border-subtle)'
+            }}
+          >
+            <div>
+              <div style={{ fontWeight: 700 }}>{transaction.description || transaction.type || 'Wallet transaction'}</div>
+              <div style={{ color: '#94a3b8', fontSize: '0.78rem' }}>{formatDateTime(transaction.date)}</div>
+            </div>
+            <span style={{ fontWeight: 800, color: '#34d399', whiteSpace: 'nowrap' }}>
+              +{formatCurrency(transaction.amount || 0)}
+            </span>
+          </div>
+        ))}
       </div>
 
     </div>

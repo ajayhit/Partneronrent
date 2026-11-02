@@ -36,6 +36,54 @@ function writeData(data) {
 const VERHOEFF_D = [[0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],[4,0,1,2,3,9,5,6,7,8],[5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],[8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0]];
 const VERHOEFF_P = [[0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],[9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]];
 
+function buildPartnerProfileFromUser(user) {
+  return {
+    id: user.partnerProfileId || user.id,
+    userId: user.id,
+    name: user.name || user.email || 'Partner Applicant',
+    email: user.email || '',
+    phone: user.phone || '',
+    city: user.city || 'Delhi NCR',
+    avatar: user.avatar || '/default-avatar.jpg',
+    tagline: user.tagline || '',
+    bio: user.bio || '',
+    age: user.age || 24,
+    gender: user.gender || '',
+    hourlyRate: Number(user.hourlyRate) || 1500,
+    walletBalance: Number(user.walletBalance) || 0,
+    totalEarnings: Number(user.totalEarnings) || 0,
+    rating: Number(user.rating) || 5,
+    reviewCount: Number(user.reviewCount) || 0,
+    completedHours: Number(user.completedHours) || 0,
+    services: Array.isArray(user.services) ? user.services : [],
+    languages: Array.isArray(user.languages) ? user.languages : ['English', 'Hindi'],
+    areas: Array.isArray(user.areas) ? user.areas : [],
+    interests: Array.isArray(user.interests) ? user.interests : [],
+    kycStatus: user.kycStatus || 'not_submitted',
+    kycRejectionReason: user.kycRejectionReason || null,
+    kycDocuments: user.kycDocuments || {},
+    status: user.status || 'new_application',
+    isOnline: Boolean(user.isOnline),
+    createdAt: user.createdAt
+  };
+}
+
+function findOrCreatePartnerProfile(db, id) {
+  const existingPartner = (db.partners || []).find(partner => partner.id === id || partner.userId === id);
+  if (existingPartner) return existingPartner;
+
+  const user = (db.users || []).find(account =>
+    (account.role === 'partner' || account.role === 'both') &&
+    (account.id === id || account.partnerProfileId === id)
+  );
+  if (!user) return null;
+
+  const partner = buildPartnerProfileFromUser(user);
+  if (!Array.isArray(db.partners)) db.partners = [];
+  db.partners.push(partner);
+  return partner;
+}
+
 function isValidAadhaar(value) {
   if (!/^[2-9]\d{11}$/.test(value)) return false;
   const reversed = value.split('').reverse().map(Number);
@@ -619,6 +667,16 @@ app.post('/api/bookings/:id/end-session', (req, res) => {
     partner.walletBalance = (partner.walletBalance || 0) + booking.partnerShare;
     partner.totalEarnings = (partner.totalEarnings || 0) + booking.partnerShare;
     partner.completedHours = (partner.completedHours || 0) + booking.durationHours;
+    const linkedUser = (db.users || []).find(u =>
+      u.id === partner.id ||
+      u.partnerProfileId === partner.id ||
+      partner.userId === u.id ||
+      (u.email && partner.email && u.email.toLowerCase() === partner.email.toLowerCase())
+    );
+    if (linkedUser) {
+      linkedUser.walletBalance = partner.walletBalance;
+      linkedUser.totalEarnings = partner.totalEarnings;
+    }
   }
 
   writeData(db);
@@ -689,14 +747,72 @@ app.post('/api/messages/:bookingId', (req, res) => {
 // 6. Wallets & Payouts
 app.get('/api/wallet/:userId', (req, res) => {
   const db = readData();
-  const user = db.users.find(u => u.id === req.params.userId);
+  if (!db) return res.status(500).json({ error: 'Database unavailable' });
+
+  const reqId = req.params.userId;
+  const user = (db.users || []).find(u => u.id === reqId);
+  const partner = (db.partners || []).find(p => p.id === reqId || p.userId === reqId);
+
   if (user) {
-    return res.json({ balance: user.walletBalance || 0, user });
+    const linkedPartnerProfiles = user.role === 'partner' || user.role === 'both'
+      ? (db.partners || [])
+        .filter(p =>
+          p.id === user.id ||
+          p.id === user.partnerProfileId ||
+          p.userId === user.id ||
+          (p.email && user.email && p.email.toLowerCase() === user.email.toLowerCase())
+        )
+      : [];
+    const partnerProfileIds = linkedPartnerProfiles.map(p => p.id);
+    const partnerProfile = linkedPartnerProfiles.find(p =>
+      p.id === user.partnerProfileId || p.id === user.id || p.userId === user.id
+    ) || linkedPartnerProfiles[0];
+
+    const balance = partnerProfile ? (partnerProfile.walletBalance ?? user.walletBalance ?? 0) : (user.walletBalance ?? 0);
+    let needSave = false;
+    if (user.walletBalance !== balance) {
+      user.walletBalance = balance;
+      needSave = true;
+    }
+    if (partnerProfile && partnerProfile.walletBalance !== balance) {
+      partnerProfile.walletBalance = balance;
+      needSave = true;
+    }
+    if (needSave) writeData(db);
+
+    const matchIds = new Set([user.id, ...partnerProfileIds]);
+    const transactions = (db.transactions || [])
+      .filter(transaction => matchIds.has(transaction.userId) || (transaction.partnerId && matchIds.has(transaction.partnerId)))
+      .sort((left, right) => new Date(right.date || right.createdAt || 0) - new Date(left.date || left.createdAt || 0));
+
+    return res.json({ balance, user: { ...user, walletBalance: balance }, transactions });
   }
 
-  const partner = db.partners.find(p => p.id === req.params.userId || p.userId === req.params.userId);
   if (partner) {
-    return res.json({ balance: partner.walletBalance || 0, partner });
+    const linkedUser = (db.users || []).find(u =>
+      u.id === partner.id ||
+      u.id === partner.userId ||
+      u.partnerProfileId === partner.id ||
+      (u.email && partner.email && u.email.toLowerCase() === partner.email.toLowerCase())
+    );
+    const balance = partner.walletBalance ?? linkedUser?.walletBalance ?? 0;
+    let needSave = false;
+    if (partner.walletBalance !== balance) {
+      partner.walletBalance = balance;
+      needSave = true;
+    }
+    if (linkedUser && linkedUser.walletBalance !== balance) {
+      linkedUser.walletBalance = balance;
+      needSave = true;
+    }
+    if (needSave) writeData(db);
+
+    const matchIds = new Set([partner.id, partner.userId, linkedUser?.id].filter(Boolean));
+    const transactions = (db.transactions || [])
+      .filter(transaction => matchIds.has(transaction.userId) || (transaction.partnerId && matchIds.has(transaction.partnerId)))
+      .sort((left, right) => new Date(right.date || right.createdAt || 0) - new Date(left.date || left.createdAt || 0));
+
+    return res.json({ balance, partner, transactions });
   }
 
   res.status(404).json({ error: 'User not found' });
@@ -704,13 +820,45 @@ app.get('/api/wallet/:userId', (req, res) => {
 
 app.post('/api/wallet/topup', (req, res) => {
   const db = readData();
-  const { userId, amount } = req.body;
-  const user = db.users.find(u => u.id === userId);
-  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (!db) return res.status(500).json({ error: 'Database unavailable' });
 
-  user.walletBalance = (user.walletBalance || 0) + Number(amount);
+  const { userId, amount } = req.body;
+  const numAmount = Number(amount);
+  if (!Number.isFinite(numAmount) || numAmount <= 0) {
+    return res.status(400).json({ error: 'Valid topup amount required' });
+  }
+
+  let user = (db.users || []).find(u => u.id === userId);
+  let partner = (db.partners || []).find(p => p.id === userId || (user && user.partnerProfileId === p.id));
+  if (!user && partner) {
+    user = (db.users || []).find(u => u.id === partner.userId || (partner.email && u.email && partner.email.toLowerCase() === u.email.toLowerCase()));
+  }
+
+  if (!user && !partner) return res.status(404).json({ error: 'Account not found' });
+
+  const currentBal = Math.max(user?.walletBalance || 0, partner?.walletBalance || 0);
+  const newBal = currentBal + numAmount;
+  if (user) user.walletBalance = newBal;
+  if (partner) partner.walletBalance = newBal;
+
+  const target = user || partner;
+  const transaction = {
+    id: `TXN-TOPUP-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    userId: target.id,
+    userName: target.name,
+    userRole: target.role || 'client',
+    type: 'wallet_topup',
+    description: 'Wallet Top-up via UPI / Card',
+    amount: numAmount,
+    paymentMethod: 'Instant Payment (UPI / Card)',
+    status: 'successful',
+    date: new Date().toISOString()
+  };
+  if (!Array.isArray(db.transactions)) db.transactions = [];
+  db.transactions.unshift(transaction);
+
   writeData(db);
-  res.json({ message: 'Wallet topped up successfully', walletBalance: user.walletBalance });
+  res.json({ message: 'Wallet topped up successfully', walletBalance: newBal, transaction });
 });
 
 // 6b. Annual Subscription (₹249 / 1 Year for Partner & Hirer)
@@ -841,6 +989,13 @@ app.post('/api/payouts/request', (req, res) => {
   }
 
   partner.walletBalance -= withdrawAmount;
+  const linkedUser = (db.users || []).find(u =>
+    u.id === partner.id ||
+    u.id === partner.userId ||
+    u.partnerProfileId === partner.id ||
+    (u.email && partner.email && u.email.toLowerCase() === partner.email.toLowerCase())
+  );
+  if (linkedUser) linkedUser.walletBalance = partner.walletBalance;
 
   const newPayout = {
     id: `PAY-${Date.now().toString().slice(-4)}`,
@@ -1124,12 +1279,21 @@ app.post('/api/admin/customers/:id/notes', (req, res) => {
 // Partner Management Endpoints
 app.get('/api/admin/partners', (req, res) => {
   const db = readData();
-  res.json(db.partners || []);
+  const partners = db.partners || [];
+  const unlistedPartnerAccounts = (db.users || [])
+    .filter(user => user.role === 'partner' || user.role === 'both')
+    .filter(user => !partners.some(partner =>
+      partner.id === user.id ||
+      partner.id === user.partnerProfileId ||
+      (partner.email && user.email && partner.email.toLowerCase() === user.email.toLowerCase())
+    ))
+    .map(buildPartnerProfileFromUser);
+  res.json([...partners, ...unlistedPartnerAccounts]);
 });
 
 app.put('/api/admin/partners/:id/status', (req, res) => {
   const db = readData();
-  const partner = db.partners.find(p => p.id === req.params.id);
+  const partner = findOrCreatePartnerProfile(db, req.params.id);
   if (!partner) return res.status(404).json({ error: 'Partner not found' });
 
   const oldStatus = partner.status || 'active';
@@ -1149,7 +1313,7 @@ app.put('/api/admin/partners/:id/status', (req, res) => {
 
 app.put('/api/admin/partners/:id/kyc', (req, res) => {
   const db = readData();
-  const partner = db.partners.find(p => p.id === req.params.id);
+  const partner = findOrCreatePartnerProfile(db, req.params.id);
   if (!partner) return res.status(404).json({ error: 'Partner not found' });
 
   const { status, notes, adminName } = req.body; // 'verified', 'rejected', 'under_review', 'suspended'
@@ -1389,6 +1553,112 @@ app.get('/api/admin/transactions', (req, res) => {
   res.json(db.transactions || []);
 });
 
+app.post('/api/admin/wallet/credit', (req, res) => {
+  const db = readData();
+  if (!db) return res.status(500).json({ error: 'Unable to load account data' });
+
+  const { recipientType, recipientId, amount, reason, adminEmail, adminPassword } = req.body;
+  const normalizedAdminEmail = String(adminEmail || '').trim().toLowerCase();
+  if (!normalizedAdminEmail || typeof adminPassword !== 'string' || !adminPassword) {
+    return res.status(401).json({ error: 'Admin credentials are required' });
+  }
+  const admin = (db.users || []).find(user =>
+    user.role === 'admin' &&
+    String(user.email || '').trim().toLowerCase() === normalizedAdminEmail &&
+    user.password === adminPassword
+  );
+  if (!admin) return res.status(401).json({ error: 'Admin credentials are invalid' });
+  if (!['customer', 'partner'].includes(recipientType) || !recipientId) {
+    return res.status(400).json({ error: 'Choose a valid wallet recipient' });
+  }
+
+  const creditAmount = Number(amount);
+  const amountInPaise = Math.round(creditAmount * 100);
+  if (!Number.isFinite(creditAmount) || creditAmount <= 0 ||
+      !Number.isSafeInteger(amountInPaise) ||
+      Math.abs(amountInPaise / 100 - creditAmount) > Number.EPSILON * Math.max(1, creditAmount)) {
+    return res.status(400).json({ error: 'Enter an amount greater than zero with up to two decimal places' });
+  }
+  const cleanReason = String(reason || '').trim();
+  if (!cleanReason || cleanReason.length > 500) {
+    return res.status(400).json({ error: 'Enter a transfer reason of 1 to 500 characters' });
+  }
+
+  let recipient;
+  let linkedUser;
+  if (recipientType === 'customer') {
+    recipient = (db.users || []).find(user =>
+      user.id === recipientId && (user.role === 'client' || user.role === 'both')
+    );
+    if (!recipient) return res.status(404).json({ error: 'Customer account not found' });
+    const balanceInPaise = Math.round((Number(recipient.walletBalance) || 0) * 100);
+    if (!Number.isSafeInteger(balanceInPaise) || !Number.isSafeInteger(balanceInPaise + amountInPaise)) {
+      return res.status(400).json({ error: 'Wallet balance is outside the supported range' });
+    }
+    recipient.walletBalance = (balanceInPaise + amountInPaise) / 100;
+  } else {
+    recipient = findOrCreatePartnerProfile(db, recipientId);
+    if (!recipient) return res.status(404).json({ error: 'Partner account not found' });
+    linkedUser = (db.users || []).find(user =>
+      (user.role === 'partner' || user.role === 'both') &&
+      (user.id === recipient.id ||
+        user.partnerProfileId === recipient.id ||
+        recipient.userId === user.id ||
+        (user.email && recipient.email && user.email.toLowerCase() === recipient.email.toLowerCase()))
+    );
+    const balanceInPaise = Math.round((Number(recipient.walletBalance) || 0) * 100);
+    if (!Number.isSafeInteger(balanceInPaise) || !Number.isSafeInteger(balanceInPaise + amountInPaise)) {
+      return res.status(400).json({ error: 'Wallet balance is outside the supported range' });
+    }
+    recipient.walletBalance = (balanceInPaise + amountInPaise) / 100;
+    if (linkedUser) linkedUser.walletBalance = recipient.walletBalance;
+  }
+
+  const newBalance = recipient.walletBalance;
+  const transaction = {
+    id: `TXN-ADMIN-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    userId: recipient.id,
+    userName: recipient.name,
+    userRole: recipientType === 'partner' ? 'partner' : recipient.role,
+    type: 'wallet_credit',
+    description: cleanReason,
+    amount: creditAmount,
+    paymentMethod: 'Admin wallet credit',
+    status: 'successful',
+    adminName: admin.name,
+    date: new Date().toISOString()
+  };
+  if (recipientType === 'partner') {
+    transaction.partnerName = recipient.name;
+    transaction.partnerId = recipient.id;
+    if (linkedUser && linkedUser.id !== recipient.id) {
+      transaction.userAccountId = linkedUser.id;
+    }
+  } else {
+    transaction.customerName = recipient.name;
+  }
+  if (!Array.isArray(db.transactions)) db.transactions = [];
+  db.transactions.unshift(transaction);
+
+  logAudit(
+    db,
+    admin.name,
+    'Wallet Credited',
+    recipientType === 'partner' ? 'Partner' : 'Customer',
+    recipient.id,
+    newBalance - creditAmount,
+    newBalance,
+    `${creditAmount.toFixed(2)} wallet credit: ${cleanReason}`
+  );
+  if (!writeData(db)) return res.status(500).json({ error: 'Unable to save wallet credit' });
+
+  res.status(201).json({
+    message: 'Wallet credited successfully',
+    transaction,
+    walletBalance: newBalance
+  });
+});
+
 app.put('/api/admin/payouts/:id', (req, res) => {
   const db = readData();
   const payout = (db.payouts || []).find(p => p.id === req.params.id);
@@ -1399,11 +1669,18 @@ app.put('/api/admin/payouts/:id', (req, res) => {
   payout.transactionRef = req.body.transactionRef || `CMS${Date.now().toString().slice(-8)}`;
   payout.processedAt = new Date().toISOString();
 
-  // Deduct from partner wallet balance if completed
-  if (payout.status === 'completed') {
+  // If payout rejected by admin, refund money back to partner wallet
+  if (oldStatus !== 'rejected' && payout.status === 'rejected') {
     const partner = db.partners.find(p => p.id === payout.partnerId);
     if (partner) {
-      partner.walletBalance = Math.max(0, (partner.walletBalance || 0) - payout.amount);
+      partner.walletBalance = (partner.walletBalance || 0) + payout.amount;
+      const linkedUser = (db.users || []).find(u =>
+        u.id === partner.id ||
+        u.partnerProfileId === partner.id ||
+        partner.userId === u.id ||
+        (u.email && partner.email && u.email.toLowerCase() === partner.email.toLowerCase())
+      );
+      if (linkedUser) linkedUser.walletBalance = partner.walletBalance;
     }
   }
 
@@ -1715,6 +1992,9 @@ app.post('/api/auth/register', (req, res) => {
   if (!name || !email || !password) {
     return res.status(400).json({ success: false, message: 'Name, email, and password are required.' });
   }
+  if (!['client', 'partner', 'both'].includes(role)) {
+    return res.status(400).json({ success: false, message: 'Choose a valid account type.' });
+  }
 
   const normalizedEmail = email.trim().toLowerCase();
   const existing = (db.users || []).find(u => (u.email || '').toLowerCase() === normalizedEmail);
@@ -1723,7 +2003,7 @@ app.post('/api/auth/register', (req, res) => {
   }
 
   const newUser = {
-    id: `client-${Date.now()}`,
+    id: `${role}-${Date.now()}`,
     name: name.trim(),
     email: normalizedEmail,
     phone: phone ? String(phone).trim() : '+91 98765 43210',
@@ -1739,7 +2019,13 @@ app.post('/api/auth/register', (req, res) => {
 
   if (!Array.isArray(db.users)) db.users = [];
   db.users.push(newUser);
-  writeData(db);
+  if (newUser.role === 'partner' || newUser.role === 'both') {
+    if (!Array.isArray(db.partners)) db.partners = [];
+    db.partners.push(buildPartnerProfileFromUser(newUser));
+  }
+  if (!writeData(db)) {
+    return res.status(500).json({ success: false, message: 'Unable to save the new account. Please try again.' });
+  }
 
   const { password: _p, ...safeUser } = newUser;
   res.status(201).json({

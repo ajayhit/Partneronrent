@@ -160,7 +160,9 @@ export async function sendMessage(bookingId, messageData) {
 
 export async function fetchWallet(userId) {
   const res = await fetch(`${API_BASE}/wallet/${userId}`);
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to load wallet');
+  return data;
 }
 
 export async function topupWallet(userId, amount) {
@@ -298,7 +300,9 @@ export async function updatePlatformSettings(data) {
 // 1. Customers
 export async function fetchAdminCustomers() {
   const res = await fetch(`${API_BASE}/admin/customers`);
-  return res.json();
+  const data = await res.json().catch(() => []);
+  if (!res.ok) throw new Error(data?.error || 'Failed to load customers');
+  return Array.isArray(data) ? data : [];
 }
 
 export async function updateCustomerStatusAdmin(id, status, reason, adminName) {
@@ -322,7 +326,9 @@ export async function addCustomerNoteAdmin(id, note) {
 // 2. Partners
 export async function fetchAdminPartners() {
   const res = await fetch(`${API_BASE}/admin/partners`);
-  return res.json();
+  const data = await res.json().catch(() => []);
+  if (!res.ok) throw new Error(data?.error || 'Failed to load partners');
+  return Array.isArray(data) ? data : [];
 }
 
 export async function updatePartnerStatusAdmin(id, status, reason, adminName) {
@@ -447,7 +453,20 @@ export async function updateCancellationPolicyAdmin(data, adminName) {
 // 7. Transactions
 export async function fetchAdminTransactions() {
   const res = await fetch(`${API_BASE}/admin/transactions`);
-  return res.json();
+  const data = await res.json().catch(() => []);
+  if (!res.ok) throw new Error(data?.error || 'Failed to load transactions');
+  return Array.isArray(data) ? data : [];
+}
+
+export async function creditAdminWallet(data) {
+  const res = await fetch(`${API_BASE}/admin/wallet/credit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.error || 'Failed to credit wallet');
+  return result;
 }
 
 // 8. Reviews

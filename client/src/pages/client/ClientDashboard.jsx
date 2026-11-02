@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import { getClientFavorites, saveClientFavorites } from '../../utils/clientFavorites';
-import { fetchBookings, fetchClientById, fetchPartners, submitClientKYC, updateClientProfile } from '../../utils/api';
+import { fetchBookings, fetchClientById, fetchPartners, fetchWallet, submitClientKYC, updateClientProfile } from '../../utils/api';
 import './client.css';
 
 // Sidebar
@@ -116,19 +116,37 @@ export default function ClientDashboard({ initialTab = 'dashboard', setActivePag
     setActiveTab(tabId);
   };
 
+  useEffect(() => {
+    if (activeTab === 'wallet' && activeUser?.id) {
+      fetchWallet(activeUser.id)
+        .then(wallet => {
+          if (wallet && typeof wallet.balance === 'number') {
+            setClientProfile(prev => ({ ...(prev || {}), walletBalance: wallet.balance }));
+            updateSession?.({ walletBalance: wallet.balance });
+          }
+        })
+        .catch(err => console.error('Failed to refresh wallet on tab switch:', err));
+    }
+  }, [activeTab, activeUser?.id]);
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const [bookingsData, partnersData, clientData] = await Promise.all([
-        fetchBookings({ clientId: activeUser?.id }),
-        fetchPartners(),
-        activeUser?.id ? fetchClientById(activeUser.id) : Promise.resolve(null)
+      const [bookingsData, partnersData, clientData, walletData] = await Promise.all([
+        fetchBookings({ clientId: activeUser?.id }).catch(() => []),
+        fetchPartners().catch(() => []),
+        activeUser?.id ? fetchClientById(activeUser.id).catch(() => null) : Promise.resolve(null),
+        activeUser?.id ? fetchWallet(activeUser.id).catch(() => null) : Promise.resolve(null)
       ]);
       setBookings(Array.isArray(bookingsData) ? bookingsData : []);
       setPartners(Array.isArray(partnersData) ? partnersData : []);
+      const mergedBalance = walletData?.balance ?? clientData?.walletBalance ?? activeUser?.walletBalance ?? 0;
       if (clientData && !clientData.error) {
-        setClientProfile(clientData);
-        updateSession?.({ ...activeUser, ...clientData });
+        const enrichedClient = { ...clientData, walletBalance: mergedBalance };
+        setClientProfile(enrichedClient);
+        updateSession?.({ ...activeUser, ...enrichedClient });
+      } else if (walletData) {
+        updateSession?.({ walletBalance: mergedBalance });
       }
     } catch (err) {
       console.error('Failed to load client data:', err);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
-import { fetchPayouts, requestPayout, fetchPartnerById } from '../../utils/api';
+import { fetchPayouts, requestPayout, fetchPartnerById, fetchWallet } from '../../utils/api';
 import { formatCurrency, formatDateTime } from '../../utils/helpers';
 import { 
   Wallet, 
@@ -16,10 +16,11 @@ import {
 } from 'lucide-react';
 
 export default function PartnerEarnings() {
-  const { activePartner } = useAuth();
+  const { activePartner, updateSession } = useAuth();
   const { showToast } = useApp();
   const [partner, setPartner] = useState(activePartner || null);
   const [payouts, setPayouts] = useState([]);
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Payout request form
@@ -35,11 +36,27 @@ export default function PartnerEarnings() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [partnerData, payoutData] = await Promise.all([
-        fetchPartnerById(activePartner?.id),
-        fetchPayouts({ partnerId: activePartner?.id })
+      const partnerId = activePartner?.partnerProfileId || activePartner?.id;
+      const [partnerData, walletData, payoutData] = await Promise.all([
+        fetchPartnerById(partnerId).catch(error => {
+          console.error('Failed to load partner profile:', error);
+          return null;
+        }),
+        fetchWallet(activePartner?.id),
+        fetchPayouts({ partnerId })
       ]);
-      if (partnerData) setPartner(partnerData);
+      const refreshedPartner = {
+        ...activePartner,
+        ...(partnerData && !partnerData.error ? partnerData : {}),
+        walletBalance: walletData?.balance ?? partnerData?.walletBalance ?? 0
+      };
+      setPartner(refreshedPartner);
+      if (walletData && typeof walletData.balance === 'number') {
+        updateSession({ walletBalance: walletData.balance });
+      }
+      if (walletData && Array.isArray(walletData.transactions)) {
+        setTransactions(walletData.transactions);
+      }
       if (payoutData) setPayouts(payoutData);
     } catch (err) {
       console.error(err);
@@ -321,6 +338,62 @@ export default function PartnerEarnings() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Wallet Credits & Activity Ledger */}
+      <div className="glass-panel" style={{ padding: '24px' }}>
+        <h3 style={{ fontSize: '1.2rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Wallet size={18} color="#34d399" /> Wallet Credits & Transfer History
+        </h3>
+        {transactions.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '28px', color: '#64748b', fontSize: '0.9rem' }}>
+            No wallet credit transactions found.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {transactions.map(transaction => {
+              const isCredit = transaction.type === 'wallet_credit' || transaction.type === 'credit' || transaction.type === 'wallet_topup' || transaction.type === 'refund';
+              const title = transaction.description || transaction.title || (transaction.type === 'wallet_credit' ? 'Admin Wallet Credit' : 'Wallet Activity');
+              const dateStr = transaction.date || transaction.createdAt ? formatDateTime(transaction.date || transaction.createdAt) : 'Recently';
+
+              return (
+                <div
+                  key={transaction.id}
+                  style={{
+                    padding: '14px 18px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'rgba(15, 23, 42, 0.5)',
+                    border: '1px solid var(--border-subtle)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '12px'
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                      <strong style={{ color: '#fff', fontSize: '1.02rem' }}>{title}</strong>
+                      <span className={`badge ${isCredit ? 'badge-verified' : 'badge-warning'}`}>
+                        {isCredit ? '+ Credit' : '- Debit'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                      Txn: #{transaction.id} {transaction.adminName ? `• Admin: ${transaction.adminName}` : ''}
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: 800, fontSize: '1.1rem', color: isCredit ? '#34d399' : '#f87171' }}>
+                      {isCredit ? '+' : '-'}{formatCurrency(transaction.amount || 0)}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{dateStr}</div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

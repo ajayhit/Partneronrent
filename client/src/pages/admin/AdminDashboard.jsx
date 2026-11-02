@@ -28,6 +28,7 @@ import {
   fetchAdminCancellationPolicy,
   updateCancellationPolicyAdmin,
   fetchAdminTransactions,
+  creditAdminWallet,
   fetchPayouts,
   updatePayoutStatus,
   fetchAdminReviews,
@@ -135,6 +136,46 @@ export default function AdminDashboard() {
     loadAllData();
   }, []);
 
+  useEffect(() => {
+    if (activeTab !== 'partners' && activeTab !== 'partner-kyc') return;
+
+    let cancelled = false;
+    fetchAdminPartners()
+      .then(data => {
+        if (!cancelled) setPartners(data);
+      })
+      .catch(err => {
+        console.error('Failed to refresh admin partner data:', err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== 'payments' && activeTab !== 'reports') return;
+
+    let cancelled = false;
+    Promise.all([
+      fetchAdminTransactions().catch(() => []),
+      fetchAdminCustomers().catch(() => []),
+      fetchAdminPartners().catch(() => [])
+    ]).then(([txns, custs, pts]) => {
+      if (!cancelled) {
+        if (Array.isArray(txns)) setTransactions(txns);
+        if (Array.isArray(custs)) setCustomers(custs);
+        if (Array.isArray(pts)) setPartners(pts);
+      }
+    }).catch(err => {
+      console.error('Failed to refresh payments/reports data:', err);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab]);
+
   const loadAllData = async () => {
     setLoading(true);
     try {
@@ -163,13 +204,13 @@ export default function AdminDashboard() {
       ]);
 
       if (st) setStats(st);
-      if (custs) setCustomers(custs);
-      if (pts) setPartners(pts);
-      if (bks) setBookings(bks);
-      if (locs) setLocations(locs);
-      if (svcs) setServices(svcs);
-      if (pays) setPayouts(pays);
-      if (txns) setTransactions(txns);
+      if (Array.isArray(custs)) setCustomers(custs);
+      if (Array.isArray(pts)) setPartners(pts);
+      if (Array.isArray(bks)) setBookings(bks);
+      if (Array.isArray(locs)) setLocations(locs);
+      if (Array.isArray(svcs)) setServices(svcs);
+      if (Array.isArray(pays)) setPayouts(pays);
+      if (Array.isArray(txns)) setTransactions(txns);
       if (revs) setReviews(revs);
       if (cmps) setComplaints(cmps);
       if (safes) setSafetyIncidents(safes);
@@ -352,6 +393,19 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleCreditWallet = async (transferData) => {
+    const result = await creditAdminWallet(transferData);
+    if (result.transaction) {
+      setTransactions(currentTransactions => [
+        result.transaction,
+        ...currentTransactions.filter(transaction => transaction.id !== result.transaction.id)
+      ]);
+    }
+    showToast(result.message);
+    await loadAllData();
+    return result;
   };
 
   const handleSaveCommissions = async (rules, reason) => {
@@ -634,6 +688,11 @@ export default function AdminDashboard() {
             transactions={transactions}
             subFilter={subFilter}
             setSubFilter={setSubFilter}
+            customers={customers}
+            partners={partners}
+            adminEmail={session?.email || ''}
+            onCreditWallet={handleCreditWallet}
+            onRefresh={loadAllData}
           />
         )}
 
@@ -715,6 +774,8 @@ export default function AdminDashboard() {
             stats={stats}
             partners={partners}
             bookings={bookings}
+            transactions={transactions}
+            onRefresh={loadAllData}
           />
         )}
 

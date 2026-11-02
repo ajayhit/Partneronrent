@@ -166,6 +166,7 @@ export function AuthProvider({ children }) {
   // ── Login ──────────────────────────────────────────────────────────────────
   const login = async (email, password, role) => {
     const normEmail = (email || '').trim().toLowerCase();
+    let serverRejectedLogin = false;
 
     // 1. Try server-side authentication first
     try {
@@ -181,6 +182,7 @@ export function AuthProvider({ children }) {
           return { success: true, user: data.user };
         }
       }
+      serverRejectedLogin = res.status === 401;
     } catch {
       // Backend unavailable or network error, fallback to local store below
     }
@@ -203,6 +205,37 @@ export function AuthProvider({ children }) {
 
     if (!user) {
       return { success: false, message: 'Invalid email or password. Please check your credentials.' };
+    }
+
+    if (serverRejectedLogin && ['client', 'partner', 'both'].includes(user.role)) {
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            password: user.password,
+            role: user.role,
+            city: user.city || 'Delhi NCR'
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.success && data.user) {
+          const syncedUser = { ...data.user, password: user.password };
+          saveMockUsers(users.map(account =>
+            account.email.toLowerCase() === user.email.toLowerCase() ? syncedUser : account
+          ));
+          setSession(data.user);
+          return { success: true, user: data.user };
+        }
+        if (res.status !== 400) {
+          console.error('Failed to sync local account with the server:', data.message || res.statusText);
+        }
+      } catch (error) {
+        console.error('Failed to sync local account with the server:', error);
+      }
     }
 
     const { password: _pw, ...safeUser } = user;
@@ -242,30 +275,16 @@ export function AuthProvider({ children }) {
   };
 
   // ── Register ───────────────────────────────────────────────────────────────
-  const register = (formData, role) => {
+  const register = async (formData, role) => {
     const users = getMockUsers();
     const existing = users.find(u => u.email.toLowerCase() === formData.email.toLowerCase());
     if (existing) {
       return { success: false, message: 'An account with this email already exists.' };
     }
-    const newUser = {
-      id: `${role}-${Date.now()}`,
-      role,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone || '',
-      password: formData.password,
-      city: formData.city || 'India',
-      avatar: DEFAULT_AVATAR,
-      walletBalance: 0,
-      ...(role === 'partner' ? { hourlyRate: 1000, totalEarnings: 0, kycStatus: 'not_submitted' } : {})
-    };
-    const updatedUsers = [...users, newUser];
-    saveMockUsers(updatedUsers);
-
-    // Sync to backend server so mobile app and web share all registered accounts
+    let response;
+    let data;
     try {
-      fetch('/api/auth/register', {
+      response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -276,10 +295,21 @@ export function AuthProvider({ children }) {
           role,
           city: formData.city || 'Delhi NCR'
         })
-      }).catch(() => {});
-    } catch {}
+      });
+      data = await response.json();
+    } catch (error) {
+      console.error('Failed to register account with the server:', error);
+      return { success: false, message: 'Could not create your account because the server is unavailable. Please try again.' };
+    }
 
-    const { password: _pw, ...safeUser } = newUser;
+    if (!response.ok || !data.success || !data.user) {
+      return { success: false, message: data.message || 'Could not create your account. Please try again.' };
+    }
+
+    const newUser = { ...data.user, password: formData.password };
+    saveMockUsers([...users, newUser]);
+
+    const { password: _pw, ...safeUser } = data.user;
     setSession(safeUser);
     return { success: true, user: safeUser };
   };
@@ -291,8 +321,49 @@ export function AuthProvider({ children }) {
 
   // ── Update session user (e.g. wallet balance) ──────────────────────────────
   const updateSession = (updates) => {
-    setSession(prev => prev ? { ...prev, ...updates } : prev);
+    setSession(prev => {
+      if (!prev) return prev;
+      const nextUpdates = typeof updates === 'function' ? updates(prev) : updates;
+      const nextSession = { ...prev, ...nextUpdates };
+      try {
+        const safe = sanitizeSessionForStorage(nextSession);
+        localStorage.setItem(SESSION_KEY, JSON.stringify(safe));
+      } catch (err) {
+        console.warn('Could not persist updated session to localStorage:', err);
+      }
+      return nextSession;
+    });
   };
+
+  // ── Sync latest session data & wallet balance from server ────────────────────
+  const refreshSession = async () => {
+    if (!session?.id) return;
+    try {
+      const res = await fetch(`/api/wallet/${session.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data.balance === 'number') {
+          updateSession({ walletBalance: data.balance });
+        }
+      }
+    } catch {
+      // Ignore background refresh errors
+    }
+  };
+
+  useEffect(() => {
+    if (!session?.id) return;
+    refreshSession();
+
+    const handleFocus = () => refreshSession();
+    window.addEventListener('focus', handleFocus);
+    const interval = setInterval(refreshSession, 15000); // 15s polling to catch admin credits
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
+  }, [session?.id]);
 
   return (
     <AuthContext.Provider
@@ -308,6 +379,7 @@ export function AuthProvider({ children }) {
         logout,
         register,
         updateSession,
+        refreshSession,
         updateAdminPassword,
         // Legacy compat
         setActiveUser: updateSession,

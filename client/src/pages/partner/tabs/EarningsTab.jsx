@@ -14,7 +14,7 @@ import {
   Info
 } from 'lucide-react';
 
-export default function EarningsTab({ partner, payouts = [], bookings = [], onTabChange, showToast }) {
+export default function EarningsTab({ partner, payouts = [], bookings = [], walletTransactions = [], onTabChange, showToast }) {
   const [filterPeriod, setFilterPeriod] = useState('All Time');
 
   // Dynamic figures calculated from real partner, payouts & bookings state:
@@ -277,6 +277,70 @@ export default function EarningsTab({ partner, payouts = [], bookings = [], onTa
                     <td><span className="partner-badge partner-badge-emerald">Credited</span></td>
                   </tr>
                 ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Wallet Credits & Adjustments Activity */}
+      <div className="partner-panel">
+        <div className="partner-panel-title" style={{ marginBottom: '16px' }}>
+          <Wallet size={18} color="#34d399" />
+          <span>Wallet Credits & Adjustments History</span>
+        </div>
+
+        <div className="partner-table-container">
+          <table className="partner-table">
+            <thead>
+              <tr>
+                <th>Transaction ID</th>
+                <th>Description / Reason</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Date & Time</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {walletTransactions.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
+                    No wallet credit transactions recorded yet.
+                  </td>
+                </tr>
+              ) : (
+                walletTransactions.map(t => {
+                  const isCredit = t.type === 'wallet_credit' || t.type === 'credit' || t.type === 'wallet_topup' || t.type === 'refund';
+                  const title = t.description || t.title || (t.type === 'wallet_credit' ? 'Admin Wallet Credit' : 'Wallet Activity');
+                  const dateStr = t.date || t.createdAt ? formatDateTime(t.date || t.createdAt) : 'Recently';
+
+                  return (
+                    <tr key={t.id}>
+                      <td><strong style={{ color: '#38bdf8' }}>#{t.id}</strong></td>
+                      <td>
+                        <span style={{ fontWeight: 600, color: '#fff' }}>{title}</span>
+                        {t.adminName && <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Authorized by Admin ({t.adminName})</div>}
+                      </td>
+                      <td>
+                        <span className={`partner-badge ${isCredit ? 'partner-badge-emerald' : 'partner-badge-rose'}`}>
+                          {isCredit ? '+ Credit' : '- Debit'}
+                        </span>
+                      </td>
+                      <td>
+                        <strong style={{ color: isCredit ? '#34d399' : '#f87171' }}>
+                          {isCredit ? '+' : '-'}{formatCurrency(t.amount)}
+                        </strong>
+                      </td>
+                      <td><span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{dateStr}</span></td>
+                      <td>
+                        <span className={`partner-badge ${t.status === 'successful' || t.status === 'completed' ? 'partner-badge-emerald' : 'partner-badge-amber'}`}>
+                          {t.status || 'completed'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

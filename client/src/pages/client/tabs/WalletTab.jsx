@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { formatCurrency } from '../../../utils/helpers';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../../context/AuthContext';
+import { fetchWallet, topupWallet } from '../../../utils/api';
+import { formatCurrency, formatDateTime } from '../../../utils/helpers';
 import {
   Wallet,
   PlusCircle,
@@ -13,39 +15,66 @@ import {
 } from 'lucide-react';
 
 export default function WalletTab({ client, onTopupWallet, showToast }) {
-  const [walletBalance, setWalletBalance] = useState(0);
+  const { updateSession } = useAuth();
+  const [walletBalance, setWalletBalance] = useState(client?.walletBalance || 0);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const promotionalCredits = client?.promotionalCredits ?? 0;
   const refundCredits = client?.refundCredits ?? 0;
 
   const [topupAmount, setTopupAmount] = useState(1000);
   const [submitting, setSubmitting] = useState(false);
-  const [transactions, setTransactions] = useState([]);
 
-  const handleTopup = (e) => {
+  useEffect(() => {
+    if (client?.walletBalance !== undefined) {
+      setWalletBalance(client.walletBalance);
+    }
+  }, [client?.walletBalance]);
+
+  const loadWalletData = async () => {
+    if (!client?.id) return;
+    try {
+      setLoading(true);
+      const data = await fetchWallet(client.id);
+      if (data) {
+        const bal = typeof data.balance === 'number' ? data.balance : (client?.walletBalance || 0);
+        setWalletBalance(bal);
+        setTransactions(Array.isArray(data.transactions) ? data.transactions : []);
+        updateSession?.({ walletBalance: bal });
+      }
+    } catch (err) {
+      console.error('Failed to load wallet data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadWalletData();
+  }, [client?.id]);
+
+  const handleTopup = async (e) => {
     e.preventDefault();
     if (!topupAmount || topupAmount < 100) {
-      showToast('Minimum top-up is ₹100', 'warning');
+      if (showToast) showToast('Minimum top-up is ₹100', 'warning');
       return;
     }
 
     setSubmitting(true);
-    setTimeout(() => {
-      const newBal = walletBalance + Number(topupAmount);
+    try {
+      const res = await topupWallet(client.id, topupAmount);
+      const newBal = res?.walletBalance ?? (walletBalance + Number(topupAmount));
       setWalletBalance(newBal);
-      setTransactions([
-        {
-          id: `WLT-${Date.now().toString().slice(-5)}`,
-          type: 'credit',
-          title: 'Top-up via UPI / Card',
-          amount: Number(topupAmount),
-          date: 'Just now',
-          status: 'completed'
-        },
-        ...transactions
-      ]);
+      updateSession?.({ walletBalance: newBal });
+      if (showToast) showToast(`${formatCurrency(topupAmount)} added to your Hirer Wallet successfully!`);
+      await loadWalletData();
+    } catch (err) {
+      console.error('Wallet topup failed:', err);
+      if (showToast) showToast(err.message || 'Top-up failed. Please try again.', 'danger');
+    } finally {
       setSubmitting(false);
-      showToast(`${formatCurrency(topupAmount)} added to your Hirer Wallet!`);
-    }, 500);
+    }
   };
 
   return (
@@ -74,7 +103,7 @@ export default function WalletTab({ client, onTopupWallet, showToast }) {
               Available Wallet Balance
             </div>
             <div style={{ fontSize: '3.2rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '8px' }}>
-              {formatCurrency(walletBalance)}
+              {loading && walletBalance === 0 ? 'Loading...' : formatCurrency(walletBalance)}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', opacity: 0.95 }}>
               <ShieldCheck size={18} /> 100% Escrow Protected by PartnerOnRent
@@ -199,9 +228,25 @@ export default function WalletTab({ client, onTopupWallet, showToast }) {
 
       {/* Wallet Transactions Ledger */}
       <div className="client-panel">
-        <div className="client-panel-title" style={{ marginBottom: '16px' }}>
-          <RotateCcw size={18} color="#38bdf8" />
-          <span>Wallet Transactions Activity</span>
+        <div className="client-panel-title" style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <RotateCcw size={18} color="#38bdf8" />
+            <span>Wallet Transactions Activity</span>
+          </div>
+          <button
+            onClick={loadWalletData}
+            style={{
+              background: 'transparent',
+              border: '1px solid rgba(255,255,255,0.15)',
+              color: '#94a3b8',
+              borderRadius: '6px',
+              padding: '4px 10px',
+              fontSize: '0.75rem',
+              cursor: 'pointer'
+            }}
+          >
+            Refresh
+          </button>
         </div>
 
         <div className="client-table-container">
@@ -217,24 +262,45 @@ export default function WalletTab({ client, onTopupWallet, showToast }) {
               </tr>
             </thead>
             <tbody>
-              {transactions.map(t => (
-                <tr key={t.id}>
-                  <td><strong style={{ color: '#38bdf8' }}>#{t.id}</strong></td>
-                  <td><span style={{ fontWeight: 600, color: '#fff' }}>{t.title}</span></td>
-                  <td>
-                    <span className={`client-badge ${t.type === 'credit' ? 'client-badge-emerald' : 'client-badge-rose'}`}>
-                      {t.type === 'credit' ? '+ Credit' : '- Debit'}
-                    </span>
+              {transactions.length === 0 ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center', padding: '32px', color: '#64748b' }}>
+                    {loading ? 'Loading transactions...' : 'No wallet transactions recorded yet.'}
                   </td>
-                  <td>
-                    <strong style={{ color: t.type === 'credit' ? '#34d399' : '#f87171' }}>
-                      {t.type === 'credit' ? '+' : '-'}{formatCurrency(t.amount)}
-                    </strong>
-                  </td>
-                  <td><span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{t.date}</span></td>
-                  <td><span className="client-badge client-badge-emerald">Completed</span></td>
                 </tr>
-              ))}
+              ) : (
+                transactions.map(t => {
+                  const isCredit = t.type === 'wallet_credit' || t.type === 'credit' || t.type === 'wallet_topup' || t.type === 'refund';
+                  const title = t.description || t.title || (t.type === 'wallet_credit' ? 'Admin Wallet Credit' : 'Wallet Activity');
+                  const dateStr = t.date || t.createdAt ? formatDateTime(t.date || t.createdAt) : 'Recently';
+
+                  return (
+                    <tr key={t.id}>
+                      <td><strong style={{ color: '#38bdf8' }}>#{t.id}</strong></td>
+                      <td>
+                        <span style={{ fontWeight: 600, color: '#fff' }}>{title}</span>
+                        {t.adminName && <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Processed by Admin ({t.adminName})</div>}
+                      </td>
+                      <td>
+                        <span className={`client-badge ${isCredit ? 'client-badge-emerald' : 'client-badge-rose'}`}>
+                          {isCredit ? '+ Credit' : '- Debit'}
+                        </span>
+                      </td>
+                      <td>
+                        <strong style={{ color: isCredit ? '#34d399' : '#f87171' }}>
+                          {isCredit ? '+' : '-'}{formatCurrency(t.amount)}
+                        </strong>
+                      </td>
+                      <td><span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{dateStr}</span></td>
+                      <td>
+                        <span className={`client-badge ${t.status === 'successful' || t.status === 'completed' ? 'client-badge-emerald' : 'client-badge-amber'}`}>
+                          {t.status || 'completed'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
